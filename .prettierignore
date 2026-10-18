@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+package-lock.json
+
+# Project specification documents are maintained by hand.
+discord-music-bot-docs/
