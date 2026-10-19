@@ -1,18 +1,18 @@
 # Stage 1: Build TypeScript bot
-FROM node:22-bookworm-slim AS builder
+FROM node:24-bookworm-slim AS builder
 WORKDIR /app
 COPY package*.json tsconfig*.json ./
 RUN npm ci
 COPY src ./src
 RUN npm run build
 
-# Stage 2: Runtime image with Java 21 + Node.js 22 + Lavalink v4
+# Stage 2: Runtime image with Java 21 + Node.js 24 + Lavalink v4
 FROM eclipse-temurin:21-jre-jammy AS runtime
 WORKDIR /app
 
-# Install Node.js 22 LTS
+# Install Node.js 24 LTS
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && \
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 

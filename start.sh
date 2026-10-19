@@ -11,7 +11,7 @@ cleanup() {
   fi
 }
 
-trap cleanup SIGTERM SIGINT
+trap cleanup TERM INT
 
 echo "[All-in-One] Starting embedded Lavalink v4 server..."
 cd /app/lavalink
