@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
+    "register:commands": "node dist/deploy-commands.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
