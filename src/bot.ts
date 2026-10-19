@@ -1,8 +1,13 @@
 import { Client, Events, GatewayIntentBits } from 'discord.js';
 import type { AppConfig } from './config.js';
 import type { Command } from './commands/types.js';
-import { commandMap } from './commands/index.js';
+import { buildCommandMap } from './commands/index.js';
 import { handleInteraction } from './interaction.js';
+import { LavalinkMusicEngine } from './audio/lavalink-engine.js';
+import { GuildPlayerManager } from './player/guild-player.js';
+import { ProviderRegistry } from './provider/registry.js';
+import { LavalinkProvider } from './provider/lavalink-provider.js';
+import { TrackResolver } from './provider/resolver.js';
 
 export interface RifflyBot {
   readonly client: Client;
@@ -16,14 +21,49 @@ export interface CreateBotOptions {
 }
 
 export function createBot(config: AppConfig, options: CreateBotOptions = {}): RifflyBot {
-  // Slash command interactions and voice updates require Guilds and GuildVoiceStates (unprivileged).
   const client =
     options.client ??
     new Client({
       intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
     });
 
-  const commands = options.commands ?? commandMap;
+  // Set up audio engine and player stack (only if real client is used)
+  let commands: ReadonlyMap<string, Command>;
+
+  if (options.commands) {
+    commands = options.commands;
+  } else {
+    const engine = new LavalinkMusicEngine({ client, config });
+    const playerManager = new GuildPlayerManager(engine);
+
+    const registry = new ProviderRegistry();
+    const lavalinkProvider = new LavalinkProvider({ manager: engine.manager });
+    // SoundCloud is the primary search/URL source via Lavalink built-in sc source
+    registry.register(lavalinkProvider, [
+      'soundcloud.com',
+      'www.soundcloud.com',
+      'on.soundcloud.com',
+    ]);
+
+    const resolver = new TrackResolver({ registry });
+
+    commands = buildCommandMap(playerManager, resolver);
+
+    // Initialize Lavalink manager after bot is ready
+    client.once(Events.ClientReady, () => {
+      void engine.init().catch((err: unknown) => {
+        console.error(
+          '[Bot] Failed to initialize Lavalink manager:',
+          err instanceof Error ? err.message : err,
+        );
+      });
+    });
+
+    // Forward voice state and voice server updates to Lavalink
+    client.on('raw', (packet: unknown) => {
+      void engine.manager.sendRawData(packet as Parameters<typeof engine.manager.sendRawData>[0]);
+    });
+  }
 
   client.once(Events.ClientReady, (readyClient) => {
     console.log(`[Bot] Logged in as ${readyClient.user.tag}! Gateway connection established.`);

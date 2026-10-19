@@ -1,10 +1,9 @@
 import type { Interaction } from 'discord.js';
 import type { Command } from './commands/types.js';
-import { commandMap } from './commands/index.js';
 
 export async function handleInteraction(
   interaction: Interaction,
-  commands: ReadonlyMap<string, Command> = commandMap,
+  commands: ReadonlyMap<string, Command>,
 ): Promise<void> {
   if (!interaction.isChatInputCommand()) {
     return;

@@ -3,7 +3,12 @@ import { REST, Routes } from 'discord.js';
 import type { AppConfig } from './config.js';
 import { ConfigError, loadConfig } from './config.js';
 import type { Command } from './commands/types.js';
-import { commands as defaultCommands } from './commands/index.js';
+import { allCommandData } from './commands/index.js';
+
+const defaultCommands: readonly Command[] = allCommandData.map((data) => ({
+  data,
+  execute: async () => {},
+}));
 
 export interface CommandRegistrationResult {
   readonly scope: 'guild' | 'global';
