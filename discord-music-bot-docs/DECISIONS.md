@@ -4,7 +4,9 @@
 - Primary language: TypeScript.
 - Runtime: supported Node.js LTS release; pin after checking current compatibility.
 - Discord library: discord.js.
-- Audio architecture: Lavalink behind an internal MusicEngine abstraction.
+- Audio architecture: Lavalink v4.x behind an internal MusicEngine abstraction.
+- Lavalink client: `lavalink-client` (v2.11.x) selected for Lavalink v4 compatibility with discord.js v14.
+- Audio server runtime: Java 17+ or 21 (Eclipse Temurin) for Lavalink v4.
 - User input: text query and recognized track/playlist URLs.
 - Source architecture: multiple provider adapters behind one resolver interface.
 - Initial deployment: local development first; long-running host for production.
@@ -12,9 +14,8 @@
 - No assumption that any specific commercial provider allows rebroadcasting audio.
 
 ## Assumptions to validate
-- A compatible maintained Lavalink TypeScript client is available for the chosen Lavalink release.
 - At least one permitted source can be configured for a working end-to-end test.
-- Current package versions and Java runtime compatibility must be verified before pinning.
+- Verify plugin compatibility (e.g. YouTube/LavaSearch plugins) against Lavalink v4 server if needed.
 
 ## Open questions
 - Final bot name and branding.
