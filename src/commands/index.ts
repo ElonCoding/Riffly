@@ -58,12 +58,27 @@ export function buildCommandMap(
 /** All command data for slash-command registration (no runtime deps). */
 export const allCommandData: readonly Command['data'][] = [
   pingCommand.data,
-  { name: 'play', toJSON: () => ({ name: 'play', description: 'Play a song or playlist.', type: 1 }) },
+  {
+    name: 'play',
+    toJSON: () => ({ name: 'play', description: 'Play a song or playlist.', type: 1 }),
+  },
   { name: 'pause', toJSON: () => ({ name: 'pause', description: 'Pause playback.', type: 1 }) },
-  { name: 'resume', toJSON: () => ({ name: 'resume', description: 'Resume paused playback.', type: 1 }) },
-  { name: 'skip', toJSON: () => ({ name: 'skip', description: 'Skip the current track.', type: 1 }) },
+  {
+    name: 'resume',
+    toJSON: () => ({ name: 'resume', description: 'Resume paused playback.', type: 1 }),
+  },
+  {
+    name: 'skip',
+    toJSON: () => ({ name: 'skip', description: 'Skip the current track.', type: 1 }),
+  },
   { name: 'stop', toJSON: () => ({ name: 'stop', description: 'Stop and clear queue.', type: 1 }) },
-  { name: 'leave', toJSON: () => ({ name: 'leave', description: 'Leave voice channel.', type: 1 }) },
-  { name: 'nowplaying', toJSON: () => ({ name: 'nowplaying', description: 'Show now playing.', type: 1 }) },
+  {
+    name: 'leave',
+    toJSON: () => ({ name: 'leave', description: 'Leave voice channel.', type: 1 }),
+  },
+  {
+    name: 'nowplaying',
+    toJSON: () => ({ name: 'nowplaying', description: 'Show now playing.', type: 1 }),
+  },
   { name: 'queue', toJSON: () => ({ name: 'queue', description: 'Show the queue.', type: 1 }) },
 ];

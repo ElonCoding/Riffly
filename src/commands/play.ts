@@ -43,8 +43,7 @@ export function makePlayCommand(
 
       // Require the user to be in a voice channel
       const member = interaction.member;
-      const voiceChannelId =
-        member instanceof GuildMember ? member.voice.channelId : null;
+      const voiceChannelId = member instanceof GuildMember ? member.voice.channelId : null;
       if (!voiceChannelId) {
         await interaction.editReply(RifflyError.notInVoiceChannel().userMessage);
         return;

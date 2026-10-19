@@ -38,9 +38,26 @@ export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Comman
         .setDescription(`**[${track.title}](${track.uri ?? '#'})**`)
         .addFields(
           { name: 'Artist', value: track.author, inline: true },
-          { name: 'Duration', value: track.isStream ? '🔴 Live' : formatDuration(track.lengthMs), inline: true },
-          { name: 'Status', value: state.engineState === 'paused' ? '⏸️ Paused' : '▶️ Playing', inline: true },
-          { name: 'Loop', value: state.loopMode === 'off' ? 'Off' : state.loopMode === 'track' ? '🔂 Track' : '🔁 Queue', inline: true },
+          {
+            name: 'Duration',
+            value: track.isStream ? '🔴 Live' : formatDuration(track.lengthMs),
+            inline: true,
+          },
+          {
+            name: 'Status',
+            value: state.engineState === 'paused' ? '⏸️ Paused' : '▶️ Playing',
+            inline: true,
+          },
+          {
+            name: 'Loop',
+            value:
+              state.loopMode === 'off'
+                ? 'Off'
+                : state.loopMode === 'track'
+                  ? '🔂 Track'
+                  : '🔁 Queue',
+            inline: true,
+          },
           { name: 'Queue', value: `${state.upcoming.length} track(s) up next`, inline: true },
         )
         .setColor(0x5865f2);

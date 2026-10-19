@@ -21,9 +21,7 @@ export function makeQueueCommand(playerManager: GuildPlayerManager): Command {
     data: new SlashCommandBuilder()
       .setName('queue')
       .setDescription('Show the current queue.')
-      .addIntegerOption((opt) =>
-        opt.setName('page').setDescription('Page number').setMinValue(1),
-      ),
+      .addIntegerOption((opt) => opt.setName('page').setDescription('Page number').setMinValue(1)),
     async execute(interaction) {
       const guildId = interaction.guildId!;
       const state = playerManager.getState(guildId);
@@ -60,7 +58,9 @@ export function makeQueueCommand(playerManager: GuildPlayerManager): Command {
       const embed = new EmbedBuilder()
         .setTitle('📋 Queue')
         .setDescription(lines.join('\n'))
-        .setFooter({ text: `Page ${clampedPage}/${totalPages} · ${upcoming.length} track(s) in queue · Loop: ${state.loopMode}` })
+        .setFooter({
+          text: `Page ${clampedPage}/${totalPages} · ${upcoming.length} track(s) in queue · Loop: ${state.loopMode}`,
+        })
         .setColor(0x5865f2);
 
       await interaction.reply({ embeds: [embed] });

@@ -83,7 +83,7 @@ export class LavalinkProvider implements SearchableProvider, TrackUrlProvider {
 
   constructor(options: LavalinkProviderOptions) {
     this.manager = options.manager;
-    this.searchSource = options.searchSource ?? ('scsearch' as SearchPlatform);
+    this.searchSource = options.searchSource ?? 'scsearch';
   }
 
   private getNode() {
@@ -98,10 +98,7 @@ export class LavalinkProvider implements SearchableProvider, TrackUrlProvider {
     let result: SearchResult;
     try {
       // node.search accepts { query, source } or a plain string
-      result = (await node.search(
-        { query, source: this.searchSource },
-        null,
-      )) as SearchResult;
+      result = (await node.search({ query, source: this.searchSource }, null)) as SearchResult;
     } catch (cause) {
       throw new RifflyError(
         'ProviderUnavailable',

@@ -49,10 +49,7 @@ export class TrackResolver {
     if (input.kind === 'search') {
       const provider = this.registry.getSearchProvider();
       if (!provider) {
-        throw new RifflyError(
-          'UnsupportedProvider',
-          '❌ No search provider is configured.',
-        );
+        throw new RifflyError('UnsupportedProvider', '❌ No search provider is configured.');
       }
       const tracks = await provider.searchTracks(input.query, this.searchResultLimit);
       if (tracks.length === 0) {

@@ -9,9 +9,7 @@ import { RifflyError } from '../errors.js';
 
 export function makeSkipCommand(playerManager: GuildPlayerManager): Command {
   return {
-    data: new SlashCommandBuilder()
-      .setName('skip')
-      .setDescription('Skip the current track.'),
+    data: new SlashCommandBuilder().setName('skip').setDescription('Skip the current track.'),
     async execute(interaction) {
       const guildId = interaction.guildId!;
       try {

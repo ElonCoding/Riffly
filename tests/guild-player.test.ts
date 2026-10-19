@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { GuildPlayerManager } from '../src/player/guild-player.js';
 import { FakeMusicEngine } from '../src/audio/fake-engine.js';
 import type { Track } from '../src/audio/types.js';
