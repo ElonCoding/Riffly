@@ -24,7 +24,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "discord.js": "14.27.0"
+    "discord.js": "14.27.0",
+    "lavalink-client": "^2.11.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
