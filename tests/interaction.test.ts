@@ -9,7 +9,7 @@ describe('handleInteraction', () => {
       isChatInputCommand: () => false,
     } as unknown as Interaction;
 
-    await expect(handleInteraction(fakeInteraction)).resolves.toBeUndefined();
+    await expect(handleInteraction(fakeInteraction, new Map())).resolves.toBeUndefined();
   });
 
   it('replies ephemeral message for unknown command', async () => {
