@@ -8,7 +8,7 @@ describe('registerCommands', () => {
   const fakeCommand: Command = {
     data: {
       name: 'ping',
-      toJSON: () => ({ name: 'ping', description: 'Replies with Pong' } as never),
+      toJSON: () => ({ name: 'ping', description: 'Replies with Pong' }),
     },
     execute: vi.fn(),
   };

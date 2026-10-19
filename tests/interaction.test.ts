@@ -36,7 +36,7 @@ describe('handleInteraction', () => {
     const fakeCommand: Command = {
       data: {
         name: 'test',
-        toJSON: () => ({ name: 'test', description: 'test command' } as never),
+        toJSON: () => ({ name: 'test', description: 'test command' }),
       },
       execute: executeMock,
     };
@@ -59,7 +59,7 @@ describe('handleInteraction', () => {
     const fakeCommand: Command = {
       data: {
         name: 'fail',
-        toJSON: () => ({ name: 'fail', description: 'failing command' } as never),
+        toJSON: () => ({ name: 'fail', description: 'failing command' }),
       },
       execute: executeMock,
     };
@@ -89,7 +89,7 @@ describe('handleInteraction', () => {
     const fakeCommand: Command = {
       data: {
         name: 'asyncfail',
-        toJSON: () => ({ name: 'asyncfail', description: 'async failing' } as never),
+        toJSON: () => ({ name: 'asyncfail', description: 'async failing' }),
       },
       execute: executeMock,
     };

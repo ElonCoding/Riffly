@@ -34,10 +34,7 @@ export function createBot(config: AppConfig, options: CreateBotOptions = {}): Ri
   });
 
   client.on(Events.Error, (error) => {
-    console.error(
-      '[Bot] Discord gateway error:',
-      error instanceof Error ? error.message : error,
-    );
+    console.error('[Bot] Discord gateway error:', error instanceof Error ? error.message : error);
   });
 
   client.on(Events.Warn, (warning) => {

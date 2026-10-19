@@ -23,10 +23,9 @@ export async function registerCommands(
     console.log(
       `[CommandRegistration] Registering ${payload.length} slash command(s) to guild ${config.discordGuildId}...`,
     );
-    await rest.put(
-      Routes.applicationGuildCommands(config.discordClientId, config.discordGuildId),
-      { body: payload },
-    );
+    await rest.put(Routes.applicationGuildCommands(config.discordClientId, config.discordGuildId), {
+      body: payload,
+    });
     return {
       scope: 'guild',
       targetId: config.discordGuildId,
