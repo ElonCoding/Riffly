@@ -5,10 +5,18 @@
  * missing or malformed. Never include raw secret values in thrown messages.
  */
 
+export interface LavalinkConfig {
+  readonly host: string;
+  readonly port: number;
+  readonly password: string;
+  readonly secure: boolean;
+}
+
 export interface AppConfig {
   readonly discordToken: string;
   readonly discordClientId: string;
   readonly discordGuildId?: string;
+  readonly lavalink: LavalinkConfig;
 }
 
 /** Discord snowflakes are numeric strings; 17-20 digits covers current IDs. */
@@ -57,6 +65,32 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     );
   }
 
+  const lavalinkHost = readEnv(env, 'LAVALINK_HOST') || 'localhost';
+  const rawLavalinkPort = readEnv(env, 'LAVALINK_PORT');
+  let lavalinkPort = 2333;
+  if (rawLavalinkPort.length > 0) {
+    const parsed = Number.parseInt(rawLavalinkPort, 10);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
+      problems.push('LAVALINK_PORT, when set, must be an integer between 1 and 65535.');
+    } else {
+      lavalinkPort = parsed;
+    }
+  }
+
+  const lavalinkPassword = readEnv(env, 'LAVALINK_PASSWORD') || 'youshallnotpass';
+
+  const rawLavalinkSecure = readEnv(env, 'LAVALINK_SECURE');
+  let lavalinkSecure = false;
+  if (rawLavalinkSecure.length > 0) {
+    if (rawLavalinkSecure === 'true') {
+      lavalinkSecure = true;
+    } else if (rawLavalinkSecure === 'false') {
+      lavalinkSecure = false;
+    } else {
+      problems.push("LAVALINK_SECURE, when set, must be 'true' or 'false'.");
+    }
+  }
+
   if (problems.length > 0) {
     throw new ConfigError(problems);
   }
@@ -65,5 +99,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     discordToken,
     discordClientId,
     ...(discordGuildId.length > 0 ? { discordGuildId } : {}),
+    lavalink: {
+      host: lavalinkHost,
+      port: lavalinkPort,
+      password: lavalinkPassword,
+      secure: lavalinkSecure,
+    },
   };
 }

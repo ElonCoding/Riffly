@@ -16,11 +16,11 @@ export interface CreateBotOptions {
 }
 
 export function createBot(config: AppConfig, options: CreateBotOptions = {}): RifflyBot {
-  // Slash command interactions only require Guilds intent; no privileged intents.
+  // Slash command interactions and voice updates require Guilds and GuildVoiceStates (unprivileged).
   const client =
     options.client ??
     new Client({
-      intents: [GatewayIntentBits.Guilds],
+      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
     });
 
   const commands = options.commands ?? commandMap;

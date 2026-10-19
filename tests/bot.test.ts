@@ -7,6 +7,12 @@ describe('createBot', () => {
   const fakeConfig = {
     discordToken: 'mock-token',
     discordClientId: '123456789012345678',
+    lavalink: {
+      host: 'localhost',
+      port: 2333,
+      password: 'youshallnotpass',
+      secure: false,
+    },
   };
 
   it('registers expected event listeners on the client', () => {

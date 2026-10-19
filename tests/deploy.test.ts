@@ -22,6 +22,12 @@ describe('registerCommands', () => {
         discordToken: 'mock-token',
         discordClientId: '123456789012345678',
         discordGuildId: '987654321098765432',
+        lavalink: {
+          host: 'localhost',
+          port: 2333,
+          password: 'youshallnotpass',
+          secure: false,
+        },
       },
       fakeRest,
       [fakeCommand],
@@ -47,6 +53,12 @@ describe('registerCommands', () => {
       {
         discordToken: 'mock-token',
         discordClientId: '123456789012345678',
+        lavalink: {
+          host: 'localhost',
+          port: 2333,
+          password: 'youshallnotpass',
+          secure: false,
+        },
       },
       fakeRest,
       [fakeCommand],
