@@ -41,6 +41,48 @@ function readEnv(env: NodeJS.ProcessEnv, key: string): string {
  *
  * @throws {ConfigError} when any required value is missing or malformed.
  */
+interface ParsedHost {
+  host: string;
+  inferredSecure?: boolean | undefined;
+  inferredPort?: number | undefined;
+}
+
+function parseLavalinkHost(rawInput: string): ParsedHost {
+  let cleaned = rawInput.trim();
+  let inferredSecure: boolean | undefined;
+  let inferredPort: number | undefined;
+
+  if (cleaned.startsWith('https://') || cleaned.startsWith('wss://')) {
+    inferredSecure = true;
+    inferredPort = 443;
+    cleaned = cleaned.replace(/^(https?|wss?):\/\//, '');
+  } else if (cleaned.startsWith('http://') || cleaned.startsWith('ws://')) {
+    inferredSecure = false;
+    cleaned = cleaned.replace(/^(https?|wss?):\/\//, '');
+  }
+
+  // Remove trailing slashes and URL path segments (e.g. "my-host.onrender.com/version")
+  cleaned = cleaned.split('/')[0] ?? '';
+
+  // Extract inline port if present (e.g. "my-host.com:2333")
+  if (cleaned.includes(':')) {
+    const parts = cleaned.split(':');
+    cleaned = parts[0] ?? '';
+    const parsedPort = Number.parseInt(parts[1] ?? '', 10);
+    if (Number.isInteger(parsedPort) && parsedPort >= 1 && parsedPort <= 65535) {
+      inferredPort = parsedPort;
+    }
+  }
+
+  // Public Render services always run on HTTPS/WSS (port 443, secure)
+  if (cleaned.endsWith('.onrender.com')) {
+    if (inferredSecure === undefined) inferredSecure = true;
+    if (inferredPort === undefined) inferredPort = 443;
+  }
+
+  return { host: cleaned, inferredSecure, inferredPort };
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const problems: string[] = [];
 
@@ -65,9 +107,24 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     );
   }
 
-  const lavalinkHost = readEnv(env, 'LAVALINK_HOST') || 'localhost';
+  const rawLavalinkHost = readEnv(env, 'LAVALINK_HOST');
+  let lavalinkHost = 'localhost';
+  let inferredSecure: boolean | undefined;
+  let inferredPort: number | undefined;
+
+  if (rawLavalinkHost.length > 0) {
+    const parsed = parseLavalinkHost(rawLavalinkHost);
+    lavalinkHost = parsed.host;
+    inferredSecure = parsed.inferredSecure;
+    inferredPort = parsed.inferredPort;
+
+    if (lavalinkHost.length === 0 || /\s/.test(lavalinkHost)) {
+      problems.push('LAVALINK_HOST must be a valid hostname without whitespace.');
+    }
+  }
+
   const rawLavalinkPort = readEnv(env, 'LAVALINK_PORT');
-  let lavalinkPort = 2333;
+  let lavalinkPort = inferredPort ?? 2333;
   if (rawLavalinkPort.length > 0) {
     const parsed = Number.parseInt(rawLavalinkPort, 10);
     if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
@@ -80,7 +137,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const lavalinkPassword = readEnv(env, 'LAVALINK_PASSWORD') || 'youshallnotpass';
 
   const rawLavalinkSecure = readEnv(env, 'LAVALINK_SECURE');
-  let lavalinkSecure = false;
+  let lavalinkSecure = inferredSecure ?? false;
   if (rawLavalinkSecure.length > 0) {
     if (rawLavalinkSecure === 'true') {
       lavalinkSecure = true;

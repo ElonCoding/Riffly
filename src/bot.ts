@@ -58,11 +58,6 @@ export function createBot(config: AppConfig, options: CreateBotOptions = {}): Ri
         );
       });
     });
-
-    // Forward voice state and voice server updates to Lavalink
-    client.on('raw', (packet: unknown) => {
-      void engine.manager.sendRawData(packet as Parameters<typeof engine.manager.sendRawData>[0]);
-    });
   }
 
   client.once(Events.ClientReady, (readyClient) => {

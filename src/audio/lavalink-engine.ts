@@ -62,6 +62,8 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
             port: options.config.lavalink.port,
             secure: options.config.lavalink.secure,
             id: 'primary-node',
+            retryAmount: 30,
+            retryDelay: 5000,
           },
         ],
         sendToShard: (guildId, payload) => {
@@ -84,7 +86,9 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
 
     // Map Lavalink node lifecycle events
     this.manager.nodeManager.on('connect', (node) => {
-      console.log(`[MusicEngine] Connected to Lavalink node: ${node.id}`);
+      console.log(
+        `[MusicEngine] Successfully connected to Lavalink node: ${node.id} (${node.options.host}:${node.options.port}, secure: ${node.options.secure})`,
+      );
       this.emit('nodeConnect', node.id);
     });
 
@@ -103,7 +107,9 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
     });
 
     this.manager.nodeManager.on('reconnecting', (node) => {
-      console.log(`[MusicEngine] Reconnecting to Lavalink node: ${node.id}`);
+      console.log(
+        `[MusicEngine] Reconnecting to Lavalink node: ${node.id} (${node.options.host}:${node.options.port})...`,
+      );
     });
 
     // Map Lavalink player/track events
@@ -132,8 +138,14 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
   }
 
   async init(): Promise<void> {
+    const clientId = this.client.user?.id ?? this.client.application?.id ?? '';
+    const node = this.manager.nodeManager.nodes.get('primary-node');
+    const endpointDesc = node
+      ? `${node.options.host}:${node.options.port} (secure: ${node.options.secure})`
+      : 'configured node';
+    console.log(`[MusicEngine] Connecting to Lavalink at ${endpointDesc} as client ${clientId}...`);
     await this.manager.init({
-      id: this.client.user?.id ?? this.client.application?.id ?? '',
+      id: clientId,
       username: this.client.user?.username ?? 'Riffly',
     });
   }

@@ -134,4 +134,43 @@ describe('loadConfig', () => {
       expect((error as Error).message).not.toContain(secret);
     }
   });
+
+  it('sanitizes full URLs and infers secure/port 443 for HTTPS/WSS endpoints', () => {
+    const config = loadConfig({
+      DISCORD_TOKEN: VALID_TOKEN,
+      DISCORD_CLIENT_ID: VALID_CLIENT_ID,
+      LAVALINK_HOST: 'https://riffly-lavalink.onrender.com/',
+    });
+
+    expect(config.lavalink).toEqual({
+      host: 'riffly-lavalink.onrender.com',
+      port: 443,
+      password: 'youshallnotpass',
+      secure: true,
+    });
+  });
+
+  it('infers port 443 and secure: true for .onrender.com hostnames when not specified', () => {
+    const config = loadConfig({
+      DISCORD_TOKEN: VALID_TOKEN,
+      DISCORD_CLIENT_ID: VALID_CLIENT_ID,
+      LAVALINK_HOST: 'riffly-lavalink.onrender.com',
+    });
+
+    expect(config.lavalink.host).toBe('riffly-lavalink.onrender.com');
+    expect(config.lavalink.port).toBe(443);
+    expect(config.lavalink.secure).toBe(true);
+  });
+
+  it('sanitizes inline host:port from host string', () => {
+    const config = loadConfig({
+      DISCORD_TOKEN: VALID_TOKEN,
+      DISCORD_CLIENT_ID: VALID_CLIENT_ID,
+      LAVALINK_HOST: 'wss://custom-lavalink.com:8443/',
+    });
+
+    expect(config.lavalink.host).toBe('custom-lavalink.com');
+    expect(config.lavalink.port).toBe(8443);
+    expect(config.lavalink.secure).toBe(true);
+  });
 });
