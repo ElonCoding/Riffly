@@ -18,12 +18,14 @@
 ## Render deployment
 
 ### Service type
-Deploy Riffly as a Render **Background Worker** (not a Web Service), because a Discord Gateway bot maintains an outbound persistent WebSocket connection rather than serving inbound HTTP traffic.
+Deploy Riffly as either a Render **Web Service** or **Background Worker**:
+- **Environment:** Docker (uses the root `Dockerfile`, running embedded Lavalink + bot in one container)
+- If deployed as a **Web Service**, Riffly automatically runs a lightweight HTTP health check endpoint on `$PORT` so Render health checks succeed immediately.
 
 ### Build and start settings
-- **Environment:** Node
-- **Build Command:** `npm ci && npm run build`
-- **Start Command:** `npm start`
+When using Docker on Render:
+- **Dockerfile Path:** `Dockerfile` (default)
+- **Start Command:** handled by `Dockerfile` (`start.sh` boots Lavalink, then starts the bot)
 
 ### Required environment variables in Render Dashboard
 | Variable Name | Description | Required? |

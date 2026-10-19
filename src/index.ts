@@ -27,6 +27,23 @@ async function main(): Promise<void> {
 
   const bot = createBot(config);
 
+  // If deployed as a Web Service (e.g. Render Web Service), bind HTTP health check to PORT
+  const rawPort = process.env.PORT;
+  let healthServer: import('node:http').Server | undefined;
+  if (rawPort) {
+    const port = Number.parseInt(rawPort, 10);
+    if (!Number.isNaN(port)) {
+      const http = await import('node:http');
+      healthServer = http.createServer((_req, res) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'healthy', service: 'riffly' }));
+      });
+      healthServer.listen(port, '0.0.0.0', () => {
+        console.log(`[Health] Web service HTTP health check listening on port ${port}`);
+      });
+    }
+  }
+
   let isShuttingDown = false;
   const shutdown = async (signal: string): Promise<void> => {
     if (isShuttingDown) {
@@ -34,6 +51,9 @@ async function main(): Promise<void> {
     }
     isShuttingDown = true;
     console.log(`[Shutdown] Received ${signal}. Starting graceful shutdown...`);
+    if (healthServer) {
+      healthServer.close();
+    }
     try {
       await bot.stop();
       console.log('[Shutdown] Gateway connection closed gracefully.');
