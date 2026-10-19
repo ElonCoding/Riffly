@@ -5,7 +5,7 @@ const VALID_TOKEN = 'test-token-value';
 const VALID_CLIENT_ID = '123456789012345678';
 
 describe('loadConfig', () => {
-  it('returns a valid config with a guild id', () => {
+  it('returns a valid config with a guild id and default lavalink settings', () => {
     const config = loadConfig({
       DISCORD_TOKEN: VALID_TOKEN,
       DISCORD_CLIENT_ID: VALID_CLIENT_ID,
@@ -16,7 +16,59 @@ describe('loadConfig', () => {
       discordToken: VALID_TOKEN,
       discordClientId: VALID_CLIENT_ID,
       discordGuildId: '987654321098765432',
+      lavalink: {
+        host: 'localhost',
+        port: 2333,
+        password: 'youshallnotpass',
+        secure: false,
+      },
     });
+  });
+
+  it('customizes lavalink configuration when provided', () => {
+    const config = loadConfig({
+      DISCORD_TOKEN: VALID_TOKEN,
+      DISCORD_CLIENT_ID: VALID_CLIENT_ID,
+      LAVALINK_HOST: 'lavalink.internal',
+      LAVALINK_PORT: '8080',
+      LAVALINK_PASSWORD: 'custom-password',
+      LAVALINK_SECURE: 'true',
+    });
+
+    expect(config.lavalink).toEqual({
+      host: 'lavalink.internal',
+      port: 8080,
+      password: 'custom-password',
+      secure: true,
+    });
+  });
+
+  it('rejects invalid lavalink port', () => {
+    expect(() =>
+      loadConfig({
+        DISCORD_TOKEN: VALID_TOKEN,
+        DISCORD_CLIENT_ID: VALID_CLIENT_ID,
+        LAVALINK_PORT: 'invalid-port',
+      }),
+    ).toThrow(/LAVALINK_PORT, when set, must be an integer between 1 and 65535/);
+
+    expect(() =>
+      loadConfig({
+        DISCORD_TOKEN: VALID_TOKEN,
+        DISCORD_CLIENT_ID: VALID_CLIENT_ID,
+        LAVALINK_PORT: '70000',
+      }),
+    ).toThrow(/LAVALINK_PORT, when set, must be an integer between 1 and 65535/);
+  });
+
+  it('rejects invalid lavalink secure flag', () => {
+    expect(() =>
+      loadConfig({
+        DISCORD_TOKEN: VALID_TOKEN,
+        DISCORD_CLIENT_ID: VALID_CLIENT_ID,
+        LAVALINK_SECURE: 'yes',
+      }),
+    ).toThrow(/LAVALINK_SECURE, when set, must be 'true' or 'false'/);
   });
 
   it('omits an empty optional guild id', () => {
