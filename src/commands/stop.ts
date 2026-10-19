@@ -7,11 +7,13 @@ import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
 import { RifflyError } from '../errors.js';
 
+export const stopCommandData = new SlashCommandBuilder()
+  .setName('stop')
+  .setDescription('Stop playback and clear the queue.');
+
 export function makeStopCommand(playerManager: GuildPlayerManager): Command {
   return {
-    data: new SlashCommandBuilder()
-      .setName('stop')
-      .setDescription('Stop playback and clear the queue.'),
+    data: stopCommandData,
     async execute(interaction) {
       const guildId = interaction.guildId!;
       try {

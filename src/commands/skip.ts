@@ -7,9 +7,13 @@ import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
 import { RifflyError } from '../errors.js';
 
+export const skipCommandData = new SlashCommandBuilder()
+  .setName('skip')
+  .setDescription('Skip the current track.');
+
 export function makeSkipCommand(playerManager: GuildPlayerManager): Command {
   return {
-    data: new SlashCommandBuilder().setName('skip').setDescription('Skip the current track.'),
+    data: skipCommandData,
     async execute(interaction) {
       const guildId = interaction.guildId!;
       try {

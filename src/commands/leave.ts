@@ -7,11 +7,13 @@ import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
 import { RifflyError } from '../errors.js';
 
+export const leaveCommandData = new SlashCommandBuilder()
+  .setName('leave')
+  .setDescription('Disconnect from the voice channel and clear the queue.');
+
 export function makeLeaveCommand(playerManager: GuildPlayerManager): Command {
   return {
-    data: new SlashCommandBuilder()
-      .setName('leave')
-      .setDescription('Disconnect from the voice channel and clear the queue.'),
+    data: leaveCommandData,
     async execute(interaction) {
       const guildId = interaction.guildId!;
       try {

@@ -7,9 +7,13 @@ import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
 import { RifflyError } from '../errors.js';
 
+export const pauseCommandData = new SlashCommandBuilder()
+  .setName('pause')
+  .setDescription('Pause playback.');
+
 export function makePauseCommand(playerManager: GuildPlayerManager): Command {
   return {
-    data: new SlashCommandBuilder().setName('pause').setDescription('Pause playback.'),
+    data: pauseCommandData,
     async execute(interaction) {
       const guildId = interaction.guildId!;
       try {

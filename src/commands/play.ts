@@ -11,20 +11,22 @@ import type { TrackResolver } from '../provider/resolver.js';
 import { RifflyError } from '../errors.js';
 import { validatePlayInput } from './input.js';
 
+export const playCommandData = new SlashCommandBuilder()
+  .setName('play')
+  .setDescription('Play a song or playlist from a search query or URL.')
+  .addStringOption((opt) =>
+    opt
+      .setName('input')
+      .setDescription('Song name, search query, or supported URL')
+      .setRequired(true),
+  );
+
 export function makePlayCommand(
   playerManager: GuildPlayerManager,
   resolver: TrackResolver,
 ): Command {
   return {
-    data: new SlashCommandBuilder()
-      .setName('play')
-      .setDescription('Play a song or playlist from a search query or URL.')
-      .addStringOption((opt) =>
-        opt
-          .setName('input')
-          .setDescription('Song name, search query, or supported URL')
-          .setRequired(true),
-      ),
+    data: playCommandData,
 
     async execute(interaction) {
       await interaction.deferReply();

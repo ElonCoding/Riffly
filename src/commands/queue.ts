@@ -16,12 +16,14 @@ function formatDuration(ms: number): string {
 
 const PAGE_SIZE = 10;
 
+export const queueCommandData = new SlashCommandBuilder()
+  .setName('queue')
+  .setDescription('Show the current queue.')
+  .addIntegerOption((opt) => opt.setName('page').setDescription('Page number').setMinValue(1));
+
 export function makeQueueCommand(playerManager: GuildPlayerManager): Command {
   return {
-    data: new SlashCommandBuilder()
-      .setName('queue')
-      .setDescription('Show the current queue.')
-      .addIntegerOption((opt) => opt.setName('page').setDescription('Page number').setMinValue(1)),
+    data: queueCommandData,
     async execute(interaction) {
       const guildId = interaction.guildId!;
       const state = playerManager.getState(guildId);

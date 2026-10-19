@@ -18,11 +18,13 @@ function formatDuration(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
+export const nowPlayingCommandData = new SlashCommandBuilder()
+  .setName('nowplaying')
+  .setDescription('Show what is currently playing.');
+
 export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Command {
   return {
-    data: new SlashCommandBuilder()
-      .setName('nowplaying')
-      .setDescription('Show what is currently playing.'),
+    data: nowPlayingCommandData,
     async execute(interaction) {
       const guildId = interaction.guildId!;
       const state = playerManager.getState(guildId);

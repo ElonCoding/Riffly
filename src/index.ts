@@ -71,6 +71,15 @@ async function main(): Promise<void> {
   process.once('SIGTERM', () => void shutdown('SIGTERM'));
 
   try {
+    // Synchronize latest slash commands to Discord on startup
+    const { registerCommands } = await import('./deploy-commands.js');
+    void registerCommands(config).catch((err: unknown) => {
+      console.warn(
+        '[Startup] Slash command registration notice:',
+        err instanceof Error ? err.message : err,
+      );
+    });
+
     await bot.start();
     console.log('[Startup] Bot client started and listening for gateway events.');
   } catch (error) {
