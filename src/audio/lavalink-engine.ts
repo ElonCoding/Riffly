@@ -97,6 +97,15 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
       this.emit('nodeDisconnect', node.id, reasonStr);
     });
 
+    this.manager.nodeManager.on('error', (node, error) => {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`[MusicEngine] Lavalink node ${node.id} error: ${msg}`);
+    });
+
+    this.manager.nodeManager.on('reconnecting', (node) => {
+      console.log(`[MusicEngine] Reconnecting to Lavalink node: ${node.id}`);
+    });
+
     // Map Lavalink player/track events
     this.manager.on('trackStart', (player, track) => {
       const normalized = normalizeLavalinkTrack(track);
