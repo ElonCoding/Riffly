@@ -85,4 +85,41 @@ describe('GuildQueue', () => {
     expect(q.isEmpty).toBe(true);
     expect(q.current).toBeUndefined();
   });
+
+  describe('Safeguard C-04: Error reason exclusion in loop mode', () => {
+    it('does not re-play current track on loadFailed when loopMode is track', () => {
+      const q = new GuildQueue();
+      const a = makeTrack('a');
+      const b = makeTrack('b');
+      q.setCurrent(a);
+      q.enqueue([b]);
+      q.setLoopMode('track');
+
+      const next = q.advance('loadFailed');
+      expect(next?.identifier).toBe('b');
+    });
+
+    it('does not re-play current track on error when loopMode is track', () => {
+      const q = new GuildQueue();
+      const a = makeTrack('a');
+      q.setCurrent(a);
+      q.setLoopMode('track');
+
+      const next = q.advance('error');
+      expect(next).toBeUndefined();
+    });
+
+    it('does not requeue current track on error when loopMode is queue', () => {
+      const q = new GuildQueue();
+      const a = makeTrack('a');
+      const b = makeTrack('b');
+      q.setCurrent(a);
+      q.enqueue([b]);
+      q.setLoopMode('queue');
+
+      const next = q.advance('error');
+      expect(next?.identifier).toBe('b');
+      expect(q.size).toBe(0); // 'a' was NOT re-queued
+    });
+  });
 });

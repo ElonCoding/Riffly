@@ -11,12 +11,14 @@ export interface Track {
   readonly requesterId?: string;
 }
 
-export type PlayerState = 'disconnected' | 'idle' | 'playing' | 'paused' | 'destroyed';
+export type PlayerState = 'disconnected' | 'idle' | 'buffering' | 'playing' | 'paused';
 
 export interface MusicEngineEvents {
   readonly trackStart: (guildId: string, track: Track) => void;
   readonly trackEnd: (guildId: string, track: Track, reason: string) => void;
   readonly trackError: (guildId: string, track: Track | undefined, error: Error) => void;
+  readonly trackStuck: (guildId: string, track: Track, thresholdMs: number) => void;
+  readonly playerConnect: (guildId: string) => void;
   readonly playerDisconnect: (guildId: string) => void;
   readonly nodeConnect: (nodeId: string) => void;
   readonly nodeDisconnect: (nodeId: string, reason?: string) => void;
@@ -24,7 +26,9 @@ export interface MusicEngineEvents {
 
 export interface MusicEngine {
   connect(guildId: string, voiceChannelId: string): Promise<void>;
+  join(guildId: string, voiceChannelId: string): Promise<void>;
   disconnect(guildId: string): Promise<void>;
+  leave(guildId: string): Promise<void>;
   play(guildId: string, track: Track): Promise<void>;
   pause(guildId: string): Promise<void>;
   resume(guildId: string): Promise<void>;

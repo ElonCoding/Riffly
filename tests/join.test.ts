@@ -39,21 +39,44 @@ describe('makeJoinCommand', () => {
     expect(callArg.content).toContain('must be in a voice channel');
   });
 
-  it('calls playerManager.join and replies with success when member is in voice', async () => {
+  it('calls playerManager.join and edits reply with success when member is in voice', async () => {
     const joinMock = vi.fn().mockResolvedValue(undefined);
     const playerManager = { join: joinMock } as unknown as GuildPlayerManager;
     const command = makeJoinCommand(playerManager);
 
-    const reply = vi.fn().mockResolvedValue(undefined);
+    const deferReply = vi.fn().mockResolvedValue(undefined);
+    const editReply = vi.fn().mockResolvedValue(undefined);
     const fakeInteraction = {
       inGuild: () => true,
       guildId: 'guild-1',
       member: { voice: { channelId: 'vc-123' } },
-      reply,
+      deferReply,
+      editReply,
     } as unknown as ChatInputCommandInteraction;
 
     await command.execute(fakeInteraction);
+    expect(deferReply).toHaveBeenCalled();
     expect(joinMock).toHaveBeenCalledWith('guild-1', 'vc-123');
-    expect(reply).toHaveBeenCalledWith('🔊 Joined <#vc-123>!');
+    expect(editReply).toHaveBeenCalledWith('🔊 Joined <#vc-123>!');
+  });
+
+  it('edits reply with user message on join error', async () => {
+    const joinMock = vi.fn().mockRejectedValue(new Error('Connection timed out'));
+    const playerManager = { join: joinMock } as unknown as GuildPlayerManager;
+    const command = makeJoinCommand(playerManager);
+
+    const deferReply = vi.fn().mockResolvedValue(undefined);
+    const editReply = vi.fn().mockResolvedValue(undefined);
+    const fakeInteraction = {
+      inGuild: () => true,
+      guildId: 'guild-1',
+      member: { voice: { channelId: 'vc-123' } },
+      deferReply,
+      editReply,
+    } as unknown as ChatInputCommandInteraction;
+
+    await command.execute(fakeInteraction);
+    expect(deferReply).toHaveBeenCalled();
+    expect(editReply).toHaveBeenCalledWith('💥 Failed to join voice channel.');
   });
 });

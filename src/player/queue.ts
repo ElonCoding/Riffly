@@ -66,13 +66,14 @@ export class GuildQueue {
    */
   advance(reason: string): Track | undefined {
     const finished = this._current;
+    const isError = reason === 'loadFailed' || reason === 'error';
 
-    if (this._loopMode === 'track' && finished && reason !== 'stopped') {
+    if (this._loopMode === 'track' && finished && reason !== 'stopped' && !isError) {
       // Re-play the same track
       return finished;
     }
 
-    if (this._loopMode === 'queue' && finished && reason !== 'stopped') {
+    if (this._loopMode === 'queue' && finished && reason !== 'stopped' && !isError) {
       // Push the finished track to the back
       this._tracks.push(finished);
     }

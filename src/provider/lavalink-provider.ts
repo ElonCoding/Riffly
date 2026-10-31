@@ -11,7 +11,13 @@
 import type { LavalinkManager, SearchPlatform } from 'lavalink-client';
 import { RifflyError } from '../errors.js';
 import type { Track } from '../audio/types.js';
-import type { ProviderCapability, SearchableProvider, TrackUrlProvider } from './types.js';
+import type {
+  PlaylistUrlProvider,
+  ProviderCapability,
+  ResolvedPlaylist,
+  SearchableProvider,
+  TrackUrlProvider,
+} from './types.js';
 
 export interface LavalinkProviderOptions {
   readonly manager: LavalinkManager;
@@ -23,7 +29,19 @@ export interface LavalinkProviderOptions {
 interface SearchResult {
   loadType?: string;
   tracks?: RawTrack[];
-  data?: RawTrack[] | RawTrack | { tracks?: RawTrack[] };
+  data?:
+    | RawTrack[]
+    | RawTrack
+    | {
+        tracks?: RawTrack[];
+        info?: { name?: string; title?: string };
+        pluginInfo?: { name?: string; title?: string };
+      };
+  playlist?: {
+    name?: string | null;
+    title?: string | null;
+    author?: string | null;
+  } | null;
   exception?: { message?: string };
 }
 
@@ -60,22 +78,25 @@ function normalizeRaw(raw: unknown): Track | undefined {
 }
 
 function extractTracks(result: SearchResult): RawTrack[] {
+  // If lavalink-client populated tracks array
+  if (Array.isArray(result.tracks) && result.tracks.length > 0) return result.tracks;
   // loadType = 'search' or 'track' → v4 API shape
   if (Array.isArray(result.data)) return result.data;
   if (result.data && typeof result.data === 'object' && !Array.isArray(result.data)) {
     const d = result.data as { tracks?: RawTrack[] };
     if (Array.isArray(d.tracks)) return d.tracks;
   }
-  // Older shape
+  // Fallback to tracks array
   if (Array.isArray(result.tracks)) return result.tracks;
   return [];
 }
 
-export class LavalinkProvider implements SearchableProvider, TrackUrlProvider {
+export class LavalinkProvider implements SearchableProvider, TrackUrlProvider, PlaylistUrlProvider {
   readonly id = 'lavalink';
   readonly capabilities: ReadonlySet<ProviderCapability> = new Set<ProviderCapability>([
     'search',
     'resolveTrackUrl',
+    'resolvePlaylistUrl',
   ]);
 
   private readonly manager: LavalinkManager;
@@ -136,5 +157,90 @@ export class LavalinkProvider implements SearchableProvider, TrackUrlProvider {
     const track = normalizeRaw(tracks[0]);
     if (!track) throw RifflyError.trackUnavailable();
     return track;
+  }
+
+  async resolvePlaylistUrl(url: URL, itemLimit = 50): Promise<ResolvedPlaylist> {
+    const node = this.getNode();
+    if (!node) throw RifflyError.lavalinkUnavailable();
+
+    let result: SearchResult;
+    try {
+      const managerWithLoad = this.manager as unknown as {
+        loadTracks?: (identifier: string) => Promise<SearchResult>;
+      };
+      const nodeWithLoad = node as unknown as {
+        loadTracks?: (identifier: string) => Promise<SearchResult>;
+      };
+
+      if (typeof managerWithLoad.loadTracks === 'function') {
+        result = await managerWithLoad.loadTracks(url.toString());
+      } else if (typeof nodeWithLoad.loadTracks === 'function') {
+        result = await nodeWithLoad.loadTracks(url.toString());
+      } else {
+        result = (await node.search(
+          { query: url.toString(), source: 'link' },
+          null,
+        )) as SearchResult;
+      }
+    } catch (cause) {
+      throw RifflyError.trackUnavailable(cause);
+    }
+
+    if (!result || result.loadType === 'empty') {
+      throw RifflyError.noResults(url.toString());
+    }
+
+    if (result.loadType === 'error') {
+      const msg = result.exception?.message;
+      throw RifflyError.trackUnavailable(msg ? new Error(msg) : undefined);
+    }
+
+    let title = 'Playlist';
+    if (result.playlist?.title) {
+      title = result.playlist.title;
+    } else if (result.playlist?.name) {
+      title = result.playlist.name;
+    } else if (result.data && typeof result.data === 'object' && !Array.isArray(result.data)) {
+      const dataObj = result.data as {
+        info?: { name?: string; title?: string };
+        pluginInfo?: { name?: string; title?: string };
+      };
+      title =
+        dataObj.info?.title ??
+        dataObj.info?.name ??
+        dataObj.pluginInfo?.title ??
+        dataObj.pluginInfo?.name ??
+        title;
+    }
+
+    const rawTracks = extractTracks(result);
+    if (rawTracks.length === 0) {
+      throw RifflyError.noResults(url.toString());
+    }
+
+    const totalItems = rawTracks.length;
+    const cappedRaw = rawTracks.slice(0, itemLimit);
+    const tracks: Track[] = [];
+    let skipped = totalItems - cappedRaw.length;
+
+    for (const raw of cappedRaw) {
+      const normalized = normalizeRaw(raw);
+      if (normalized) {
+        tracks.push(normalized);
+      } else {
+        skipped++;
+      }
+    }
+
+    if (tracks.length === 0) {
+      throw RifflyError.noResults(url.toString());
+    }
+
+    return {
+      title,
+      tracks,
+      totalItems,
+      skipped,
+    };
   }
 }

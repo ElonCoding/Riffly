@@ -116,7 +116,104 @@ describe('GuildPlayerManager', () => {
     engine.emit('trackEnd', 'g1', trackA, 'finished');
 
     // Let microtask queue flush
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 10));
     expect(manager.getState('g1').current?.identifier).toBe('b');
+  });
+
+  describe('DEF-03: Double-skip cascade prevention', () => {
+    it('does not advance queue a second time when trackEnd emits stopped or replaced', async () => {
+      const { manager, engine } = await setupConnected();
+      await manager.play('g1', [makeTrack('a')]);
+      await manager.play('g1', [makeTrack('b')]);
+      await manager.play('g1', [makeTrack('c')]);
+
+      // Skip 'a' -> should play 'b', upcoming should have 'c'
+      const next = await manager.skip('g1');
+      expect(next?.identifier).toBe('b');
+      expect(manager.getState('g1').current?.identifier).toBe('b');
+      expect(manager.getState('g1').upcoming).toHaveLength(1);
+      expect(manager.getState('g1').upcoming[0]?.identifier).toBe('c');
+
+      // Now simulate a stray 'stopped' or 'replaced' trackEnd event for 'a'
+      engine.emit('trackEnd', 'g1', makeTrack('a'), 'stopped');
+      await new Promise((r) => setTimeout(r, 10));
+
+      // 'b' should STILL be playing, 'c' should STILL be in upcoming
+      expect(manager.getState('g1').current?.identifier).toBe('b');
+      expect(manager.getState('g1').upcoming).toHaveLength(1);
+      expect(manager.getState('g1').upcoming[0]?.identifier).toBe('c');
+    });
+  });
+
+  describe('DEF-04: Quick-play concurrency serialization', () => {
+    it('concurrent play calls do not clobber active track', async () => {
+      const { manager } = await setupConnected();
+
+      // Fire two play calls concurrently without awaiting the first before starting the second
+      const p1 = manager.play('g1', [makeTrack('song1')]);
+      const p2 = manager.play('g1', [makeTrack('song2')]);
+
+      const [res1, res2] = await Promise.all([p1, p2]);
+      expect(res1.started).toBe(true);
+      expect(res2.started).toBe(false);
+
+      const state = manager.getState('g1');
+      expect(state.current?.identifier).toBe('song1');
+      expect(state.upcoming).toHaveLength(1);
+      expect(state.upcoming[0]?.identifier).toBe('song2');
+    });
+  });
+
+  describe('Safeguard C-06: Inactivity Timer (waitTimeout)', () => {
+    it('arms waitTimeout when stopping playback and clears on enqueue', async () => {
+      const { manager } = await setupConnected();
+      await manager.play('g1', [makeTrack('a')]);
+
+      // Stop arms the inactivity timer
+      await manager.stop('g1');
+      expect(manager.isWaiting('g1')).toBe(true);
+
+      // Enqueueing a new track clears the inactivity timer
+      await manager.play('g1', [makeTrack('b')]);
+      expect(manager.isWaiting('g1')).toBe(false);
+    });
+
+    it('arms waitTimeout when clear() is called', async () => {
+      const { manager } = await setupConnected();
+      await manager.play('g1', [makeTrack('a')]);
+      await manager.clear('g1');
+      expect(manager.isWaiting('g1')).toBe(true);
+    });
+  });
+
+  describe('Safeguard C-05: Consecutive Error Circuit Breaker', () => {
+    it('trips circuit breaker after 3 errors within 5000ms', async () => {
+      const engine = new FakeMusicEngine();
+      const manager = new GuildPlayerManager(engine);
+      await manager.join('g1', 'vc1');
+
+      await manager.play('g1', [makeTrack('t1')]);
+      await manager.play('g1', [makeTrack('t2')]);
+      await manager.play('g1', [makeTrack('t3')]);
+      await manager.play('g1', [makeTrack('t4')]);
+
+      // Emit error 1
+      engine.emit('trackError', 'g1', makeTrack('t1'), new Error('Error 1'));
+      await new Promise((r) => setTimeout(r, 10));
+
+      // Emit error 2
+      engine.emit('trackError', 'g1', makeTrack('t2'), new Error('Error 2'));
+      await new Promise((r) => setTimeout(r, 10));
+
+      // Emit error 3 (stuck or error)
+      engine.emit('trackStuck', 'g1', makeTrack('t3'), 10000);
+      await new Promise((r) => setTimeout(r, 15));
+
+      // Circuit breaker should have tripped:
+      // queue cleared, playback stopped, waitTimeout armed
+      const state = manager.getState('g1');
+      expect(state.upcoming).toHaveLength(0);
+      expect(manager.isWaiting('g1')).toBe(true);
+    });
   });
 });

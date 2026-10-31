@@ -13,6 +13,7 @@ import { makeNowPlayingCommand, nowPlayingCommandData } from './nowplaying.js';
 import { makeQueueCommand, queueCommandData } from './queue.js';
 
 export * from './types.js';
+export * from './helpers.js';
 export * from './ping.js';
 export * from './input.js';
 export * from './join.js';

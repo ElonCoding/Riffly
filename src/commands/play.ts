@@ -4,12 +4,75 @@
  * Validates input, resolves a track (or playlist), joins voice, and enqueues.
  */
 
-import { SlashCommandBuilder, GuildMember } from 'discord.js';
+import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
-import type { TrackResolver } from '../provider/resolver.js';
+import type { ResolveResult, TrackResolver } from '../provider/resolver.js';
 import { RifflyError } from '../errors.js';
 import { validatePlayInput } from './input.js';
+import { getBotVoiceChannelId, getMemberVoiceChannelId } from './helpers.js';
+
+function formatDuration(ms: number): string {
+  if (ms <= 0) return '∞';
+  const totalSec = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function buildEnqueuedEmbed(resolved: ResolveResult, started: boolean): EmbedBuilder {
+  const isPlaylist = resolved.tracks.length > 1;
+
+  if (isPlaylist) {
+    const firstTrack = resolved.tracks[0];
+    const embed = new EmbedBuilder()
+      .setTitle('📋 Playlist Enqueued')
+      .setDescription(resolved.summary)
+      .addFields(
+        { name: 'Total Tracks', value: `${resolved.tracks.length}`, inline: true },
+        {
+          name: 'Playback',
+          value: started ? `▶️ Now playing: **${firstTrack?.title ?? 'Track'}**` : '📋 Added to queue',
+          inline: true,
+        },
+      )
+      .setColor(0x5865f2);
+
+    if (firstTrack?.artworkUrl) {
+      embed.setThumbnail(firstTrack.artworkUrl);
+    }
+    return embed;
+  }
+
+  const track = resolved.tracks[0];
+  if (!track) {
+    return new EmbedBuilder()
+      .setTitle('📋 Added to Queue')
+      .setDescription(resolved.summary)
+      .setColor(0x5865f2);
+  }
+
+  const titlePrefix = started ? '▶️ Now Playing' : '📋 Added to Queue';
+  const embed = new EmbedBuilder()
+    .setTitle(titlePrefix)
+    .setDescription(
+      track.uri ? `**[${track.title}](${track.uri})**` : `**${track.title}**`,
+    )
+    .addFields(
+      { name: 'Artist', value: track.author, inline: true },
+      {
+        name: 'Duration',
+        value: track.isStream ? '🔴 Live' : formatDuration(track.lengthMs),
+        inline: true,
+      },
+    )
+    .setColor(0x5865f2);
+
+  if (track.artworkUrl) {
+    embed.setThumbnail(track.artworkUrl);
+  }
+  return embed;
+}
 
 export const playCommandData = new SlashCommandBuilder()
   .setName('play')
@@ -31,6 +94,11 @@ export function makePlayCommand(
     async execute(interaction) {
       await interaction.deferReply();
 
+      if (!interaction.inGuild() || !interaction.guildId) {
+        await interaction.editReply('❌ This command can only be used in a server.');
+        return;
+      }
+
       const raw = interaction.options.getString('input', true);
       const validation = validatePlayInput(raw);
       if (!validation.ok) {
@@ -44,17 +112,25 @@ export function makePlayCommand(
       }
 
       // Require the user to be in a voice channel
-      const member = interaction.member;
-      const voiceChannelId = member instanceof GuildMember ? member.voice.channelId : null;
+      const voiceChannelId = getMemberVoiceChannelId(interaction.member);
       if (!voiceChannelId) {
         await interaction.editReply(RifflyError.notInVoiceChannel().userMessage);
         return;
       }
 
-      const guildId = interaction.guildId!;
+      // Verify co-location if bot is already in a voice channel
+      const botVoiceChannelId = getBotVoiceChannelId(interaction);
+      if (botVoiceChannelId && botVoiceChannelId !== voiceChannelId) {
+        await interaction.editReply(
+          '🔇 You must be in the same voice channel as Riffly to play music.',
+        );
+        return;
+      }
+
+      const guildId = interaction.guildId;
 
       try {
-        // Join voice channel (idempotent)
+        // Join voice channel (idempotent / awaits handshake)
         await playerManager.join(guildId, voiceChannelId);
 
         // Resolve track(s)
@@ -63,8 +139,8 @@ export function makePlayCommand(
         // Enqueue and possibly start playback
         const { started } = await playerManager.play(guildId, resolved.tracks);
 
-        const action = started ? '▶️ Now playing' : '📋 Added to queue';
-        await interaction.editReply(`${action}: ${resolved.summary}`);
+        const embed = buildEnqueuedEmbed(resolved, started);
+        await interaction.editReply({ embeds: [embed] });
       } catch (err) {
         const message =
           err instanceof RifflyError

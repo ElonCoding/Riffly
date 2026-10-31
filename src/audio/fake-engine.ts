@@ -23,6 +23,17 @@ export class FakeMusicEngine extends EventEmitter implements MusicEngine {
     return this.players.get(guildId)?.volume ?? 100;
   }
 
+  setPlayerState(guildId: string, state: PlayerState): void {
+    const player = this.players.get(guildId);
+    if (player) {
+      player.state = state;
+    }
+  }
+
+  setBuffering(guildId: string): void {
+    this.setPlayerState(guildId, 'buffering');
+  }
+
   connect(guildId: string, voiceChannelId: string): Promise<void> {
     if (!voiceChannelId || voiceChannelId.trim().length === 0) {
       return Promise.reject(new Error('Invalid voice channel ID'));
@@ -43,6 +54,10 @@ export class FakeMusicEngine extends EventEmitter implements MusicEngine {
     return Promise.resolve();
   }
 
+  join(guildId: string, voiceChannelId: string): Promise<void> {
+    return this.connect(guildId, voiceChannelId);
+  }
+
   disconnect(guildId: string): Promise<void> {
     const player = this.players.get(guildId);
     if (!player || player.state === 'disconnected') {
@@ -52,6 +67,10 @@ export class FakeMusicEngine extends EventEmitter implements MusicEngine {
     delete player.currentTrack;
     this.emit('playerDisconnect', guildId);
     return Promise.resolve();
+  }
+
+  leave(guildId: string): Promise<void> {
+    return this.disconnect(guildId);
   }
 
   play(guildId: string, track: Track): Promise<void> {

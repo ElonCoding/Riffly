@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Client } from 'discord.js';
 import type { LavalinkManager, Player } from 'lavalink-client';
 import { LavalinkMusicEngine } from '../src/audio/lavalink-engine.js';
 import type { Track } from '../src/audio/types.js';
+import { RifflyError } from '../src/errors.js';
 
 describe('LavalinkMusicEngine', () => {
   const fakeConfig = {
@@ -46,7 +47,12 @@ describe('LavalinkMusicEngine', () => {
       this.connected = false;
       return Promise.resolve();
     });
-    const playMock = vi.fn().mockResolvedValue(undefined);
+    const playMock = vi.fn().mockImplementation(function (this: { queue?: { current?: unknown } }) {
+      if (this?.queue) {
+        this.queue.current = sampleTrack;
+      }
+      return Promise.resolve();
+    });
     const pauseMock = vi.fn().mockResolvedValue(undefined);
     const resumeMock = vi.fn().mockResolvedValue(undefined);
     const stopPlayingMock = vi.fn().mockResolvedValue(undefined);
@@ -59,6 +65,7 @@ describe('LavalinkMusicEngine', () => {
       connected: false,
       playing: false,
       paused: false,
+      queue: { current: null as unknown },
       connect: connectMock,
       disconnect: disconnectMock,
       play: playMock,
@@ -77,6 +84,11 @@ describe('LavalinkMusicEngine', () => {
       },
       on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
         listeners.set(event, cb);
+      }),
+      off: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+        if (listeners.get(event) === cb) {
+          listeners.delete(event);
+        }
       }),
       getPlayer: vi.fn(() => fakePlayer),
       createPlayer: vi.fn(() => fakePlayer),
@@ -119,6 +131,7 @@ describe('LavalinkMusicEngine', () => {
     expect(engine.getState('guild-1')).toBe('idle');
 
     // Playing
+    (fakePlayer as { queue: { current: unknown } }).queue = { current: sampleTrack };
     (fakePlayer as { playing: boolean }).playing = true;
     expect(engine.getState('guild-1')).toBe('playing');
 
@@ -127,8 +140,31 @@ describe('LavalinkMusicEngine', () => {
     expect(engine.getState('guild-1')).toBe('paused');
   });
 
+  it('reports buffering state when a track is dispatched before trackStart fires', async () => {
+    const { fakeClient, fakeManager, fakePlayer, listeners } = createMockSetup();
+    const engine = new LavalinkMusicEngine({
+      client: fakeClient,
+      config: fakeConfig,
+      manager: fakeManager,
+    });
+
+    (fakePlayer as { connected: boolean }).connected = true;
+    (fakePlayer as { queue: { current: unknown } }).queue = { current: sampleTrack };
+
+    await engine.play('guild-1', sampleTrack);
+    // Dispatched to Lavalink -> buffering
+    expect(engine.getState('guild-1')).toBe('buffering');
+
+    // trackStart arrives -> transitions to playing
+    listeners.get('trackStart')?.({ guildId: 'guild-1' }, {
+      encoded: sampleTrack.encoded,
+      info: { title: sampleTrack.title, author: sampleTrack.author, duration: sampleTrack.lengthMs },
+    });
+    expect(engine.getState('guild-1')).toBe('playing');
+  });
+
   it('delegates connect, play, pause, resume, and stop to player', async () => {
-    const { fakeClient, fakeManager, fakePlayer, mocks } = createMockSetup();
+    const { fakeClient, fakeManager, fakePlayer, mocks, listeners } = createMockSetup();
     const engine = new LavalinkMusicEngine({
       client: fakeClient,
       config: fakeConfig,
@@ -138,7 +174,7 @@ describe('LavalinkMusicEngine', () => {
     await engine.connect('guild-1', 'vc-1');
     expect(mocks.connect).toHaveBeenCalled();
 
-    // Set playing status
+    // Set playing status and active track
     (fakePlayer as { connected: boolean; playing: boolean }).connected = true;
     (fakePlayer as { connected: boolean; playing: boolean }).playing = true;
 
@@ -146,6 +182,13 @@ describe('LavalinkMusicEngine', () => {
     expect(mocks.play).toHaveBeenCalledWith({
       track: { encoded: 'encoded-data' },
     });
+
+    // Fire trackStart to clear buffering flag
+    listeners.get('trackStart')?.({ guildId: 'guild-1' }, {
+      encoded: sampleTrack.encoded,
+      info: { title: sampleTrack.title, author: sampleTrack.author, duration: sampleTrack.lengthMs },
+    });
+    (fakePlayer as { queue: { current: unknown } }).queue = { current: sampleTrack };
 
     await engine.pause('guild-1');
     expect(mocks.pause).toHaveBeenCalled();
@@ -158,7 +201,7 @@ describe('LavalinkMusicEngine', () => {
     expect(mocks.stopPlaying).toHaveBeenCalled();
   });
 
-  it('translates manager trackStart, trackEnd, and trackError events', () => {
+  it('translates manager trackStart, trackEnd, trackError, and trackStuck events', () => {
     const { fakeClient, fakeManager, listeners } = createMockSetup();
     const engine = new LavalinkMusicEngine({
       client: fakeClient,
@@ -169,10 +212,12 @@ describe('LavalinkMusicEngine', () => {
     const startSpy = vi.fn();
     const endSpy = vi.fn();
     const errorSpy = vi.fn();
+    const stuckSpy = vi.fn();
 
     engine.on('trackStart', startSpy);
     engine.on('trackEnd', endSpy);
     engine.on('trackError', errorSpy);
+    engine.on('trackStuck', stuckSpy);
 
     const trackData = {
       encoded: 'sample-encoded',
@@ -210,5 +255,130 @@ describe('LavalinkMusicEngine', () => {
       expect.objectContaining({ title: 'Song' }),
       expect.any(Error),
     );
+
+    // Trigger trackStuck
+    listeners.get('trackStuck')?.({ guildId: 'guild-1' }, trackData, { thresholdMs: 12000 });
+    expect(stuckSpy).toHaveBeenCalledWith(
+      'guild-1',
+      expect.objectContaining({ title: 'Song' }),
+      12000,
+    );
+  });
+
+  describe('Safeguard C-01: Voice Connection Handshake Timeout', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('aborts on 10,000ms timeout by disconnecting and rejecting with informative error', async () => {
+      const { fakeClient, fakeManager, fakePlayer, mocks } = createMockSetup();
+      // Simulate hanging connect() that never finishes
+      mocks.connect.mockImplementation(() => new Promise(() => {}));
+      (fakePlayer as { connected: boolean }).connected = false;
+
+      const engine = new LavalinkMusicEngine({
+        client: fakeClient,
+        config: fakeConfig,
+        manager: fakeManager,
+      });
+
+      const assertion = expect(engine.join('guild-1', 'vc-1')).rejects.toThrow(
+        'Voice connection timeout for guild guild-1 after 10000ms',
+      );
+
+      // Fast-forward past 10,000ms
+      await vi.advanceTimersByTimeAsync(10_001);
+      await assertion;
+      expect(mocks.disconnect).toHaveBeenCalled();
+    });
+
+    it('resolves cleanly when playerConnect event fires before timeout', async () => {
+      const { fakeClient, fakeManager, fakePlayer, mocks, listeners } = createMockSetup();
+      mocks.connect.mockImplementation(() => new Promise(() => {}));
+      (fakePlayer as { connected: boolean }).connected = false;
+
+      const engine = new LavalinkMusicEngine({
+        client: fakeClient,
+        config: fakeConfig,
+        manager: fakeManager,
+      });
+
+      const connectPromise = engine.join('guild-1', 'vc-1');
+
+      // Emit playerConnect for guild-1
+      const connectHandler = listeners.get('playerConnect');
+      expect(connectHandler).toBeDefined();
+      connectHandler?.({ guildId: 'guild-1' });
+
+      await expect(connectPromise).resolves.toBeUndefined();
+    });
+  });
+
+  describe('Pause & Resume Safeguards', () => {
+    it('throws NotPlaying when pausing without current track', async () => {
+      const { fakeClient, fakeManager, fakePlayer } = createMockSetup();
+      (fakePlayer as { connected: boolean }).connected = true;
+      (fakePlayer as { queue: { current: unknown } }).queue = { current: null };
+
+      const engine = new LavalinkMusicEngine({
+        client: fakeClient,
+        config: fakeConfig,
+        manager: fakeManager,
+      });
+
+      await expect(engine.pause('guild-1')).rejects.toThrow(RifflyError);
+      await expect(engine.pause('guild-1')).rejects.toMatchObject({ code: 'NotPlaying' });
+    });
+
+    it('throws AlreadyPaused when pausing an already paused player', async () => {
+      const { fakeClient, fakeManager, fakePlayer } = createMockSetup();
+      (fakePlayer as { connected: boolean }).connected = true;
+      (fakePlayer as { queue: { current: unknown } }).queue = { current: sampleTrack };
+      (fakePlayer as { paused: boolean }).paused = true;
+
+      const engine = new LavalinkMusicEngine({
+        client: fakeClient,
+        config: fakeConfig,
+        manager: fakeManager,
+      });
+
+      await expect(engine.pause('guild-1')).rejects.toThrow(RifflyError);
+      await expect(engine.pause('guild-1')).rejects.toMatchObject({ code: 'AlreadyPaused' });
+    });
+
+    it('throws NotPlaying when resuming without current track', async () => {
+      const { fakeClient, fakeManager, fakePlayer } = createMockSetup();
+      (fakePlayer as { connected: boolean }).connected = true;
+      (fakePlayer as { queue: { current: unknown } }).queue = { current: null };
+
+      const engine = new LavalinkMusicEngine({
+        client: fakeClient,
+        config: fakeConfig,
+        manager: fakeManager,
+      });
+
+      await expect(engine.resume('guild-1')).rejects.toThrow(RifflyError);
+      await expect(engine.resume('guild-1')).rejects.toMatchObject({ code: 'NotPlaying' });
+    });
+
+    it('throws NotPaused when resuming an unpaused player', async () => {
+      const { fakeClient, fakeManager, fakePlayer } = createMockSetup();
+      (fakePlayer as { connected: boolean }).connected = true;
+      (fakePlayer as { queue: { current: unknown } }).queue = { current: sampleTrack };
+      (fakePlayer as { paused: boolean }).paused = false;
+
+      const engine = new LavalinkMusicEngine({
+        client: fakeClient,
+        config: fakeConfig,
+        manager: fakeManager,
+      });
+
+      await expect(engine.resume('guild-1')).rejects.toThrow(RifflyError);
+      await expect(engine.resume('guild-1')).rejects.toMatchObject({ code: 'NotPaused' });
+    });
   });
 });

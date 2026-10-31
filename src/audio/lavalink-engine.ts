@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { LavalinkManager } from 'lavalink-client';
 import type { Client } from 'discord.js';
 import type { AppConfig } from '../config.js';
+import { RifflyError } from '../errors.js';
 import type { MusicEngine, MusicEngineEvents, PlayerState, Track } from './types.js';
 
 export interface LavalinkMusicEngineOptions {
@@ -47,6 +48,7 @@ function normalizeLavalinkTrack(track: unknown): Track | undefined {
 export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
   readonly manager: LavalinkManager;
   private readonly client: Client;
+  private readonly bufferingGuilds = new Set<string>();
 
   constructor(options: LavalinkMusicEngineOptions) {
     super();
@@ -114,6 +116,7 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
 
     // Map Lavalink player/track events
     this.manager.on('trackStart', (player, track) => {
+      this.bufferingGuilds.delete(player.guildId);
       const normalized = normalizeLavalinkTrack(track);
       if (normalized) {
         this.emit('trackStart', player.guildId, normalized);
@@ -121,6 +124,7 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
     });
 
     this.manager.on('trackEnd', (player, track, payload) => {
+      this.bufferingGuilds.delete(player.guildId);
       const normalized = normalizeLavalinkTrack(track);
       if (normalized) {
         this.emit('trackEnd', player.guildId, normalized, payload?.reason ?? 'finished');
@@ -128,11 +132,21 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
     });
 
     this.manager.on('trackError', (player, track, payload) => {
+      this.bufferingGuilds.delete(player.guildId);
       const error = new Error(payload?.exception?.message ?? 'Lavalink track playback error');
       this.emit('trackError', player.guildId, normalizeLavalinkTrack(track), error);
     });
 
+    this.manager.on('trackStuck', (player, track, payload) => {
+      this.bufferingGuilds.delete(player.guildId);
+      const normalized = normalizeLavalinkTrack(track);
+      if (normalized) {
+        this.emit('trackStuck', player.guildId, normalized, payload?.thresholdMs ?? 10000);
+      }
+    });
+
     this.manager.on('playerDisconnect', (player) => {
+      this.bufferingGuilds.delete(player.guildId);
       this.emit('playerDisconnect', player.guildId);
     });
   }
@@ -155,13 +169,16 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
     if (!player || !player.connected) {
       return 'disconnected';
     }
+    if (this.bufferingGuilds.has(guildId)) {
+      return 'buffering';
+    }
+    if (!player.queue?.current) {
+      return 'idle';
+    }
     if (player.paused) {
       return 'paused';
     }
-    if (player.playing) {
-      return 'playing';
-    }
-    return 'idle';
+    return 'playing';
   }
 
   async connect(guildId: string, voiceChannelId: string): Promise<void> {
@@ -176,17 +193,77 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
       player.voiceChannelId = voiceChannelId;
     }
 
-    if (!player.connected) {
-      await player.connect();
+    if (player.connected) {
+      return;
     }
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        (this.manager as unknown as { off?: (event: string, fn: unknown) => void }).off?.(
+          'playerConnect',
+          onConnect,
+        );
+      };
+
+      const timeout = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        void player.disconnect().catch(() => {});
+        reject(new Error(`Voice connection timeout for guild ${guildId} after 10000ms`));
+      }, 10_000);
+
+      const onConnect = (connectedPlayer: { guildId: string }) => {
+        if (connectedPlayer?.guildId === guildId) {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve();
+        }
+      };
+
+      (this.manager as unknown as { on: (event: string, fn: unknown) => void }).on(
+        'playerConnect',
+        onConnect,
+      );
+
+      player
+        .connect()
+        .then(() => {
+          if (player.connected && !settled) {
+            settled = true;
+            cleanup();
+            resolve();
+          }
+        })
+        .catch((err: unknown) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          void player.disconnect().catch(() => {});
+          reject(err instanceof Error ? err : new Error(String(err)));
+        });
+    });
+  }
+
+  async join(guildId: string, voiceChannelId: string): Promise<void> {
+    return this.connect(guildId, voiceChannelId);
   }
 
   async disconnect(guildId: string): Promise<void> {
+    this.bufferingGuilds.delete(guildId);
     const player = this.manager.getPlayer(guildId);
     if (!player) {
       return;
     }
     await player.disconnect();
+  }
+
+  async leave(guildId: string): Promise<void> {
+    return this.disconnect(guildId);
   }
 
   async play(guildId: string, track: Track): Promise<void> {
@@ -197,30 +274,43 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
       );
     }
 
-    await player.play({
-      track: {
-        encoded: track.encoded,
-      },
-    });
+    this.bufferingGuilds.add(guildId);
+    try {
+      await player.play({
+        track: {
+          encoded: track.encoded,
+        },
+      });
+    } catch (err) {
+      this.bufferingGuilds.delete(guildId);
+      throw err;
+    }
   }
 
   async pause(guildId: string): Promise<void> {
     const player = this.manager.getPlayer(guildId);
-    if (!player || !player.playing) {
-      throw new Error(`Cannot pause: player for guild ${guildId} is not currently playing`);
+    if (!player || !player.queue?.current) {
+      throw RifflyError.notPlaying();
+    }
+    if (player.paused) {
+      throw RifflyError.alreadyPaused();
     }
     await player.pause();
   }
 
   async resume(guildId: string): Promise<void> {
     const player = this.manager.getPlayer(guildId);
-    if (!player || !player.paused) {
-      throw new Error(`Cannot resume: player for guild ${guildId} is not paused`);
+    if (!player || !player.queue?.current) {
+      throw RifflyError.notPlaying();
+    }
+    if (!player.paused) {
+      throw RifflyError.notPaused();
     }
     await player.resume();
   }
 
   async stop(guildId: string): Promise<void> {
+    this.bufferingGuilds.delete(guildId);
     const player = this.manager.getPlayer(guildId);
     if (!player) {
       return;

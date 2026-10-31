@@ -84,10 +84,11 @@ export function classifyInput(
 
 /** Heuristic: common playlist path indicators across providers. */
 function isPlaylistPath(pathname: string, params: URLSearchParams): boolean {
+  const lowerPath = pathname.toLowerCase();
   return (
-    pathname.includes('/playlist') ||
-    pathname.includes('/album') ||
-    pathname.includes('/sets') ||
+    lowerPath.includes('/playlist') ||
+    lowerPath.includes('/album') ||
+    lowerPath.includes('/sets') ||
     params.has('list') // YouTube ?list=...
   );
 }
