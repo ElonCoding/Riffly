@@ -6,6 +6,7 @@ interface FakePlayer {
   voiceChannelId: string;
   currentTrack?: Track;
   volume: number;
+  position: number;
 }
 
 export class FakeMusicEngine extends EventEmitter implements MusicEngine {
@@ -49,6 +50,7 @@ export class FakeMusicEngine extends EventEmitter implements MusicEngine {
         state: 'idle',
         voiceChannelId,
         volume: 100,
+        position: 0,
       });
     }
     return Promise.resolve();
@@ -65,6 +67,7 @@ export class FakeMusicEngine extends EventEmitter implements MusicEngine {
     }
     player.state = 'disconnected';
     delete player.currentTrack;
+    player.position = 0;
     this.emit('playerDisconnect', guildId);
     return Promise.resolve();
   }
@@ -81,6 +84,7 @@ export class FakeMusicEngine extends EventEmitter implements MusicEngine {
       );
     }
     player.currentTrack = track;
+    player.position = 0;
     player.state = 'playing';
     this.emit('trackStart', guildId, track);
     return Promise.resolve();
@@ -113,6 +117,7 @@ export class FakeMusicEngine extends EventEmitter implements MusicEngine {
     }
     const hadTrack = player.currentTrack;
     delete player.currentTrack;
+    player.position = 0;
     player.state = 'idle';
     if (hadTrack) {
       this.emit('trackEnd', guildId, hadTrack, 'stopped');
@@ -130,6 +135,7 @@ export class FakeMusicEngine extends EventEmitter implements MusicEngine {
     if (positionMs < 0 || positionMs > player.currentTrack.lengthMs) {
       return Promise.reject(new Error(`Invalid seek position: ${positionMs}ms`));
     }
+    player.position = positionMs;
     return Promise.resolve();
   }
 
@@ -143,6 +149,17 @@ export class FakeMusicEngine extends EventEmitter implements MusicEngine {
     }
     player.volume = volume;
     return Promise.resolve();
+  }
+
+  getPosition(guildId: string): number {
+    return this.players.get(guildId)?.position ?? 0;
+  }
+
+  setPlaybackPosition(guildId: string, positionMs: number): void {
+    const player = this.players.get(guildId);
+    if (player) {
+      player.position = positionMs;
+    }
   }
 
   // Type-safe event subscription helpers

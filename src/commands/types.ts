@@ -10,3 +10,4 @@ export interface Command {
   };
   readonly execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
 }
+

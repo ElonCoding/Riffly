@@ -18,6 +18,8 @@ export interface GuildPlayerState {
   readonly current: Track | undefined;
   readonly upcoming: readonly Track[];
   readonly loopMode: LoopMode;
+  readonly volume: number;
+  readonly position: number;
 }
 
 export interface GuildPlayerManagerOptions {
@@ -201,6 +203,8 @@ export class GuildPlayerManager {
       current: queue?.current,
       upcoming: queue?.upcoming ?? [],
       loopMode: queue?.loopMode ?? 'off',
+      volume: queue?.volume ?? 100,
+      position: this.engine.getPosition(guildId),
     };
   }
 
@@ -289,19 +293,97 @@ export class GuildPlayerManager {
     });
   }
 
-  /**
-   * Safeguard C-06: Clear queue and arm waitTimeout.
-   */
-  async clear(guildId: string): Promise<void> {
+  async seek(guildId: string, positionMs: number): Promise<void> {
     return this.getMutex(guildId).runExclusive(async () => {
-      await Promise.resolve();
-      const queue = this.queues.get(guildId);
-      if (queue) {
-        queue.clear();
+      const state = this.engine.getState(guildId);
+      if (state === 'disconnected') {
+        throw RifflyError.notInVoiceChannel();
       }
-      // Safeguard C-06: Explicitly arm waitTimeout in clear()
-      this.armWaitTimeout(guildId);
+      const queue = this.queues.get(guildId);
+      const track = queue?.current;
+      if (!track || state === 'idle') {
+        throw RifflyError.notPlaying();
+      }
+      if (!track.isSeekable) {
+        throw RifflyError.invalidInput('Current track is not seekable.');
+      }
+      if (!Number.isFinite(positionMs) || positionMs < 0 || positionMs > track.lengthMs) {
+        throw RifflyError.invalidInput(
+          `Seek position must be between 0 and ${track.lengthMs}ms.`,
+        );
+      }
+      await this.engine.seek(guildId, positionMs);
     });
+  }
+
+  async setVolume(guildId: string, volume: number): Promise<void> {
+    if (!Number.isFinite(volume) || volume < 0 || volume > 100) {
+      throw RifflyError.invalidInput('Volume must be between 0 and 100.');
+    }
+    const state = this.engine.getState(guildId);
+    if (state === 'disconnected') {
+      throw RifflyError.notInVoiceChannel();
+    }
+    const queue = this.getOrCreate(guildId);
+    queue.setVolume(volume);
+    await this.engine.setVolume(guildId, volume);
+  }
+
+  getVolume(guildId: string): number {
+    return this.queues.get(guildId)?.volume ?? 100;
+  }
+
+  setLoopMode(guildId: string, mode: LoopMode): LoopMode {
+    if (mode !== 'off' && mode !== 'track' && mode !== 'queue') {
+      throw RifflyError.invalidInput('Invalid loop mode. Must be "off", "track", or "queue".');
+    }
+    const queue = this.getOrCreate(guildId);
+    queue.setLoopMode(mode);
+    return queue.loopMode;
+  }
+
+  getLoopMode(guildId: string): LoopMode {
+    return this.queues.get(guildId)?.loopMode ?? 'off';
+  }
+
+  shuffle(guildId: string): void {
+    const queue = this.queues.get(guildId);
+    if (!queue || queue.isEmpty) {
+      throw RifflyError.emptyQueue();
+    }
+    queue.shuffle();
+  }
+
+  remove(guildId: string, index: number): Track {
+    const queue = this.queues.get(guildId);
+    if (!queue || queue.isEmpty) {
+      throw RifflyError.emptyQueue();
+    }
+    if (!Number.isInteger(index) || index < 1 || index > queue.length) {
+      throw RifflyError.invalidInput(
+        `Track index must be between 1 and ${queue.length}.`,
+      );
+    }
+    return queue.remove(index);
+  }
+
+  clear(guildId: string): void {
+    const queue = this.queues.get(guildId);
+    if (queue) {
+      queue.clearUpcoming();
+    }
+    const state = this.engine.getState(guildId);
+    if (state === 'idle' || !queue?.current) {
+      this.armWaitTimeout(guildId);
+    }
+  }
+
+  clearUpcoming(guildId: string): void {
+    this.clear(guildId);
+  }
+
+  getPlaybackPosition(guildId: string): number {
+    return this.engine.getPosition(guildId);
   }
 
   async leave(guildId: string): Promise<void> {
@@ -314,10 +396,6 @@ export class GuildPlayerManager {
     await this.engine.disconnect(guildId);
     this.queues.delete(guildId);
     this.mutexes.delete(guildId);
-  }
-
-  setLoopMode(guildId: string, mode: LoopMode): void {
-    this.getOrCreate(guildId).setLoopMode(mode);
   }
 
   /** Diagnostic/testing helper to check whether the inactivity timer is active */

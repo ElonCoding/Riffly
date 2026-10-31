@@ -16,6 +16,7 @@ export class GuildQueue {
   private readonly _tracks: Track[] = [];
   private _current: Track | undefined;
   private _loopMode: LoopMode = 'off';
+  private _volume = 100;
   readonly limit: number;
 
   constructor(limit = DEFAULT_QUEUE_LIMIT) {
@@ -30,6 +31,10 @@ export class GuildQueue {
     return this._tracks;
   }
 
+  get tracks(): readonly Track[] {
+    return this._tracks;
+  }
+
   get loopMode(): LoopMode {
     return this._loopMode;
   }
@@ -38,8 +43,20 @@ export class GuildQueue {
     return this._tracks.length;
   }
 
+  get length(): number {
+    return this._tracks.length;
+  }
+
   get isEmpty(): boolean {
     return this._tracks.length === 0;
+  }
+
+  get volume(): number {
+    return this._volume;
+  }
+
+  setVolume(volume: number): void {
+    this._volume = volume;
   }
 
   setLoopMode(mode: LoopMode): void {
@@ -88,10 +105,50 @@ export class GuildQueue {
     return this._current;
   }
 
-  /** Clear the queue and current track. */
-  clear(): void {
+  /**
+   * Shuffle upcoming tracks in place using the Fisher-Yates algorithm.
+   * Current track remains unchanged.
+   */
+  shuffle(): void {
+    for (let i = this._tracks.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = this._tracks[i]!;
+      this._tracks[i] = this._tracks[j]!;
+      this._tracks[j] = temp;
+    }
+  }
+
+  /**
+   * Remove a track at the specified 0-based index from upcoming tracks.
+   */
+  removeAt(index: number): Track {
+    if (!Number.isInteger(index) || index < 0 || index >= this._tracks.length) {
+      throw new RangeError(
+        `Index ${index} is out of bounds for queue of size ${this._tracks.length}`,
+      );
+    }
+    const [removed] = this._tracks.splice(index, 1);
+    return removed!;
+  }
+
+  /**
+   * Remove a track at the specified 1-based index from upcoming tracks.
+   */
+  remove(oneBasedIndex: number): Track {
+    return this.removeAt(oneBasedIndex - 1);
+  }
+
+  /** Clear the upcoming tracks and optionally current track. */
+  clear(clearCurrent = true): void {
     this._tracks.length = 0;
-    this._current = undefined;
+    if (clearCurrent) {
+      this._current = undefined;
+    }
+  }
+
+  /** Clear all upcoming tracks while keeping current playing track. */
+  clearUpcoming(): void {
+    this._tracks.length = 0;
   }
 
   /** Set current (called when playback begins). */

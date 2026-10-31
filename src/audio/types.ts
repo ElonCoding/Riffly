@@ -35,7 +35,11 @@ export interface MusicEngine {
   stop(guildId: string): Promise<void>;
   seek(guildId: string, positionMs: number): Promise<void>;
   setVolume(guildId: string, volume: number): Promise<void>;
+  getPosition(guildId: string): number;
   getState(guildId: string): PlayerState;
   on<E extends keyof MusicEngineEvents>(event: E, listener: MusicEngineEvents[E]): this;
   off<E extends keyof MusicEngineEvents>(event: E, listener: MusicEngineEvents[E]): this;
 }
+
+export type IMusicEngine = MusicEngine;
+

@@ -178,11 +178,22 @@ describe('GuildPlayerManager', () => {
       expect(manager.isWaiting('g1')).toBe(false);
     });
 
-    it('arms waitTimeout when clear() is called', async () => {
+    it('arms waitTimeout when clear() is called on idle queue', async () => {
+      const { manager } = await setupConnected();
+      manager.clear('g1');
+      expect(manager.isWaiting('g1')).toBe(true);
+    });
+
+    it('keeps current track playing and clears upcoming when clear() is called during playback', async () => {
       const { manager } = await setupConnected();
       await manager.play('g1', [makeTrack('a')]);
-      await manager.clear('g1');
-      expect(manager.isWaiting('g1')).toBe(true);
+      await manager.play('g1', [makeTrack('b')]);
+      expect(manager.getState('g1').upcoming).toHaveLength(1);
+
+      manager.clear('g1');
+      expect(manager.getState('g1').current?.identifier).toBe('a');
+      expect(manager.getState('g1').upcoming).toHaveLength(0);
+      expect(manager.isWaiting('g1')).toBe(false);
     });
   });
 

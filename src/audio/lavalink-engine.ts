@@ -334,6 +334,12 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
     await player.setVolume(volume);
   }
 
+  getPosition(guildId: string): number {
+    const player = this.manager.getPlayer(guildId);
+    return player?.position ?? 0;
+  }
+
+
   override on<E extends keyof MusicEngineEvents>(event: E, listener: MusicEngineEvents[E]): this {
     return super.on(event, listener as (...args: unknown[]) => void);
   }

@@ -2,7 +2,7 @@ import { Client, Events, GatewayIntentBits } from 'discord.js';
 import type { AppConfig } from './config.js';
 import type { Command } from './commands/types.js';
 import { buildCommandMap } from './commands/index.js';
-import { handleInteraction } from './interaction.js';
+import { handleInteraction, setDefaultPlayerManager } from './interaction.js';
 import { LavalinkMusicEngine } from './audio/lavalink-engine.js';
 import { GuildPlayerManager } from './player/guild-player.js';
 import { ProviderRegistry } from './provider/registry.js';
@@ -18,14 +18,27 @@ export interface RifflyBot {
 export interface CreateBotOptions {
   readonly client?: Client;
   readonly commands?: ReadonlyMap<string, Command>;
+  readonly playerManager?: GuildPlayerManager;
 }
 
-export function createBot(config: AppConfig, options: CreateBotOptions = {}): RifflyBot {
+export type BotOptions = CreateBotOptions;
+
+export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBot {
   const client =
     options.client ??
     new Client({
       intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
     });
+
+  let engine: LavalinkMusicEngine | undefined;
+  let playerManager = options.playerManager;
+
+  if (!playerManager) {
+    engine = new LavalinkMusicEngine({ client, config });
+    playerManager = new GuildPlayerManager(engine);
+  }
+
+  setDefaultPlayerManager(playerManager);
 
   // Set up audio engine and player stack (only if real client is used)
   let commands: ReadonlyMap<string, Command>;
@@ -33,11 +46,13 @@ export function createBot(config: AppConfig, options: CreateBotOptions = {}): Ri
   if (options.commands) {
     commands = options.commands;
   } else {
-    const engine = new LavalinkMusicEngine({ client, config });
-    const playerManager = new GuildPlayerManager(engine);
+    const activeEngine = engine ?? new LavalinkMusicEngine({ client, config });
+    if (!engine) {
+      engine = activeEngine;
+    }
 
     const registry = new ProviderRegistry();
-    const lavalinkProvider = new LavalinkProvider({ manager: engine.manager });
+    const lavalinkProvider = new LavalinkProvider({ manager: activeEngine.manager });
     // SoundCloud is the primary search/URL source via Lavalink built-in sc source
     registry.register(lavalinkProvider, [
       'soundcloud.com',
@@ -48,7 +63,9 @@ export function createBot(config: AppConfig, options: CreateBotOptions = {}): Ri
     const resolver = new TrackResolver({ registry });
 
     commands = buildCommandMap(playerManager, resolver);
+  }
 
+  if (engine) {
     // Initialize Lavalink manager after bot is ready
     client.once(Events.ClientReady, () => {
       void engine.init().catch((err: unknown) => {
@@ -65,7 +82,7 @@ export function createBot(config: AppConfig, options: CreateBotOptions = {}): Ri
   });
 
   client.on(Events.InteractionCreate, (interaction) => {
-    void handleInteraction(interaction, commands);
+    void handleInteraction(interaction, commands, playerManager);
   });
 
   client.on(Events.Error, (error) => {

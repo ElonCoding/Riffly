@@ -11,6 +11,12 @@ import { makeStopCommand, stopCommandData } from './stop.js';
 import { makeLeaveCommand, leaveCommandData } from './leave.js';
 import { makeNowPlayingCommand, nowPlayingCommandData } from './nowplaying.js';
 import { makeQueueCommand, queueCommandData } from './queue.js';
+import { makeVolumeCommand, volumeCommandData } from './volume.js';
+import { makeLoopCommand, loopCommandData } from './loop.js';
+import { makeShuffleCommand, shuffleCommandData } from './shuffle.js';
+import { makeSeekCommand, seekCommandData } from './seek.js';
+import { makeRemoveCommand, removeCommandData } from './remove.js';
+import { makeClearCommand, clearCommandData } from './clear.js';
 
 export * from './types.js';
 export * from './helpers.js';
@@ -25,6 +31,12 @@ export * from './stop.js';
 export * from './leave.js';
 export * from './nowplaying.js';
 export * from './queue.js';
+export * from './volume.js';
+export * from './loop.js';
+export * from './shuffle.js';
+export * from './seek.js';
+export * from './remove.js';
+export * from './clear.js';
 
 /** Static commands (no dependencies). */
 export const staticCommands: readonly Command[] = [pingCommand];
@@ -47,6 +59,12 @@ export function buildCommands(
     makeLeaveCommand(playerManager),
     makeNowPlayingCommand(playerManager),
     makeQueueCommand(playerManager),
+    makeVolumeCommand(playerManager),
+    makeLoopCommand(playerManager),
+    makeShuffleCommand(playerManager),
+    makeSeekCommand(playerManager),
+    makeRemoveCommand(playerManager),
+    makeClearCommand(playerManager),
   ];
 }
 
@@ -72,4 +90,10 @@ export const allCommandData: readonly Command['data'][] = [
   leaveCommandData,
   nowPlayingCommandData,
   queueCommandData,
+  volumeCommandData,
+  loopCommandData,
+  shuffleCommandData,
+  seekCommandData,
+  removeCommandData,
+  clearCommandData,
 ];
