@@ -172,4 +172,41 @@ describe('makePlayCommand', () => {
     expect(callArg.embeds?.[0]?.data.title).toBe('📋 Playlist Enqueued');
     expect(callArg.embeds?.[0]?.data.description).toContain('My Favorites');
   });
+
+  it('rejects with voicePermissionDenied userMessage when bot lacks voice permissions', async () => {
+    const joinMock = vi.fn();
+    const playMock = vi.fn();
+    const playerManager = { join: joinMock, play: playMock } as unknown as GuildPlayerManager;
+    const resolver = { resolve: vi.fn() } as unknown as TrackResolver;
+
+    const cmd = makePlayCommand(playerManager, resolver);
+
+    const deferReply = vi.fn().mockResolvedValue(undefined);
+    const editReply = vi.fn().mockResolvedValue(undefined);
+    const interaction = {
+      inGuild: () => true,
+      guildId: 'guild-1',
+      member: { voice: { channelId: 'vc-user' } },
+      guild: {
+        members: {
+          me: {
+            voice: { channelId: null },
+            permissionsIn: vi.fn(() => ({
+              has: vi.fn((perm) => (perm === 'Speak' ? false : true)),
+            })),
+          },
+        },
+      },
+      options: { getString: () => 'Test Song' },
+      deferReply,
+      editReply,
+    } as unknown as ChatInputCommandInteraction;
+
+    await cmd.execute(interaction);
+    expect(deferReply).toHaveBeenCalled();
+    expect(joinMock).not.toHaveBeenCalled();
+    expect(editReply).toHaveBeenCalled();
+    const message = String(editReply.mock.calls[0]?.[0] ?? '');
+    expect(message).toContain('Speak');
+  });
 });

@@ -10,7 +10,7 @@ import type { GuildPlayerManager } from '../player/guild-player.js';
 import type { ResolveResult, TrackResolver } from '../provider/resolver.js';
 import { RifflyError } from '../errors.js';
 import { validatePlayInput } from './input.js';
-import { getBotVoiceChannelId, resolveMemberVoiceChannelId } from './helpers.js';
+import { assertBotVoicePermissions, getBotVoiceChannelId, resolveMemberVoiceChannelId } from './helpers.js';
 
 function formatDuration(ms: number): string {
   if (ms <= 0) return '∞';
@@ -130,6 +130,13 @@ export function makePlayCommand(
       const guildId = interaction.guildId;
 
       try {
+        // Pre-flight voice permissions check (ViewChannel, Connect, Speak)
+        assertBotVoicePermissions(interaction, voiceChannelId);
+
+        if (interaction.channelId) {
+          playerManager.setTextChannelId?.(guildId, interaction.channelId);
+        }
+
         // Join voice channel (idempotent / awaits handshake)
         await playerManager.join(guildId, voiceChannelId);
 

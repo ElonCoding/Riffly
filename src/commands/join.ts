@@ -8,7 +8,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
 import { RifflyError } from '../errors.js';
-import { resolveMemberVoiceChannelId } from './helpers.js';
+import { assertBotVoicePermissions, resolveMemberVoiceChannelId } from './helpers.js';
 
 export const joinCommandData = new SlashCommandBuilder()
   .setName('join')
@@ -39,6 +39,12 @@ export function makeJoinCommand(playerManager: GuildPlayerManager): Command {
       await interaction.deferReply();
 
       try {
+        assertBotVoicePermissions(interaction, voiceChannelId);
+
+        if (interaction.channelId) {
+          playerManager.setTextChannelId?.(interaction.guildId, interaction.channelId);
+        }
+
         await playerManager.join(interaction.guildId, voiceChannelId);
         await interaction.editReply(`🔊 Joined <#${voiceChannelId}>!`);
       } catch (err) {

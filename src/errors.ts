@@ -87,6 +87,14 @@ export class RifflyError extends Error {
     return new RifflyError('TrackUnavailable', '🚫 That track is unavailable for playback.', cause);
   }
 
+  static voicePermissionDenied(missing: string[] = []): RifflyError {
+    const list = missing.length > 0 ? ` (${missing.join(', ')})` : '';
+    return new RifflyError(
+      'VoicePermissionDenied',
+      `🔒 Riffly lacks required voice channel permissions${list}. Please grant View Channel, Connect, and Speak permissions in the voice channel settings.`,
+    );
+  }
+
   static internal(cause?: unknown): RifflyError {
     return new RifflyError('InternalError', '💥 An internal error occurred.', cause);
   }

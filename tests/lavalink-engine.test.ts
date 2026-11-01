@@ -310,9 +310,9 @@ describe('LavalinkMusicEngine', () => {
       expect(mocks.disconnect).toHaveBeenCalled();
     });
 
-    it('resolves cleanly when playerConnect event fires before timeout', async () => {
-      const { fakeClient, fakeManager, fakePlayer, mocks, listeners } = createMockSetup();
-      mocks.connect.mockImplementation(() => new Promise(() => {}));
+    it('resolves cleanly when player.connect() finishes before timeout', async () => {
+      const { fakeClient, fakeManager, fakePlayer, mocks } = createMockSetup();
+      mocks.connect.mockResolvedValue(undefined);
       (fakePlayer as { connected: boolean }).connected = false;
 
       const engine = new LavalinkMusicEngine({
@@ -321,14 +321,8 @@ describe('LavalinkMusicEngine', () => {
         manager: fakeManager,
       });
 
-      const connectPromise = engine.join('guild-1', 'vc-1');
-
-      // Emit playerConnect for guild-1
-      const connectHandler = listeners.get('playerConnect');
-      expect(connectHandler).toBeDefined();
-      connectHandler?.({ guildId: 'guild-1' });
-
-      await expect(connectPromise).resolves.toBeUndefined();
+      await expect(engine.join('guild-1', 'vc-1')).resolves.toBeUndefined();
+      expect(mocks.connect).toHaveBeenCalled();
     });
   });
 
@@ -393,6 +387,71 @@ describe('LavalinkMusicEngine', () => {
 
       await expect(engine.resume('guild-1')).rejects.toThrow(RifflyError);
       await expect(engine.resume('guild-1')).rejects.toMatchObject({ code: 'NotPaused' });
+    });
+  });
+
+  describe('Connection state checks and raw gateway forwarding', () => {
+    it('handles player.connected being undefined/uninitialized when voiceChannelId is set', async () => {
+      const { fakeClient, fakeManager, fakePlayer, mocks } = createMockSetup();
+      const engine = new LavalinkMusicEngine({
+        client: fakeClient,
+        config: fakeConfig,
+        manager: fakeManager,
+      });
+
+      // Simulates real lavalink-client behavior right after connect():
+      // voiceChannelId is set, but connected is undefined (not false)
+      (fakePlayer as { connected?: boolean | undefined; voiceChannelId?: string }).connected = undefined;
+      (fakePlayer as { connected?: boolean | undefined; voiceChannelId?: string }).voiceChannelId = 'vc-1';
+
+      expect(engine.getState('guild-1')).toBe('idle');
+      await expect(engine.play('guild-1', sampleTrack)).resolves.toBeUndefined();
+      expect(mocks.play).toHaveBeenCalled();
+    });
+
+    it('rejects play and reports disconnected when voiceChannelId is missing or connected is false', async () => {
+      const { fakeClient, fakeManager, fakePlayer } = createMockSetup();
+      const engine = new LavalinkMusicEngine({
+        client: fakeClient,
+        config: fakeConfig,
+        manager: fakeManager,
+      });
+
+      // connected === false
+      (fakePlayer as { connected?: boolean; voiceChannelId?: string }).connected = false;
+      (fakePlayer as { connected?: boolean; voiceChannelId?: string }).voiceChannelId = 'vc-1';
+      expect(engine.getState('guild-1')).toBe('disconnected');
+      await expect(engine.play('guild-1', sampleTrack)).rejects.toThrow('is not connected to a voice channel');
+
+      // missing voiceChannelId
+      (fakePlayer as { connected?: boolean; voiceChannelId?: string | null }).connected = true;
+      (fakePlayer as { connected?: boolean; voiceChannelId?: string | null }).voiceChannelId = null;
+      expect(engine.getState('guild-1')).toBe('disconnected');
+      await expect(engine.play('guild-1', sampleTrack)).rejects.toThrow('is not connected to a voice channel');
+    });
+
+    it('catches sendRawData rejections in wireEvents without unhandled rejection', () => {
+      let rawHandler: ((...args: unknown[]) => void) | undefined;
+      const fakeClient = {
+        on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+          if (event === 'raw') rawHandler = cb;
+        }),
+      } as unknown as Client;
+
+      const fakeManager = {
+        nodeManager: { on: vi.fn() },
+        on: vi.fn(),
+        sendRawData: vi.fn().mockRejectedValue(new Error('WebSocket closed')),
+      } as unknown as LavalinkManager;
+
+      new LavalinkMusicEngine({
+        client: fakeClient,
+        config: fakeConfig,
+        manager: fakeManager,
+      });
+
+      expect(rawHandler).toBeDefined();
+      expect(() => rawHandler?.({ t: 'VOICE_SERVER_UPDATE' })).not.toThrow();
     });
   });
 });

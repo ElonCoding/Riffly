@@ -48,7 +48,7 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
 
   if (!playerManager) {
     engine = new LavalinkMusicEngine({ client, config });
-    playerManager = new GuildPlayerManager(engine);
+    playerManager = new GuildPlayerManager(engine, { client });
   }
 
   setDefaultPlayerManager(playerManager);

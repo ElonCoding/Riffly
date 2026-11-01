@@ -4,7 +4,8 @@
  * Provides voice channel co-location verification and interaction safety guards.
  */
 
-import { ButtonInteraction, ChatInputCommandInteraction, GuildMember } from 'discord.js';
+import { ButtonInteraction, ChatInputCommandInteraction, GuildMember, PermissionFlagsBits } from 'discord.js';
+import { RifflyError } from '../errors.js';
 
 /**
  * Common shape for interactions that have guild, member, and client access.
@@ -12,9 +13,37 @@ import { ButtonInteraction, ChatInputCommandInteraction, GuildMember } from 'dis
 export type VoiceGuardedInteraction = {
   readonly guildId: string | null;
   readonly guild?: unknown;
-  readonly client: { readonly guilds: { readonly cache: { get(id: string): unknown } } };
+  readonly client?: { readonly guilds?: { readonly cache?: { get(id: string): unknown } }; readonly user?: { id: string } };
   readonly member?: unknown;
 };
+
+interface HelperGuildVoiceStateShape {
+  readonly voiceStates?: {
+    readonly cache?: {
+      get(id: string): { readonly channelId?: string | null } | undefined;
+    };
+  };
+  readonly members?: {
+    readonly cache?: {
+      get(id: string): { readonly voice?: { readonly channelId?: string | null } } | undefined;
+    };
+    fetch?(id: string): Promise<{ readonly voice?: { readonly channelId?: string | null } } | undefined>;
+    readonly me?: {
+      readonly voice?: { readonly channelId?: string | null };
+      permissionsIn?(channel: unknown): { has(perm: unknown): boolean };
+    };
+  };
+  readonly channels?: {
+    readonly cache?: {
+      get(id: string): {
+        permissionsFor?(member: unknown): { has(perm: unknown): boolean };
+      } | undefined;
+    };
+  };
+  readonly me?: {
+    readonly voice?: { readonly channelId?: string | null };
+  };
+}
 
 /**
  * Extract the invoking member's current voice channel ID, or null if not in voice.
@@ -49,10 +78,10 @@ export async function resolveMemberVoiceChannelId(
 
   const userId = interaction.user?.id;
   const guild =
-    (interaction as { guild?: any }).guild ??
-    (interaction.guildId && interaction.client?.guilds?.cache
+    (interaction as { guild?: HelperGuildVoiceStateShape }).guild ??
+    ((interaction.guildId && interaction.client?.guilds?.cache
       ? interaction.client.guilds.cache.get(interaction.guildId)
-      : null);
+      : null) as HelperGuildVoiceStateShape | null);
 
   if (guild && userId) {
     // 2. Guild voiceStates cache lookup
@@ -94,7 +123,7 @@ export function getBotVoiceChannelId(interaction: VoiceGuardedInteraction): stri
   const guild =
     (interaction as { guild?: { members?: { me?: { voice?: { channelId?: string | null } } }; voiceStates?: { cache?: { get(id: string): { channelId?: string | null } | undefined } } } })
       .guild ??
-    (interaction.client.guilds.cache.get(interaction.guildId) as
+    (interaction.client?.guilds?.cache?.get(interaction.guildId) as
       { members?: { me?: { voice?: { channelId?: string | null } } }; voiceStates?: { cache?: { get(id: string): { channelId?: string | null } | undefined } } } | undefined);
 
   const me =
@@ -123,7 +152,7 @@ export function getBotVoiceChannelId(interaction: VoiceGuardedInteraction): stri
 export function canModifyQueue(interaction: VoiceGuardedInteraction): boolean {
   let memberVoiceChannelId = getMemberVoiceChannelId(interaction.member);
   const userId = (interaction as { user?: { id: string } }).user?.id;
-  const guild = (interaction as { guild?: any }).guild;
+  const guild = (interaction as { guild?: HelperGuildVoiceStateShape }).guild;
   if (!memberVoiceChannelId && guild && userId) {
     memberVoiceChannelId = guild.voiceStates?.cache?.get(userId)?.channelId ?? null;
   }
@@ -250,3 +279,59 @@ export function parseTimestamp(input: string): number | null {
 
   return null;
 }
+
+/**
+ * Pre-flight validation ensuring Riffly has required voice permissions in the target channel.
+ *
+ * Checks ViewChannel, Connect, and Speak permissions for the bot member.
+ * Throws RifflyError.voicePermissionDenied() if any required permission is missing.
+ */
+export function assertBotVoicePermissions(
+  interaction: { readonly guild?: unknown },
+  voiceChannelId: string,
+): void {
+  const guild = interaction.guild as {
+    members?: { me?: { permissionsIn(channel: unknown): { has(perm: unknown): boolean } } };
+    channels?: { cache?: { get(id: string): { permissionsFor(member: unknown): { has(perm: unknown): boolean } } | undefined } };
+  } | undefined;
+
+  const me = guild?.members?.me;
+  if (!me) return;
+
+  const channel = guild?.channels?.cache?.get(voiceChannelId);
+  const permissions =
+    (typeof me.permissionsIn === 'function' ? me.permissionsIn(voiceChannelId) : undefined) ??
+    (channel && typeof channel.permissionsFor === 'function' ? channel.permissionsFor(me) : undefined);
+
+  if (!permissions || typeof permissions.has !== 'function') return;
+
+  const hasPerm = (bit: bigint, name: string): boolean => {
+    try {
+      if (permissions.has(name) === false) return false;
+    } catch {
+      // Ignore
+    }
+    try {
+      if (permissions.has(bit) === false) return false;
+    } catch {
+      // Ignore
+    }
+    return true;
+  };
+
+  const missing: string[] = [];
+  if (!hasPerm(PermissionFlagsBits.ViewChannel, 'ViewChannel')) {
+    missing.push('ViewChannel');
+  }
+  if (!hasPerm(PermissionFlagsBits.Connect, 'Connect')) {
+    missing.push('Connect');
+  }
+  if (!hasPerm(PermissionFlagsBits.Speak, 'Speak')) {
+    missing.push('Speak');
+  }
+
+  if (missing.length > 0) {
+    throw RifflyError.voicePermissionDenied(missing);
+  }
+}
+

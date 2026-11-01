@@ -90,7 +90,11 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
   private wireEvents(): void {
     // Forward raw Discord voice state/server packets to LavalinkManager
     this.client.on('raw', (packet: unknown) => {
-      void this.manager.sendRawData(packet as Parameters<typeof this.manager.sendRawData>[0]);
+      void this.manager
+        .sendRawData(packet as Parameters<typeof this.manager.sendRawData>[0])
+        .catch((err: unknown) => {
+          console.warn('[MusicEngine] Failed to send raw gateway packet to Lavalink:', err);
+        });
     });
 
     // Map Lavalink node lifecycle events
@@ -173,7 +177,7 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
 
   getState(guildId: string): PlayerState {
     const player = this.manager.getPlayer(guildId);
-    if (!player || !player.connected) {
+    if (!player || !player.voiceChannelId || player.connected === false) {
       return 'disconnected';
     }
     if (this.bufferingGuilds.has(guildId)) {
@@ -209,10 +213,6 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
 
       const cleanup = () => {
         clearTimeout(timeout);
-        (this.manager as unknown as { off?: (event: string, fn: unknown) => void }).off?.(
-          'playerConnect',
-          onConnect,
-        );
       };
 
       const timeout = setTimeout(() => {
@@ -222,20 +222,6 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
         void player.disconnect().catch(() => {});
         reject(new Error(`Voice connection timeout for guild ${guildId} after 10000ms`));
       }, 10_000);
-
-      const onConnect = (connectedPlayer: { guildId: string }) => {
-        if (connectedPlayer?.guildId === guildId) {
-          if (settled) return;
-          settled = true;
-          cleanup();
-          resolve();
-        }
-      };
-
-      (this.manager as unknown as { on: (event: string, fn: unknown) => void }).on(
-        'playerConnect',
-        onConnect,
-      );
 
       player
         .connect()
@@ -275,7 +261,7 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
 
   async play(guildId: string, track: Track): Promise<void> {
     const player = this.manager.getPlayer(guildId);
-    if (!player || !player.connected) {
+    if (!player || !player.voiceChannelId || player.connected === false) {
       throw new Error(
         `Cannot play: player for guild ${guildId} is not connected to a voice channel`,
       );

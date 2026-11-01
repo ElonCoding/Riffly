@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import type { Client } from 'discord.js';
 import { GuildPlayerManager } from '../src/player/guild-player.js';
 import { FakeMusicEngine } from '../src/audio/fake-engine.js';
 import type { Track } from '../src/audio/types.js';
@@ -225,6 +226,35 @@ describe('GuildPlayerManager', () => {
       const state = manager.getState('g1');
       expect(state.upcoming).toHaveLength(0);
       expect(manager.isWaiting('g1')).toBe(true);
+    });
+  });
+
+  describe('trackError text channel notification', () => {
+    it('notifies the Discord text channel when a track errors out', async () => {
+      const sendMock = vi.fn().mockResolvedValue(undefined);
+      const fakeClient = {
+        channels: {
+          cache: new Map([['tc-123', { send: sendMock }]]),
+        },
+      } as unknown as Client;
+
+      const engine = new FakeMusicEngine();
+      const manager = new GuildPlayerManager(engine, { client: fakeClient });
+      await manager.join('g1', 'vc1', 'tc-123');
+
+      await manager.play('g1', [makeTrack('fail1')]);
+
+      const failingTrack = makeTrack('fail1');
+      engine.emit('trackError', 'g1', failingTrack, new Error('YouTube cipher parsing failure'));
+
+      // Let microtask flush
+      await new Promise((r) => setTimeout(r, 20));
+
+      expect(sendMock).toHaveBeenCalled();
+      const callArg = sendMock.mock.calls[0]?.[0] as { content?: string } | undefined;
+      expect(callArg?.content).toContain('Playback error');
+      expect(callArg?.content).toContain('Track fail1');
+      expect(callArg?.content).toContain('YouTube cipher parsing failure');
     });
   });
 });

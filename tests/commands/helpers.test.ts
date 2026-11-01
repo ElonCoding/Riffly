@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ChatInputCommandInteraction } from 'discord.js';
 import {
+  assertBotVoicePermissions,
   canModifyQueue,
   createProgressBar,
   formatDuration,
@@ -9,6 +10,7 @@ import {
   parseTimestamp,
   requireSameVoiceChannel,
 } from '../../src/commands/helpers.js';
+import { RifflyError } from '../../src/errors.js';
 
 describe('command helpers', () => {
   describe('getMemberVoiceChannelId', () => {
@@ -225,4 +227,52 @@ describe('command helpers', () => {
       expect(parseTimestamp('1:2:3:4')).toBeNull();
     });
   });
+
+  describe('assertBotVoicePermissions', () => {
+    it('does not throw when guild or me is undefined', () => {
+      expect(() => assertBotVoicePermissions({}, 'vc-1')).not.toThrow();
+      expect(() => assertBotVoicePermissions({ guild: {} }, 'vc-1')).not.toThrow();
+    });
+
+    it('does not throw when bot has ViewChannel, Connect, and Speak permissions', () => {
+      const interaction = {
+        guild: {
+          members: {
+            me: {
+              permissionsIn: vi.fn(() => ({
+                has: vi.fn(() => true),
+              })),
+            },
+          },
+        },
+      };
+      expect(() => assertBotVoicePermissions(interaction, 'vc-1')).not.toThrow();
+    });
+
+    it('throws VoicePermissionDenied when Speak or Connect is missing', () => {
+      const interaction = {
+        guild: {
+          members: {
+            me: {
+              permissionsIn: vi.fn(() => ({
+                has: vi.fn((perm) => {
+                  if (perm === 'Speak') return false;
+                  return true;
+                }),
+              })),
+            },
+          },
+        },
+      };
+
+      expect(() => assertBotVoicePermissions(interaction, 'vc-1')).toThrow(RifflyError);
+      try {
+        assertBotVoicePermissions(interaction, 'vc-1');
+      } catch (err) {
+        expect((err as RifflyError).code).toBe('VoicePermissionDenied');
+        expect((err as RifflyError).userMessage).toContain('Speak');
+      }
+    });
+  });
 });
+

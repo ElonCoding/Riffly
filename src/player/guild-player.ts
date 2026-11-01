@@ -7,6 +7,7 @@
  * timers, and error recovery circuit breaking.
  */
 
+import type { Client } from 'discord.js';
 import { GuildQueue } from './queue.js';
 import type { LoopMode } from './queue.js';
 import { AsyncMutex } from './mutex.js';
@@ -26,6 +27,7 @@ export interface GuildPlayerState {
 export interface GuildPlayerManagerOptions {
   readonly waitTimeoutMs?: number;
   readonly autoplayManager?: AutoplayManager;
+  readonly client?: Client | undefined;
 }
 
 export class GuildPlayerManager {
@@ -34,6 +36,8 @@ export class GuildPlayerManager {
   private readonly mutexes = new Map<string, AsyncMutex>();
   private readonly waitTimeouts = new Map<string, NodeJS.Timeout>();
   private readonly errorHistory = new Map<string, number[]>();
+  private readonly textChannels = new Map<string, string>();
+  private readonly client?: Client | undefined;
   private readonly engine: MusicEngine;
   private readonly waitTimeoutMs: number;
   private readonly autoplayManager: AutoplayManager;
@@ -42,6 +46,7 @@ export class GuildPlayerManager {
 
   constructor(engine: MusicEngine, options?: GuildPlayerManagerOptions) {
     this.engine = engine;
+    this.client = options?.client;
     this.waitTimeoutMs = options?.waitTimeoutMs ?? GuildPlayerManager.DEFAULT_WAIT_TIMEOUT_MS;
     this.autoplayManager = options?.autoplayManager ?? new AutoplayManager();
 
@@ -72,6 +77,7 @@ export class GuildPlayerManager {
         `[GuildPlayer:${guildId}] Track error for "${track?.title ?? 'unknown'}":`,
         error.message,
       );
+      void this.notifyTrackError(guildId, track, error);
       void this.handlePlaybackError(guildId);
     });
 
@@ -85,6 +91,7 @@ export class GuildPlayerManager {
     engine.on('playerDisconnect', (guildId) => {
       this.clearWaitTimeout(guildId);
       this.errorHistory.delete(guildId);
+      this.textChannels.delete(guildId);
       const queue = this.queues.get(guildId);
       if (queue) {
         queue.clear();
@@ -244,15 +251,33 @@ export class GuildPlayerManager {
     };
   }
 
+  setTextChannelId(guildId: string, channelId: string): void {
+    this.textChannels.set(guildId, channelId);
+  }
+
+  getTextChannelId(guildId: string): string | undefined {
+    return this.textChannels.get(guildId);
+  }
+
   /** Connect to a voice channel. */
-  async join(guildId: string, voiceChannelId: string): Promise<void> {
+  async join(guildId: string, voiceChannelId: string, textChannelId?: string): Promise<void> {
     await this.engine.connect(guildId, voiceChannelId);
+    if (textChannelId) {
+      this.textChannels.set(guildId, textChannelId);
+    }
     this.getOrCreate(guildId);
   }
 
   /** Enqueue tracks and start playback if idle (protected by per-guild mutex). */
-  async play(guildId: string, tracks: readonly Track[]): Promise<{ started: boolean }> {
+  async play(
+    guildId: string,
+    tracks: readonly Track[],
+    options?: { textChannelId?: string },
+  ): Promise<{ started: boolean }> {
     return this.getMutex(guildId).runExclusive(async () => {
+      if (options?.textChannelId) {
+        this.textChannels.set(guildId, options.textChannelId);
+      }
       const queue = this.getOrCreate(guildId);
       const engineState = this.engine.getState(guildId);
 
@@ -431,6 +456,7 @@ export class GuildPlayerManager {
   async leave(guildId: string): Promise<void> {
     this.clearWaitTimeout(guildId);
     this.errorHistory.delete(guildId);
+    this.textChannels.delete(guildId);
     const queue = this.queues.get(guildId);
     if (queue) {
       queue.clear();
@@ -443,5 +469,45 @@ export class GuildPlayerManager {
   /** Diagnostic/testing helper to check whether the inactivity timer is active */
   isWaiting(guildId: string): boolean {
     return this.waitTimeouts.has(guildId);
+  }
+
+  /**
+   * Notifies the configured Discord text channel about track playback errors.
+   */
+  private async notifyTrackError(
+    guildId: string,
+    track: Track | undefined,
+    error: Error,
+  ): Promise<void> {
+    const textChannelId = this.textChannels.get(guildId);
+    if (!textChannelId) return;
+
+    try {
+      const client =
+        this.client ??
+        (this.engine as unknown as { client?: Client })?.client;
+      if (!client?.channels) return;
+
+      const channel =
+        client.channels.cache?.get(textChannelId) ??
+        (typeof client.channels.fetch === 'function'
+          ? await client.channels.fetch(textChannelId).catch(() => null)
+          : null);
+
+      if (
+        channel &&
+        'send' in channel &&
+        typeof (channel as { send: unknown }).send === 'function'
+      ) {
+        const title = track?.title ? `**${track.title}**` : 'Current track';
+        await (channel as { send: (payload: unknown) => Promise<unknown> }).send({
+          content: `⚠️ Playback error on ${title}: ${error.message || 'Unknown audio playback error'}. Skipping to next track...`,
+        }).catch((err: unknown) => {
+          console.error(`[GuildPlayer:${guildId}] Failed to send track error notification:`, err);
+        });
+      }
+    } catch (notifyErr) {
+      console.error(`[GuildPlayer:${guildId}] Error notifying text channel:`, notifyErr);
+    }
   }
 }
