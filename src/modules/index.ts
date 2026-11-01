@@ -8,6 +8,10 @@ export * from './tickets/index.js';
 export * from './verification/index.js';
 export * from './leveling/index.js';
 export * from './voice-rooms/index.js';
+export * from './automod/index.js';
+export * from './giveaways/index.js';
+export * from './starboard/index.js';
+export * from './utility/index.js';
 
 
 

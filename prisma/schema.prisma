@@ -20,6 +20,7 @@ model GuildSettings {
   tickets         Ticket[]
   scheduledTasks  ScheduledTask[]
   userLevels      UserLevel[]
+  giveaways       Giveaway[]
 
   @@map("guild_settings")
 }
@@ -110,4 +111,25 @@ model UserLevel {
   @@id([guildId, userId])
   @@index([guildId, xp])
   @@map("user_levels")
+}
+
+model Giveaway {
+  id           String   @id @default(cuid())
+  guildId      String
+  channelId    String
+  messageId    String   @unique
+  prize        String
+  winnersCount Int      @default(1)
+  hostId       String
+  endsAt       DateTime
+  ended        Boolean  @default(false)
+  entries      String[] @default([])
+  winners      String[] @default([])
+  createdAt    DateTime @default(now())
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([guildId])
+  @@index([ended, endsAt])
+  @@map("giveaways")
 }

@@ -129,6 +129,49 @@ export interface TicketData {
 }
 
 /**
+ * Domain representation of a giveaway.
+ */
+export interface GiveawayData {
+  id: string;
+  guildId: string;
+  channelId: string;
+  messageId: string;
+  prize: string;
+  winnersCount: number;
+  hostId: string;
+  endsAt: Date;
+  ended: boolean;
+  entries: string[];
+  winners: string[];
+  createdAt: Date;
+}
+
+/**
+ * Payload to create a new giveaway.
+ */
+export interface CreateGiveawayInput {
+  guildId: string;
+  channelId: string;
+  messageId: string;
+  prize: string;
+  winnersCount: number;
+  hostId: string;
+  endsAt: Date;
+}
+
+/**
+ * Contract for giveaway repository operations.
+ */
+export interface IGiveawayRepository {
+  createGiveaway(data: CreateGiveawayInput): Promise<GiveawayData>;
+  getGiveaway(messageId: string): Promise<GiveawayData | null>;
+  addEntry(messageId: string, userId: string): Promise<{ added: boolean; totalEntries: number }>;
+  removeEntry(messageId: string, userId: string): Promise<{ removed: boolean; totalEntries: number }>;
+  endGiveaway(messageId: string, winners: string[]): Promise<GiveawayData>;
+  getActiveGiveaways(guildId?: string): Promise<GiveawayData[]>;
+}
+
+/**
  * Domain representation of user experience and level.
  */
 export interface UserLevelData {
