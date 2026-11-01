@@ -196,3 +196,4 @@ export class LevelingService {
     return this.repository.setUserLevel(guildId, userId, level, BigInt(xp));
   }
 }
+

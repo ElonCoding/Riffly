@@ -31,3 +31,4 @@ export interface ApiStatusResponse {
   guildsCount: number;
   usersCount: number;
 }
+

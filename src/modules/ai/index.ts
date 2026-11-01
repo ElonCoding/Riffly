@@ -23,3 +23,4 @@ export function createAiModule(options: CreateAiModuleOptions = {}): ModuleDefin
     commands: createAiCommands(service),
   });
 }
+

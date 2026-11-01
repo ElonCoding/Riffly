@@ -129,3 +129,4 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
 
   return [rankCommand, leaderboardCommand, xpSetCommand];
 }
+

@@ -252,3 +252,4 @@ export function createEconomyCommands(
 
   return [balanceCmd, dailyCmd, workCmd, payCmd, depositCmd, withdrawCmd, leaderboardCmd];
 }
+

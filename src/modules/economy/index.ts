@@ -21,3 +21,4 @@ export function createEconomyModule(options: CreateEconomyModuleOptions): Module
     commands: createEconomyCommands(options.repository, options.currencySymbol ?? '🪙'),
   });
 }
+

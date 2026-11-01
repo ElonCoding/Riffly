@@ -143,3 +143,4 @@ describe('EconomyRepository', () => {
     expect(second.nextClaimAt).toBeDefined();
   });
 });
+

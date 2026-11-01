@@ -56,3 +56,4 @@ describe('AiModule', () => {
     expect(callArg?.embeds?.length).toBeGreaterThan(0);
   });
 });
+

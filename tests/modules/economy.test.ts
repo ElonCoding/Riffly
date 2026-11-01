@@ -121,3 +121,4 @@ describe('EconomyModule', () => {
     expect(callArg?.content).toContain('Successfully transferred');
   });
 });
+

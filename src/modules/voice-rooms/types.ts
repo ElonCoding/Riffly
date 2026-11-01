@@ -10,3 +10,4 @@ export interface ActiveVoiceRoom {
   ownerId: string;
   readonly createdAt: Date;
 }
+

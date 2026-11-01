@@ -39,3 +39,4 @@ export function createStarboardModule(serviceInstance?: StarboardService): Modul
     ],
   });
 }
+

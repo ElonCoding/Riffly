@@ -167,3 +167,4 @@ export function createVoiceRoomCommands(service: VoiceRoomService): CommandDefin
 
   return [voiceCommand];
 }
+

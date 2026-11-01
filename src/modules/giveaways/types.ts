@@ -18,3 +18,4 @@ export interface EndGiveawayResult {
   giveaway: GiveawayData;
   winners: string[];
 }
+

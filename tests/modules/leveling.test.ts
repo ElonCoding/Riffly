@@ -165,3 +165,4 @@ describe('LevelingService', () => {
     expect(names).toEqual(expect.arrayContaining(['rank', 'leaderboard', 'xp-set']));
   });
 });
+

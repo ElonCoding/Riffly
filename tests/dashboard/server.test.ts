@@ -71,6 +71,14 @@ describe('RifflyDashboardServer', () => {
     await server.stop();
   });
 
+  it('serves GET /dashboard with interactive HTML portal', async () => {
+    const res = await fetch(`http://127.0.0.1:${port}/dashboard`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/html');
+    const html = await res.text();
+    expect(html).toContain('Riffly Dashboard & Control API');
+  });
+
   it('serves GET /api/status with operational statistics', async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/status`);
     expect(res.status).toBe(200);

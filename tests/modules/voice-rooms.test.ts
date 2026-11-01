@@ -155,3 +155,4 @@ describe('VoiceRoomService', () => {
     expect(modDef.events).toHaveLength(1);
   });
 });
+

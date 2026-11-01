@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { DashboardServerOptions } from './types.js';
+import { getDashboardHtml } from './portal.js';
 
 function serializeWithBigInt(data: unknown): string {
   return JSON.stringify(data, (_key, value) => {
@@ -79,6 +80,20 @@ export class RifflyDashboardServer {
     const method = req.method ?? 'GET';
 
     try {
+      // Interactive Web Portal UI
+      if (
+        method === 'GET' &&
+        (path === '/dashboard' || (path === '/' && req.headers.accept?.includes('text/html')))
+      ) {
+        const html = getDashboardHtml();
+        res.writeHead(200, {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Content-Length': Buffer.byteLength(html),
+        });
+        res.end(html);
+        return;
+      }
+
       // Health check endpoint for host platforms (Render, Railway, Fly.io, etc.)
       if (method === 'GET' && (path === '/health' || path === '/')) {
         this.sendJson(res, 200, { status: 'healthy', service: 'riffly' });

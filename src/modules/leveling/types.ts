@@ -14,3 +14,4 @@ export interface XpAwardResult {
   readonly newLevel: number;
   readonly totalXp: bigint;
 }
+
