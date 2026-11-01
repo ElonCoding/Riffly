@@ -33,6 +33,8 @@ import { createStaffCommands } from '../modules/core/staff-commands.js';
 import { StaffPermissionEngine } from '../modules/core/staff-permissions.js';
 import { PrismaStaffRepository } from '../database/repositories/staff-repository.js';
 
+import { makeMusicDiagCommand, musicDiagCommandData } from './musicdiag.js';
+
 /**
  * Transforms an internal CommandDefinition into an executable Command.
  */
@@ -65,6 +67,7 @@ export function buildMasterCommands(
   // 1. Music commands (if player stack provided, otherwise fallback stubs for global mapping)
   if (playerManager && resolver) {
     commands.push(...buildCommands(playerManager, resolver));
+    commands.push(makeMusicDiagCommand(playerManager, playerManager.engine));
   } else {
     for (const data of audioCommandData) {
       commands.push({
@@ -72,6 +75,10 @@ export function buildMasterCommands(
         execute: async () => {},
       });
     }
+    commands.push({
+      data: musicDiagCommandData,
+      execute: async () => {},
+    });
   }
 
   // 2. Staff hierarchy commands
@@ -312,7 +319,7 @@ export const GLOBAL_SLASH_COMMAND_NAMES: readonly string[] = [
   'meme',
   'urban',
   'fun',
-  'rp',
+  'musicdiag',
   'image',
   // Prefix & Config (1)
   'prefix',

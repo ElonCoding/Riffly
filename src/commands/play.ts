@@ -146,8 +146,37 @@ export function makePlayCommand(
         // Enqueue and possibly start playback
         const { started } = await playerManager.play(guildId, resolved.tracks);
 
-        const embed = buildEnqueuedEmbed(resolved, started);
-        await interaction.editReply({ embeds: [embed] });
+        if (started && typeof playerManager.waitForTrackStart === 'function') {
+          const firstTrackTitle = resolved.tracks[0]?.title ?? 'Track';
+          await interaction.editReply({
+            content: `⏳ Loading track: **${firstTrackTitle}**...`,
+          });
+
+          try {
+            await playerManager.waitForTrackStart(guildId, 7000);
+            const embed = buildEnqueuedEmbed(resolved, true);
+            await interaction.editReply({ content: null, embeds: [embed] });
+          } catch (trackErr: unknown) {
+            const errMsg =
+              trackErr instanceof Error ? trackErr.message : String(trackErr);
+            if (errMsg.includes('timed out')) {
+              const embed = buildEnqueuedEmbed(resolved, true);
+              await interaction.editReply({
+                content:
+                  '⏳ Audio stream is taking longer than expected to buffer. Check `/musicdiag` for status.',
+                embeds: [embed],
+              });
+            } else {
+              await interaction.editReply({
+                content: `❌ Playback failed for **${firstTrackTitle}**: ${errMsg}. Skipping to next track...`,
+                embeds: [],
+              });
+            }
+          }
+        } else {
+          const embed = buildEnqueuedEmbed(resolved, started);
+          await interaction.editReply({ embeds: [embed] });
+        }
       } catch (err) {
         const message =
           err instanceof RifflyError

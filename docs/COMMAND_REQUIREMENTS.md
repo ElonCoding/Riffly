@@ -184,7 +184,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 - `/translate <text> <to> [from]` — Free translation (MyMemory).
 - `/define <word>` — Dictionary lookup.
 - `/wiki <query>` — Wikipedia summary.
-- `/github user|repo|search` — GitHub lookup.
+- `/github username:<username> | repo:<owner/repo>` — Public GitHub user profile inspection (display name, avatar, bio, repositories, followers, following, creation date, company, location, website) and repository statistics.
 - `/steal <emoji|url> [name]` / `/emojiadd` / `/emojidelete` — Emoji management.
 - `/help` — Interactive multi-category dashboard with select dropdown.
 - `/info` — Bot uptime, ping, servers, version.
@@ -199,7 +199,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 
 ### Category 11: Fun & Games
 
-- `/rp <action> [user]` — 20+ anime roleplay actions (hug, kiss, slap, pat, tickle, etc.).
+- `/musicdiag` — 13-point comprehensive music diagnostic suite reporting bot voice channel, connection state, Lavalink node connection, node latency, player existence and playback state, current track, position and duration, queue depth, track loading state, last error details, voice permissions, paused state, and backend active track (replaces legacy `/rp` to preserve 100 global slash command ceiling).
 - `/image <effect> [user|image]` — Image filters (grayscale, invert, sepia, blur, etc.).
 - `/tictactoe <opponent>` — Button-based Tic-Tac-Toe game.
 - `/trivia [category] [difficulty]` — OpenTDB multiple-choice trivia with buttons.

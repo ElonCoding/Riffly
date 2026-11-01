@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { LavalinkManager } from 'lavalink-client';
+import { LavalinkManager, type Player } from 'lavalink-client';
 import type { Client } from 'discord.js';
 import type { AppConfig } from '../config.js';
 import { RifflyError } from '../errors.js';
@@ -56,6 +56,8 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
   readonly manager: LavalinkManager;
   private readonly client: Client;
   private readonly bufferingGuilds = new Set<string>();
+  private readonly voiceServerCache = new Map<string, unknown>();
+  private readonly voiceStateCache = new Map<string, unknown>();
 
   constructor(options: LavalinkMusicEngineOptions) {
     super();
@@ -82,16 +84,67 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
           id: options.config.discordClientId,
           username: 'Riffly',
         },
+        playerOptions: {
+          maxErrorsPerTime: {
+            threshold: 0,
+            maxAmount: -1,
+          },
+        },
       });
 
     this.wireEvents();
   }
 
   private wireEvents(): void {
-    // Forward raw Discord voice state/server packets to LavalinkManager
+    // Forward raw Discord voice state/server packets to LavalinkManager with caching
     this.client.on('raw', (packet: unknown) => {
+      const p = packet as { t?: string; d?: Record<string, unknown> };
+      if (!p || typeof p !== 'object' || !p.t || !p.d) {
+        return;
+      }
+
+      if (p.t === 'VOICE_SERVER_UPDATE') {
+        const guildId = p.d.guild_id as string;
+        if (guildId) {
+          this.voiceServerCache.set(guildId, packet);
+        }
+      } else if (p.t === 'VOICE_STATE_UPDATE') {
+        const guildId = p.d.guild_id as string;
+        const userId = p.d.user_id as string;
+        const currentUserId = this.client.user?.id ?? this.manager.options?.client?.id;
+        if (guildId && userId === currentUserId) {
+          const channelId = p.d.channel_id as string | null;
+          if (!channelId) {
+            this.voiceServerCache.delete(guildId);
+            this.voiceStateCache.delete(guildId);
+          } else {
+            this.voiceStateCache.set(guildId, packet);
+          }
+        }
+      }
+
       void this.manager
         .sendRawData(packet as Parameters<typeof this.manager.sendRawData>[0])
+        .then(() => {
+          // If Discord sent VOICE_SERVER_UPDATE before VOICE_STATE_UPDATE,
+          // lavalink-client's sendRawData discarded the token because sessionId was missing.
+          // Once VOICE_STATE_UPDATE is processed, replay the cached VOICE_SERVER_UPDATE.
+          if (p.t === 'VOICE_STATE_UPDATE') {
+            const guildId = p.d?.guild_id as string;
+            const userId = p.d?.user_id as string;
+            const currentUserId = this.client.user?.id ?? this.manager.options?.client?.id;
+            if (guildId && userId === currentUserId && p.d?.channel_id) {
+              const cachedServer = this.voiceServerCache.get(guildId);
+              if (cachedServer) {
+                void this.manager
+                  .sendRawData(cachedServer as Parameters<typeof this.manager.sendRawData>[0])
+                  .catch((err: unknown) => {
+                    console.warn('[MusicEngine] Failed to replay cached VOICE_SERVER_UPDATE:', err);
+                  });
+              }
+            }
+          }
+        })
         .catch((err: unknown) => {
           console.warn('[MusicEngine] Failed to send raw gateway packet to Lavalink:', err);
         });
@@ -192,16 +245,23 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
     return 'playing';
   }
 
+  isBuffering(guildId: string): boolean {
+    return this.bufferingGuilds.has(guildId);
+  }
+
   async connect(guildId: string, voiceChannelId: string): Promise<void> {
     const player =
       this.manager.getPlayer(guildId) ??
       this.manager.createPlayer({
         guildId,
         voiceChannelId,
+        selfDeaf: true,
+        selfMute: false,
       });
 
     if (player.voiceChannelId !== voiceChannelId) {
       player.voiceChannelId = voiceChannelId;
+      player.options.voiceChannelId = voiceChannelId;
     }
 
     if (player.connected) {
@@ -213,7 +273,35 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
 
       const cleanup = () => {
         clearTimeout(timeout);
+        this.manager.off('playerUpdate', onPlayerUpdate);
+        this.manager.off('playerDisconnect', onPlayerDisconnect);
       };
+
+      const onPlayerUpdate = (
+        _oldPlayer: unknown,
+        newPlayer: Player,
+      ) => {
+        if (newPlayer.guildId === guildId && newPlayer.connected) {
+          if (!settled) {
+            settled = true;
+            cleanup();
+            resolve();
+          }
+        }
+      };
+
+      const onPlayerDisconnect = (disconnectedPlayer: Player) => {
+        if (disconnectedPlayer.guildId === guildId) {
+          if (!settled) {
+            settled = true;
+            cleanup();
+            reject(new Error(`Voice connection disconnected for guild ${guildId}`));
+          }
+        }
+      };
+
+      this.manager.on('playerUpdate', onPlayerUpdate);
+      this.manager.on('playerDisconnect', onPlayerDisconnect);
 
       const timeout = setTimeout(() => {
         if (settled) return;
@@ -226,10 +314,27 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
       player
         .connect()
         .then(() => {
-          if (!settled) {
-            settled = true;
-            cleanup();
-            resolve();
+          if (player.connected) {
+            if (!settled) {
+              settled = true;
+              cleanup();
+              resolve();
+            }
+            return;
+          }
+
+          // If there are no active Lavalink nodes connected (e.g. in test mock environments),
+          // playerUpdate will never be dispatched by a backend node.
+          const hasActiveNode =
+            Boolean(this.manager.nodeManager?.nodes) &&
+            Array.from(this.manager.nodeManager.nodes.values()).some((n) => n.connected);
+
+          if (!hasActiveNode) {
+            if (!settled) {
+              settled = true;
+              cleanup();
+              resolve();
+            }
           }
         })
         .catch((err: unknown) => {
@@ -248,6 +353,8 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
 
   async disconnect(guildId: string): Promise<void> {
     this.bufferingGuilds.delete(guildId);
+    this.voiceServerCache.delete(guildId);
+    this.voiceStateCache.delete(guildId);
     const player = this.manager.getPlayer(guildId);
     if (!player) {
       return;

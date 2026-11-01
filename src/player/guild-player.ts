@@ -7,6 +7,7 @@
  * timers, and error recovery circuit breaking.
  */
 
+import { EventEmitter } from 'node:events';
 import type { Client } from 'discord.js';
 import { GuildQueue } from './queue.js';
 import type { LoopMode } from './queue.js';
@@ -30,7 +31,7 @@ export interface GuildPlayerManagerOptions {
   readonly client?: Client | undefined;
 }
 
-export class GuildPlayerManager {
+export class GuildPlayerManager extends EventEmitter {
   public static readonly DEFAULT_WAIT_TIMEOUT_MS = 180_000;
   private readonly queues = new Map<string, GuildQueue>();
   private readonly mutexes = new Map<string, AsyncMutex>();
@@ -38,13 +39,20 @@ export class GuildPlayerManager {
   private readonly errorHistory = new Map<string, number[]>();
   private readonly textChannels = new Map<string, string>();
   private readonly client?: Client | undefined;
-  private readonly engine: MusicEngine;
+  public readonly engine: MusicEngine;
   private readonly waitTimeoutMs: number;
   private readonly autoplayManager: AutoplayManager;
   /** Track IDs currently being advanced (deduplication guard). */
   private readonly advancing = new Set<string>();
 
+  /** Records the most recent playback error per guild for diagnostics and status reporting. */
+  public readonly lastPlaybackErrors = new Map<
+    string,
+    { timestamp: number; trackTitle: string; error: string }
+  >();
+
   constructor(engine: MusicEngine, options?: GuildPlayerManagerOptions) {
+    super();
     this.engine = engine;
     this.client = options?.client;
     this.waitTimeoutMs = options?.waitTimeoutMs ?? GuildPlayerManager.DEFAULT_WAIT_TIMEOUT_MS;
@@ -53,6 +61,7 @@ export class GuildPlayerManager {
     engine.on('trackStart', (guildId, track) => {
       const queue = this.getOrCreate(guildId);
       queue.setCurrent(track);
+      this.emit('trackStart', guildId, track);
     });
 
     engine.on('trackEnd', (guildId, track, reason) => {
@@ -77,6 +86,12 @@ export class GuildPlayerManager {
         `[GuildPlayer:${guildId}] Track error for "${track?.title ?? 'unknown'}":`,
         error.message,
       );
+      this.lastPlaybackErrors.set(guildId, {
+        timestamp: Date.now(),
+        trackTitle: track?.title ?? 'Unknown track',
+        error: error.message,
+      });
+      this.emit('trackError', guildId, track, error);
       void this.notifyTrackError(guildId, track, error);
       void this.handlePlaybackError(guildId);
     });
@@ -172,10 +187,99 @@ export class GuildPlayerManager {
         }
         this.armWaitTimeout(guildId);
       });
+
+      const textChannelId = this.textChannels.get(guildId);
+      if (textChannelId) {
+        try {
+          const client =
+            this.client ??
+            (this.engine as unknown as { client?: Client })?.client;
+          if (client?.channels) {
+            const channel =
+              client.channels.cache?.get(textChannelId) ??
+              (typeof client.channels.fetch === 'function'
+                ? await client.channels.fetch(textChannelId).catch(() => null)
+                : null);
+            if (
+              channel &&
+              'send' in channel &&
+              typeof (channel as { send: unknown }).send === 'function'
+            ) {
+              await (channel as { send: (payload: unknown) => Promise<unknown> })
+                .send({
+                  content:
+                    '🛑 **Playback halted**: 3 consecutive playback errors occurred within 5 seconds. The queue was cleared to prevent a crash loop. Please try another audio source or search query.',
+                })
+                .catch(() => {});
+            }
+          }
+        } catch {
+          // Ignore text notification failures
+        }
+      }
       return;
     }
 
     await this.advanceQueue(guildId, 'error');
+  }
+
+  getLastError(
+    guildId: string,
+  ): { timestamp: number; trackTitle: string; error: string } | undefined {
+    return this.lastPlaybackErrors.get(guildId);
+  }
+
+  /**
+   * Awaits backend trackStart event for the given guild, rejecting on trackError,
+   * playerDisconnect, or timeout. Used by commands to provide accurate state feedback.
+   */
+  async waitForTrackStart(guildId: string, timeoutMs = 8000): Promise<Track> {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+
+      const cleanup = () => {
+        clearTimeout(timer);
+        this.off('trackStart', onStart);
+        this.off('trackError', onError);
+        this.engine.off('playerDisconnect', onDisconnect);
+      };
+
+      const onStart = (gId: string, track: Track) => {
+        if (gId === guildId && !settled) {
+          settled = true;
+          cleanup();
+          resolve(track);
+        }
+      };
+
+      const onError = (gId: string, _track: Track | undefined, error: Error) => {
+        if (gId === guildId && !settled) {
+          settled = true;
+          cleanup();
+          reject(error);
+        }
+      };
+
+      const onDisconnect = (gId: string) => {
+        if (gId === guildId && !settled) {
+          settled = true;
+          cleanup();
+          reject(new Error('Voice connection disconnected before playback could start'));
+        }
+      };
+
+      this.on('trackStart', onStart);
+      this.on('trackError', onError);
+      this.engine.on('playerDisconnect', onDisconnect);
+
+      const timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          cleanup();
+          reject(new Error(`Playback buffering timed out after ${timeoutMs}ms`));
+        }
+      }, timeoutMs);
+    });
   }
 
   private async advanceQueue(guildId: string, reason: string): Promise<void> {

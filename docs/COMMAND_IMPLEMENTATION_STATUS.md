@@ -71,11 +71,11 @@ All categories and commands specified across the 18 pages of the Command Referen
 | **Utility**            | `/remindme`                                       | ✅ Yes | ✅ Yes     | ✅ Yes | Scheduled reminder alerts                  | Complete |
 | **Utility**            | `/crypto` / `/color` / `/weather`                 | ✅ Yes | ✅ Yes     | ✅ Yes | Crypto prices, color picker, weather       | Complete |
 | **Utility**            | `/translate` / `/define` / `/wiki`                | ✅ Yes | ✅ Yes     | ✅ Yes | Google translate, dictionary, Wikipedia    | Complete |
-| **Utility**            | `/github`                                         | ✅ Yes | ✅ Yes     | ✅ Yes | GitHub user & repo statistics              | Complete |
+| **Utility**            | `/github`                                         | ✅ Yes | ✅ Yes     | ✅ Yes | User profile inspection (`username`) & repo lookup (`repo`) | Complete |
 | **Utility**            | `/steal` / `/emojiadd` / `/emojidelete`           | ✅ Yes | ✅ Yes     | ✅ Yes | Emoji manager & downloader                 | Complete |
 | **Economy**            | `/balance` / `/pay` / `/deposit` / `/withdraw`    | ✅ Yes | ✅ Yes     | ✅ Yes | Virtual currency banking system            | Complete |
 | **Economy**            | `/work` / `/daily` / `/beg` / `/gamble` / `/rich` | ✅ Yes | ✅ Yes     | ✅ Yes | Shifts, streak claims, casino & wealth     | Complete |
-| **Fun & Games**        | `/rp <action> [user]`                             | ✅ Yes | ✅ Yes     | ✅ Yes | 20+ roleplay interactions                  | Complete |
+| **Music & Audio**      | `/musicdiag`                                      | ✅ Yes | ✅ Yes     | ✅ Yes | Comprehensive 13-point diagnostics (replaces `/rp`) | Complete |
 | **Fun & Games**        | `/image <effect>`                                 | ✅ Yes | ✅ Yes     | ✅ Yes | Image filters & manipulation               | Complete |
 | **Fun & Games**        | `/tictactoe` / `/trivia`                          | ✅ Yes | ✅ Yes     | ✅ Yes | Button-based interactive minigames         | Complete |
 | **Fun & Games**        | `/urban` / `/meme` / `/fun`                       | ✅ Yes | ✅ Yes     | ✅ Yes | Urban dictionary, memes, 8ball, coin       | Complete |

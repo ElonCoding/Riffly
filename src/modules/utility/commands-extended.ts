@@ -10,6 +10,7 @@ import {
   type ColorResolvable,
 } from 'discord.js';
 import type { CommandDefinition } from '../core/types.js';
+import { fetchGitHubUser, buildGitHubUserEmbed } from './github-service.js';
 
 // In-memory snipes for deleted/edited messages: key = channelId -> { author: string, content: string, time: Date }
 export const deletedMessageSnipe = new Map<
@@ -587,18 +588,74 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
   // 20. /github
   const githubCmd: CommandDefinition = {
     name: 'github',
-    description: 'Fetch repository overview, stars, forks, and issues from GitHub.',
+    description: 'Fetch public GitHub user profile information or repository statistics.',
     data: new SlashCommandBuilder()
       .setName('github')
-      .setDescription('Fetch repository overview, stars, forks, and issues from GitHub.')
+      .setDescription('Fetch public GitHub user profile information or repository statistics.')
+      .addStringOption((opt) =>
+        opt
+          .setName('username')
+          .setDescription('GitHub username to inspect (e.g. torvalds, octocat)')
+          .setRequired(false),
+      )
       .addStringOption((opt) =>
         opt
           .setName('repo')
           .setDescription('Format: owner/repo (e.g. ElonCoding/Riffly)')
-          .setRequired(true),
+          .setRequired(false),
       ),
     execute: async (interaction: ChatInputCommandInteraction) => {
-      const repo = interaction.options.getString('repo', true);
+      const username = interaction.options.getString('username');
+      const repo = interaction.options.getString('repo');
+
+      if (!username && !repo) {
+        await interaction.reply({
+          content:
+            '❌ Please specify a GitHub `username` (e.g. `/github username:octocat`) or a `repo` (e.g. `/github repo:torvalds/linux`).',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      if (username) {
+        await interaction.deferReply();
+        const result = await fetchGitHubUser(username);
+
+        if (result.success) {
+          const embed = buildGitHubUserEmbed(result.user);
+          await interaction.editReply({ embeds: [embed] });
+          return;
+        }
+
+        if (result.reason === 'not_found') {
+          await interaction.editReply({
+            content: `❌ User **${result.username}** was not found on GitHub.`,
+          });
+          return;
+        }
+
+        if (result.reason === 'rate_limited') {
+          const resetMsg = result.resetAt ? ` Rate limit resets <t:${result.resetAt}:R>.` : '';
+          await interaction.editReply({
+            content: `⏳ GitHub API rate limit exceeded.${resetMsg} Please try again later.`,
+          });
+          return;
+        }
+
+        if (result.reason === 'timeout') {
+          await interaction.editReply({
+            content: '⏱️ Request to GitHub API timed out. Please try again later.',
+          });
+          return;
+        }
+
+        await interaction.editReply({
+          content: `❌ ${result.message}`,
+        });
+        return;
+      }
+
+      // Fallback repo lookup
       const embed = new EmbedBuilder()
         .setTitle(`🐙 GitHub: ${repo}`)
         .setColor(0x24292e)

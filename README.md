@@ -84,6 +84,7 @@ Built strictly with zero unmaintained dependencies, Riffly guarantees 100% type 
 | `/clear`      | _None_       | Purge upcoming queued tracks.                                                                   |
 | `/filter`     | `<preset>`   | Apply DSP filters (`bassboost`, `nightcore`, `vaporwave`, `8d`, `tremolo`, `karaoke`, `clear`). |
 | `/autoplay`   | `[enabled]`  | Toggle smart queue continuation.                                                                |
+| `/musicdiag`  | _None_       | 13-point audio diagnostics suite and live pipeline state inspector.                             |
 | `/join`       | _None_       | Summon Riffly to user voice channel.                                                            |
 | `/leave`      | _None_       | Disconnect Riffly from voice channel.                                                           |
 
@@ -167,12 +168,41 @@ Built strictly with zero unmaintained dependencies, Riffly guarantees 100% type 
 | `/balance` / `/pay`         | `[user] [amount]`   | Economy wallet, bank holdings, and coin transfers.        |
 | `/work` / `/daily` / `/beg` | _None_              | Earn virtual currency shifts, daily rewards, and begging. |
 | `/gamble`                   | `<amount>`          | Roll dice against the casino for double stakes.           |
-| `/rp`                       | `<action> [user]`   | Anime roleplay interactions (hug, kiss, slap, pat, etc.). |
+| `/github`                   | `[username] [repo]` | Inspect public GitHub profiles or repository statistics.  |
 | `/image`                    | `<effect> [user]`   | Visual canvas effects (grayscale, invert, sepia, blur).   |
 | `/tictactoe` / `/trivia`    | `[opponent]`        | Interactive button minigames.                             |
 | `/prefix set`               | `<prefix>`          | Configure custom guild prefix for message commands.       |
 | `/prefix noprefix grant`    | `<user> [duration]` | VIP zero-prefix command execution privilege.              |
 | `/template save\|list`      | `<name>`            | Capture server channels, categories, and role layout.     |
+
+---
+
+### 🔍 Specialized Diagnostics & GitHub Inspection
+
+#### 1. Audio Diagnostics Suite (`/musicdiag`)
+Provides real-time inspection across the 13 critical components of the Discord voice and Lavalink audio streaming pipeline:
+```
+/musicdiag
+```
+- **Voice Connection State**: Deterministic state machine (`disconnected`, `idle`, `buffering`, `playing`, `paused`).
+- **Lavalink Backend**: Node connection status, heartbeat ping latency, and raw player registration.
+- **Playback Tracking**: Active track metadata, position/duration, queue depth, and loading state.
+- **Permission Verification**: Channel-level `ViewChannel`, `Connect`, and `Speak` permission validation.
+- **Actionable Diagnostics**: Verbatim error message and timestamp for recent failures, with suggestions (e.g., reconnecting, adjusting permissions).
+
+#### 2. GitHub Profile & Repository Lookup (`/github`)
+Inspect user profiles or repositories via GitHub's official REST API:
+```
+# User Profile Lookup
+/github username:octocat
+
+# Repository Lookup
+/github repo:torvalds/linux
+```
+- **Profile Data**: Display name, clickable username link, bio, and profile avatar.
+- **Developer Metrics**: Public repository count, followers, following, and account creation date.
+- **Organization & Location**: Company affiliation, location, and verified blog/website links.
+- **Defensive Safeguards**: Username format regex validation, secret token sanitization, and Discord relative timestamps (`<t:timestamp:R>`) for rate limit reset notifications.
 
 ---
 
