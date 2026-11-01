@@ -8,7 +8,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
 import { RifflyError } from '../errors.js';
-import { getMemberVoiceChannelId } from './helpers.js';
+import { resolveMemberVoiceChannelId } from './helpers.js';
 
 export const joinCommandData = new SlashCommandBuilder()
   .setName('join')
@@ -26,7 +26,7 @@ export function makeJoinCommand(playerManager: GuildPlayerManager): Command {
         return;
       }
 
-      const voiceChannelId = getMemberVoiceChannelId(interaction.member);
+      const voiceChannelId = await resolveMemberVoiceChannelId(interaction);
       if (!voiceChannelId) {
         await interaction.reply({
           content: '❌ You must be in a voice channel to use /join.',

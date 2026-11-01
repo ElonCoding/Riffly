@@ -21,12 +21,67 @@ export type VoiceGuardedInteraction = {
  */
 export function getMemberVoiceChannelId(member: unknown): string | null {
   if (member instanceof GuildMember) {
-    return member.voice.channelId;
+    return member.voice?.channelId ?? null;
   }
   if (member && typeof member === 'object' && 'voice' in member) {
     const v = (member as { voice?: { channelId?: string | null } }).voice;
     return typeof v?.channelId === 'string' ? v.channelId : null;
   }
+  return null;
+}
+
+/**
+ * Asynchronously resolves the invoking member's voice channel ID from interaction,
+ * falling back across interaction.member, guild voice states cache, and REST fetch.
+ */
+export async function resolveMemberVoiceChannelId(
+  interaction: {
+    readonly member?: unknown;
+    readonly guild?: unknown;
+    readonly user?: { readonly id: string };
+    readonly guildId?: string | null;
+    readonly client?: { readonly guilds?: { readonly cache?: { get(id: string): unknown } }; readonly user?: { readonly id: string } };
+  },
+): Promise<string | null> {
+  // 1. Direct member check
+  const directId = getMemberVoiceChannelId(interaction.member);
+  if (directId) return directId;
+
+  const userId = interaction.user?.id;
+  const guild =
+    (interaction as { guild?: any }).guild ??
+    (interaction.guildId && interaction.client?.guilds?.cache
+      ? interaction.client.guilds.cache.get(interaction.guildId)
+      : null);
+
+  if (guild && userId) {
+    // 2. Guild voiceStates cache lookup
+    const voiceState = guild.voiceStates?.cache?.get(userId);
+    if (typeof voiceState?.channelId === 'string' && voiceState.channelId.length > 0) {
+      return voiceState.channelId;
+    }
+
+    // 3. Guild members cache lookup
+    const cachedMember = guild.members?.cache?.get(userId);
+    if (typeof cachedMember?.voice?.channelId === 'string' && cachedMember.voice.channelId.length > 0) {
+      return cachedMember.voice.channelId;
+    }
+
+    // 4. REST fetch member if uncached
+    try {
+      const fetchedMember = await guild.members?.fetch?.(userId);
+      if (typeof fetchedMember?.voice?.channelId === 'string' && fetchedMember.voice.channelId.length > 0) {
+        return fetchedMember.voice.channelId;
+      }
+      const fetchedVoiceState = guild.voiceStates?.cache?.get(userId);
+      if (typeof fetchedVoiceState?.channelId === 'string' && fetchedVoiceState.channelId.length > 0) {
+        return fetchedVoiceState.channelId;
+      }
+    } catch {
+      // Ignore fetch failures
+    }
+  }
+
   return null;
 }
 
@@ -37,15 +92,22 @@ export function getBotVoiceChannelId(interaction: VoiceGuardedInteraction): stri
   if (!interaction.guildId) return null;
 
   const guild =
-    (interaction as { guild?: { members?: { me?: { voice?: { channelId?: string | null } } } } })
+    (interaction as { guild?: { members?: { me?: { voice?: { channelId?: string | null } } }; voiceStates?: { cache?: { get(id: string): { channelId?: string | null } | undefined } } } })
       .guild ??
     (interaction.client.guilds.cache.get(interaction.guildId) as
-      { members?: { me?: { voice?: { channelId?: string | null } } } } | undefined);
+      { members?: { me?: { voice?: { channelId?: string | null } } }; voiceStates?: { cache?: { get(id: string): { channelId?: string | null } | undefined } } } | undefined);
+
   const me =
     guild?.members?.me ?? (guild as { me?: { voice?: { channelId?: string | null } } } | null)?.me;
 
   if (me?.voice?.channelId) {
     return me.voice.channelId;
+  }
+
+  const botId = (interaction.client as { user?: { id: string } } | undefined)?.user?.id;
+  if (botId && guild?.voiceStates?.cache) {
+    const vs = guild.voiceStates.cache.get(botId);
+    if (vs?.channelId) return vs.channelId;
   }
 
   return null;
@@ -59,7 +121,12 @@ export function getBotVoiceChannelId(interaction: VoiceGuardedInteraction): stri
  * - Returns false if the bot is not in a channel or member is in a different voice channel.
  */
 export function canModifyQueue(interaction: VoiceGuardedInteraction): boolean {
-  const memberVoiceChannelId = getMemberVoiceChannelId(interaction.member);
+  let memberVoiceChannelId = getMemberVoiceChannelId(interaction.member);
+  const userId = (interaction as { user?: { id: string } }).user?.id;
+  const guild = (interaction as { guild?: any }).guild;
+  if (!memberVoiceChannelId && guild && userId) {
+    memberVoiceChannelId = guild.voiceStates?.cache?.get(userId)?.channelId ?? null;
+  }
   const botVoiceChannelId = getBotVoiceChannelId(interaction);
 
   if (!botVoiceChannelId || !memberVoiceChannelId) {
@@ -77,7 +144,10 @@ export function canModifyQueue(interaction: VoiceGuardedInteraction): boolean {
 export async function requireSameVoiceChannel(
   interaction: ChatInputCommandInteraction | ButtonInteraction,
 ): Promise<boolean> {
-  if (!canModifyQueue(interaction)) {
+  const memberVoiceChannelId = await resolveMemberVoiceChannelId(interaction);
+  const botVoiceChannelId = getBotVoiceChannelId(interaction);
+
+  if (!botVoiceChannelId || !memberVoiceChannelId || memberVoiceChannelId !== botVoiceChannelId) {
     const message = '🔇 You must be in the same voice channel as Riffly to use this command.';
     if (interaction.deferred || interaction.replied) {
       await interaction.editReply({ content: message });

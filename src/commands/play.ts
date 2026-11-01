@@ -10,7 +10,7 @@ import type { GuildPlayerManager } from '../player/guild-player.js';
 import type { ResolveResult, TrackResolver } from '../provider/resolver.js';
 import { RifflyError } from '../errors.js';
 import { validatePlayInput } from './input.js';
-import { getBotVoiceChannelId, getMemberVoiceChannelId } from './helpers.js';
+import { getBotVoiceChannelId, resolveMemberVoiceChannelId } from './helpers.js';
 
 function formatDuration(ms: number): string {
   if (ms <= 0) return '∞';
@@ -112,7 +112,7 @@ export function makePlayCommand(
       }
 
       // Require the user to be in a voice channel
-      const voiceChannelId = getMemberVoiceChannelId(interaction.member);
+      const voiceChannelId = await resolveMemberVoiceChannelId(interaction);
       if (!voiceChannelId) {
         await interaction.editReply(RifflyError.notInVoiceChannel().userMessage);
         return;
