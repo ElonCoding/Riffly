@@ -1,0 +1,113 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model GuildSettings {
+  guildId   String   @id
+  prefix    String   @default("!")
+  locale    String   @default("en")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  modules         GuildModule[]
+  moderationCases ModerationCase[]
+  tickets         Ticket[]
+  scheduledTasks  ScheduledTask[]
+  userLevels      UserLevel[]
+
+  @@map("guild_settings")
+}
+
+model GuildModule {
+  id        String   @id @default(cuid())
+  guildId   String
+  moduleId  String
+  enabled   Boolean  @default(true)
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, moduleId])
+  @@index([guildId])
+  @@map("guild_modules")
+}
+
+model ModerationCase {
+  id          String   @id @default(cuid())
+  caseNumber  Int
+  guildId     String
+  targetId    String
+  moderatorId String
+  action      String
+  reason      String?
+  durationMs  BigInt?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, caseNumber])
+  @@index([guildId])
+  @@index([guildId, targetId])
+  @@map("moderation_cases")
+}
+
+model Ticket {
+  id        String    @id @default(cuid())
+  guildId   String
+  channelId String
+  creatorId String
+  claimedBy String?
+  status    String    @default("open")
+  category  String?
+  createdAt DateTime  @default(now())
+  closedAt  DateTime?
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([guildId])
+  @@index([channelId])
+  @@map("tickets")
+}
+
+model ScheduledTask {
+  id        String   @id @default(cuid())
+  guildId   String
+  taskType  String
+  payload   Json
+  executeAt DateTime
+  executed  Boolean  @default(false)
+  retries   Int      @default(0)
+  lastError String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([executed, executeAt])
+  @@index([guildId])
+  @@map("scheduled_tasks")
+}
+
+model UserLevel {
+  guildId       String
+  userId        String
+  xp            BigInt    @default(0)
+  level         Int       @default(0)
+  messagesCount Int       @default(0)
+  lastXpAt      DateTime?
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@id([guildId, userId])
+  @@index([guildId, xp])
+  @@map("user_levels")
+}
