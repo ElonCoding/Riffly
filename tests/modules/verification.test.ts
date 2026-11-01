@@ -95,6 +95,6 @@ describe('VerificationService', () => {
     const modDef = createVerificationModule();
     expect(modDef.id).toBe('verification');
     expect(modDef.commands).toHaveLength(1);
-    expect(modDef.commands?.[0]?.name).toBe('verification');
+    expect(modDef.commands?.[0]?.name).toBe('verify');
   });
 });

@@ -197,6 +197,82 @@ export class TicketService {
   }
 
   /**
+   * Releases claim on an active ticket.
+   */
+  public async unclaimTicket(
+    channel: TextChannel,
+    moderator: GuildMember,
+  ): Promise<TicketData> {
+    const ticket = await this.repository.getTicketByChannel(channel.guild.id, channel.id);
+    if (!ticket) {
+      throw new TicketError('This channel is not an active support ticket.');
+    }
+
+    if (!ticket.claimedBy) {
+      throw new TicketError('This ticket is not currently claimed.');
+    }
+
+    const unclaimed = await this.repository.unclaimTicket(ticket.id);
+    if (!unclaimed) {
+      throw new TicketError('Failed to unclaim ticket in database.');
+    }
+
+    const unclaimEmbed = new EmbedBuilder()
+      .setTitle('🔓 Ticket Unclaimed')
+      .setColor(0xf59e0b)
+      .setDescription(`Ticket has been unclaimed by <@${moderator.id}> and is open for support staff.`)
+      .setTimestamp();
+
+    await channel.send({ embeds: [unclaimEmbed] });
+    return unclaimed;
+  }
+
+  /**
+   * Renames a ticket channel.
+   */
+  public async renameTicket(channel: TextChannel, newName: string): Promise<void> {
+    const ticket = await this.repository.getTicketByChannel(channel.guild.id, channel.id);
+    if (!ticket) {
+      throw new TicketError('This channel is not an active support ticket.');
+    }
+
+    await channel.setName(newName.toLowerCase().replace(/\s+/g, '-'));
+  }
+
+  /**
+   * Lists all open tickets in the guild.
+   */
+  public async listTickets(guildId: string): Promise<TicketData[]> {
+    return this.repository.listGuildTickets(guildId, 'open');
+  }
+
+  /**
+   * Sends an interactive ticket creation panel to a designated channel.
+   */
+  public async sendPanel(
+    channel: TextChannel,
+    title: string,
+    description: string,
+    buttonText = 'Open Ticket',
+  ): Promise<void> {
+    const embed = new EmbedBuilder()
+      .setTitle(title)
+      .setDescription(description)
+      .setColor(0x6366f1)
+      .setFooter({ text: 'Riffly Support System' });
+
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId('riffly_ticket_create')
+        .setLabel(buttonText)
+        .setEmoji('📩')
+        .setStyle(ButtonStyle.Primary),
+    );
+
+    await channel.send({ embeds: [embed], components: [row] });
+  }
+
+  /**
    * Exports a structured text transcript of the ticket conversation.
    */
   public async exportTranscript(channel: TextChannel): Promise<string> {

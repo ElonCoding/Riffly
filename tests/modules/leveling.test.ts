@@ -160,9 +160,9 @@ describe('LevelingService', () => {
   it('builds valid leveling module definition', () => {
     const modDef = createLevelingModule({ repository: mockRepo });
     expect(modDef.id).toBe('leveling');
-    expect(modDef.commands).toHaveLength(3);
+    expect(modDef.commands).toHaveLength(6);
     const names = modDef.commands?.map((c) => c.name);
-    expect(names).toEqual(expect.arrayContaining(['rank', 'leaderboard', 'xp-set']));
+    expect(names).toEqual(expect.arrayContaining(['rank', 'levels', 'leaderboard', 'reset', 'setup-leveling', 'xp-set']));
   });
 });
 

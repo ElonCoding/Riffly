@@ -188,5 +188,93 @@ export class LevelRepository implements ILevelRepository {
       lastXpAt: record.lastXpAt,
     };
   }
+
+  public async resetUser(
+    guildId: string,
+    userId: string,
+    field: 'all' | 'xp' | 'messages' | 'voice' = 'all',
+  ): Promise<void> {
+    if (field === 'all' || field === 'xp') {
+      await this.client.userLevel.updateMany({
+        where: { guildId, userId },
+        data: { xp: BigInt(0), level: 0 },
+      });
+    }
+    if (field === 'all' || field === 'messages') {
+      await this.client.userLevel.updateMany({
+        where: { guildId, userId },
+        data: { messagesCount: 0 },
+      });
+    }
+    if (field === 'all' || field === 'voice') {
+      await this.client.userVoiceActivity.deleteMany({
+        where: { guildId, userId },
+      });
+    }
+  }
+
+  public async resetGuild(
+    guildId: string,
+    field: 'all' | 'xp' | 'messages' | 'voice' = 'all',
+  ): Promise<void> {
+    if (field === 'all' || field === 'xp') {
+      await this.client.userLevel.updateMany({
+        where: { guildId },
+        data: { xp: BigInt(0), level: 0 },
+      });
+    }
+    if (field === 'all' || field === 'messages') {
+      await this.client.userLevel.updateMany({
+        where: { guildId },
+        data: { messagesCount: 0 },
+      });
+    }
+    if (field === 'all' || field === 'voice') {
+      await this.client.userVoiceActivity.deleteMany({
+        where: { guildId },
+      });
+    }
+  }
+
+  public async createLiveLeaderboard(
+    guildId: string,
+    channelId: string,
+    messageId: string,
+    type: string,
+    timeframe: string,
+  ): Promise<{ id: string }> {
+    await this.client.guildSettings.upsert({
+      where: { guildId },
+      update: {},
+      create: { guildId },
+    });
+
+    const record = await this.client.liveLeaderboard.create({
+      data: {
+        guildId,
+        channelId,
+        messageId,
+        type,
+        timeframe,
+      },
+    });
+
+    return { id: record.id };
+  }
+
+  public async listLiveLeaderboards(
+    guildId: string,
+  ): Promise<Array<{ id: string; channelId: string; messageId: string; type: string; timeframe: string }>> {
+    return this.client.liveLeaderboard.findMany({
+      where: { guildId },
+    });
+  }
+
+  public async removeLiveLeaderboard(guildId: string, id: string): Promise<boolean> {
+    const deleted = await this.client.liveLeaderboard.deleteMany({
+      where: { guildId, id },
+    });
+    return deleted.count > 0;
+  }
 }
 

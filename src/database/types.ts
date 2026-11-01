@@ -296,6 +296,11 @@ export interface ILevelRepository {
   ): Promise<{ data: UserLevelData; leveledUp: boolean; oldLevel: number; newLevel: number }>;
   getLeaderboard(guildId: string, limit?: number, offset?: number): Promise<UserLevelData[]>;
   setUserLevel(guildId: string, userId: string, level: number, xp: bigint): Promise<UserLevelData>;
+  resetUser?(guildId: string, userId: string, field?: 'all' | 'xp' | 'messages' | 'voice'): Promise<void>;
+  resetGuild?(guildId: string, field?: 'all' | 'xp' | 'messages' | 'voice'): Promise<void>;
+  createLiveLeaderboard?(guildId: string, channelId: string, messageId: string, type: string, timeframe: string): Promise<{ id: string }>;
+  listLiveLeaderboards?(guildId: string): Promise<Array<{ id: string; channelId: string; messageId: string; type: string; timeframe: string }>>;
+  removeLiveLeaderboard?(guildId: string, id: string): Promise<boolean>;
 }
 
 /**

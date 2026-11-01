@@ -195,5 +195,75 @@ export class LevelingService {
   ): Promise<UserLevelData> {
     return this.repository.setUserLevel(guildId, userId, level, BigInt(xp));
   }
+
+  /**
+   * Resets leveling statistics for a specific user or the entire guild.
+   */
+  public async resetStats(
+    guildId: string,
+    options: {
+      userId?: string | undefined;
+      field?: 'all' | 'xp' | 'messages' | 'voice' | undefined;
+    } = {},
+  ): Promise<void> {
+    const field = options.field ?? 'all';
+    if (options.userId) {
+      if (typeof this.repository.resetUser === 'function') {
+        await this.repository.resetUser(guildId, options.userId, field);
+      }
+    } else {
+      if (typeof this.repository.resetGuild === 'function') {
+        await this.repository.resetGuild(guildId, field);
+      }
+    }
+  }
+
+  /**
+   * Deploys an automated live leaderboard embed to a target channel.
+   */
+  public async setupLiveLeaderboard(
+    channel: TextChannel,
+    type = 'xp',
+    timeframe = 'alltime',
+  ): Promise<{ id: string; messageId: string }> {
+    const embed = await this.getLeaderboardEmbed(channel.guild.id, channel.guild.name, 10, 0);
+    embed.setFooter({ text: `Riffly Live Leaderboard • Type: ${type} • Updates every 15s` });
+
+    const msg = await channel.send({ embeds: [embed] });
+
+    let id = `lb_${Date.now()}`;
+    if (typeof this.repository.createLiveLeaderboard === 'function') {
+      const record = await this.repository.createLiveLeaderboard(
+        channel.guild.id,
+        channel.id,
+        msg.id,
+        type,
+        timeframe,
+      );
+      id = record.id;
+    }
+
+    return { id, messageId: msg.id };
+  }
+
+  /**
+   * Lists active live leaderboards.
+   */
+  public async listLiveLeaderboards(guildId: string) {
+    if (typeof this.repository.listLiveLeaderboards === 'function') {
+      return this.repository.listLiveLeaderboards(guildId);
+    }
+    return [];
+  }
+
+  /**
+   * Removes a live leaderboard.
+   */
+  public async removeLiveLeaderboard(guildId: string, id: string): Promise<boolean> {
+    if (typeof this.repository.removeLiveLeaderboard === 'function') {
+      return this.repository.removeLiveLeaderboard(guildId, id);
+    }
+    return false;
+  }
 }
 

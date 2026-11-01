@@ -9,8 +9,58 @@ import type {
   PartialGuildMember,
   TextChannel,
 } from 'discord.js';
+import { getPrismaClient } from '../../database/client.js';
+
+export interface VerificationConfig {
+  guildId: string;
+  roleId: string;
+  channelId: string;
+  description: string | null;
+  buttonLabel: string;
+}
 
 export class VerificationService {
+  private readonly client = getPrismaClient();
+
+  public async getSettings(guildId: string): Promise<VerificationConfig | null> {
+    const record = await this.client.verificationSetting.findUnique({
+      where: { guildId },
+    });
+    return record;
+  }
+
+  public async saveSettings(
+    guildId: string,
+    roleId: string,
+    channelId: string,
+    buttonLabel = 'Verify',
+    description?: string,
+  ): Promise<VerificationConfig> {
+    await this.client.guildSettings.upsert({
+      where: { guildId },
+      update: {},
+      create: { guildId },
+    });
+
+    const updated = await this.client.verificationSetting.upsert({
+      where: { guildId },
+      update: {
+        roleId,
+        channelId,
+        buttonLabel,
+        description: description ?? null,
+      },
+      create: {
+        guildId,
+        roleId,
+        channelId,
+        buttonLabel,
+        description: description ?? null,
+      },
+    });
+    return updated;
+  }
+
   /**
    * Posts an interactive verification embed with a single click verification button.
    */
@@ -18,6 +68,7 @@ export class VerificationService {
     channel: TextChannel,
     title = 'Server Verification',
     description = 'Click the button below to verify your account and unlock access to the server.',
+    buttonLabel = 'Verify',
   ): Promise<void> {
     const embed = new EmbedBuilder()
       .setTitle(`🛡️ ${title}`)
@@ -29,7 +80,7 @@ export class VerificationService {
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setCustomId('riffly_verify_btn')
-        .setLabel('Verify Account')
+        .setLabel(buttonLabel)
         .setEmoji('✅')
         .setStyle(ButtonStyle.Success),
     );
