@@ -16,6 +16,7 @@ export * from './economy/index.js';
 export * from './ai/index.js';
 export * from './backup/index.js';
 export * from './security/index.js';
+export * from './community/index.js';
 
 
 
