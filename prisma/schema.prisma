@@ -15,13 +15,40 @@ model GuildSettings {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  modules         GuildModule[]
-  moderationCases ModerationCase[]
-  tickets         Ticket[]
-  scheduledTasks  ScheduledTask[]
-  userLevels      UserLevel[]
-  giveaways       Giveaway[]
-  economies       UserEconomy[]
+  modules             GuildModule[]
+  moderationCases     ModerationCase[]
+  tickets             Ticket[]
+  scheduledTasks      ScheduledTask[]
+  userLevels          UserLevel[]
+  giveaways           Giveaway[]
+  economies           UserEconomy[]
+  staffPermissions    StaffPermission[]
+  loggingSettings     LoggingSetting[]
+  antiNukeSettings    AntiNukeSetting?
+  antiRaidSettings    AntiRaidSetting?
+  autoModSettings     AutoModSetting?
+  verificationSetting VerificationSetting?
+  autoRoles           AutoRole[]
+  reactionRoles       ReactionRole[]
+  vanityRoles         VanityRole[]
+  inviteCounters      InviteCounter[]
+  timers              Timer[]
+  afkStatuses         AfkStatus[]
+  suggestions         Suggestion[]
+  liveLeaderboards    LiveLeaderboard[]
+  serverTemplates     ServerTemplate[]
+  boosterRoles        BoosterRole[]
+  voiceMasterSetting  VoiceMasterSetting?
+  voiceMasterChannels VoiceMasterChannel[]
+  clownboardSetting   ClownboardSetting?
+  clownboardMessages  ClownboardMessage[]
+  countingChannels    CountingChannel?
+  bumpReminders       BumpReminder[]
+  socialAlerts        SocialAlert[]
+  autoResponders      AutoResponder[]
+  jailedMembers       JailedMember[]
+  userDailyActivities UserActivityDaily[]
+  userVoiceActivities UserVoiceActivity[]
 
   @@map("guild_settings")
 }
@@ -114,6 +141,33 @@ model UserLevel {
   @@map("user_levels")
 }
 
+model UserVoiceActivity {
+  guildId      String
+  userId       String
+  voiceMinutes Int       @default(0)
+  voiceXp      BigInt    @default(0)
+  lastVoiceAt  DateTime?
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@id([guildId, userId])
+  @@map("user_voice_activities")
+}
+
+model UserActivityDaily {
+  guildId      String
+  userId       String
+  date         String
+  messageCount Int    @default(0)
+  voiceMinutes Int    @default(0)
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@id([guildId, userId, date])
+  @@index([guildId, date])
+  @@map("user_activity_daily")
+}
+
 model Giveaway {
   id           String   @id @default(cuid())
   guildId      String
@@ -148,4 +202,363 @@ model UserEconomy {
   @@id([guildId, userId])
   @@index([guildId, wallet])
   @@map("user_economies")
+}
+
+model StaffPermission {
+  id          String   @id @default(cuid())
+  guildId     String
+  targetId    String
+  targetType  String   // "user" | "role"
+  tier        String   // "extraowner" | "admin" | "mod"
+  permissions String   // bitfield representation
+  createdAt   DateTime @default(now())
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, targetId])
+  @@index([guildId, tier])
+  @@map("staff_permissions")
+}
+
+model LoggingSetting {
+  id        String   @id @default(cuid())
+  guildId   String
+  logType   String   // "message" | "voice" | "member" | "mod" | "server" | "bot"
+  channelId String
+  enabled   Boolean  @default(true)
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, logType])
+  @@map("logging_settings")
+}
+
+model AntiNukeSetting {
+  guildId                String   @id
+  enabled                Boolean  @default(false)
+  banThreshold           Int      @default(3)
+  kickThreshold          Int      @default(5)
+  channelDeleteThreshold Int      @default(3)
+  action                 String   @default("ban") // "ban" | "kick" | "strip_roles"
+  whitelist              String[] @default([])
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("antinuke_settings")
+}
+
+model AntiRaidSetting {
+  guildId       String  @id
+  enabled       Boolean @default(false)
+  joinThreshold Int     @default(10)
+  windowSeconds Int     @default(10)
+  action        String  @default("kick") // "kick" | "ban" | "timeout"
+  autoLockdown  Boolean @default(true)
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("antiraid_settings")
+}
+
+model AutoModSetting {
+  guildId             String   @id
+  antiSpam            Boolean  @default(false)
+  antiLinks           Boolean  @default(false)
+  antiCaps            Boolean  @default(false)
+  antiMention         Boolean  @default(false)
+  capsPercentage      Int      @default(70)
+  maxMentions         Int      @default(5)
+  maxMessagesPer5s    Int      @default(5)
+  bannedWords         String[] @default([])
+  whitelistedChannels String[] @default([])
+  whitelistedRoles    String[] @default([])
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("automod_settings")
+}
+
+model VerificationSetting {
+  guildId     String   @id
+  roleId      String
+  channelId   String
+  description String?
+  buttonLabel String   @default("Verify")
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("verification_settings")
+}
+
+model AutoRole {
+  id         String @id @default(cuid())
+  guildId    String
+  roleId     String
+  targetType String @default("all") // "all" | "humans" | "bots"
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, roleId, targetType])
+  @@map("autoroles")
+}
+
+model ReactionRole {
+  id        String @id @default(cuid())
+  guildId   String
+  channelId String
+  messageId String
+  emoji     String
+  roleId    String
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([messageId, emoji])
+  @@map("reaction_roles")
+}
+
+model VanityRole {
+  id      String @id @default(cuid())
+  guildId String
+  roleId  String
+  keyword String
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, keyword])
+  @@map("vanity_roles")
+}
+
+model InviteCounter {
+  guildId   String
+  userId    String
+  joins     Int     @default(0)
+  leaves    Int     @default(0)
+  fake      Int     @default(0)
+  inviterId String?
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@id([guildId, userId])
+  @@map("invite_counters")
+}
+
+model Timer {
+  id               String   @id @default(cuid())
+  guildId          String
+  channelId        String
+  name             String
+  durationSeconds  Int
+  endsAt           DateTime
+  paused           Boolean  @default(false)
+  remainingSeconds Int?
+  creatorId        String
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, name])
+  @@map("timers")
+}
+
+model AfkStatus {
+  guildId String
+  userId  String
+  reason  String?
+  setAt   DateTime @default(now())
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@id([guildId, userId])
+  @@map("afk")
+}
+
+model Suggestion {
+  id        String   @id @default(cuid())
+  guildId   String
+  channelId String
+  messageId String
+  authorId  String
+  content   String
+  status    String   @default("pending") // "pending" | "approved" | "denied"
+  upvotes   Int      @default(0)
+  downvotes Int      @default(0)
+  createdAt DateTime @default(now())
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([guildId, messageId])
+  @@map("suggestions")
+}
+
+model LiveLeaderboard {
+  id            String   @id @default(cuid())
+  guildId       String
+  channelId     String
+  messageId     String
+  type          String   // "chat" | "voice" | "all"
+  timeframe     String   @default("alltime") // "daily" | "weekly" | "monthly" | "alltime"
+  lastUpdatedAt DateTime @default(now())
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, channelId])
+  @@map("live_leaderboards")
+}
+
+model NoPrefixExemption {
+  userId    String    @id
+  expiresAt DateTime? // null = permanent
+  grantedBy String
+  grantedAt DateTime  @default(now())
+
+  @@map("no_prefix_exemptions")
+}
+
+model ServerTemplate {
+  id        String   @id @default(cuid())
+  guildId   String
+  name      String
+  data      Json
+  creatorId String
+  createdAt DateTime @default(now())
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("server_templates")
+}
+
+model UserReminder {
+  id        String   @id @default(cuid())
+  userId    String
+  channelId String
+  message   String
+  remindAt  DateTime
+  completed Boolean  @default(false)
+
+  @@index([completed, remindAt])
+  @@map("user_reminders")
+}
+
+model BoosterRole {
+  guildId String
+  userId  String
+  roleId  String
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@id([guildId, userId])
+  @@map("booster_roles")
+}
+
+model VoiceMasterSetting {
+  guildId      String  @id
+  hubChannelId String
+  categoryId   String?
+  channelType  String  @default("normal") // "normal" | "duo" | "trio" | "quad"
+  enabled      Boolean @default(true)
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("voicemaster_settings")
+}
+
+model VoiceMasterChannel {
+  channelId String   @id
+  guildId   String
+  ownerId   String
+  locked    Boolean  @default(false)
+  hidden    Boolean  @default(false)
+  userLimit Int      @default(0)
+  permitted String[] @default([])
+  banned    String[] @default([])
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@index([guildId, ownerId])
+  @@map("voicemaster_channels")
+}
+
+model ClownboardSetting {
+  guildId   String  @id
+  channelId String
+  threshold Int     @default(3)
+  enabled   Boolean @default(true)
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("clownboard_settings")
+}
+
+model ClownboardMessage {
+  id                   String @id @default(cuid())
+  guildId              String
+  originalMessageId    String @unique
+  clownboardMessageId  String
+  clownCount           Int    @default(0)
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("clownboard_messages")
+}
+
+model CountingChannel {
+  guildId       String  @id
+  channelId     String
+  currentNumber Int     @default(0)
+  lastUserId    String?
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("counting_channels")
+}
+
+model BumpReminder {
+  guildId    String   @id
+  channelId  String
+  service    String   @default("disboard")
+  lastBumpAt DateTime @default(now())
+  remindAt   DateTime
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("bump_reminders")
+}
+
+model SocialAlert {
+  id         String  @id @default(cuid())
+  guildId    String
+  channelId  String
+  platform   String  // "youtube" | "twitch" | "reddit" | "tiktok" | "x" | "instagram"
+  account    String
+  lastPostId String?
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, platform, account])
+  @@map("social_alerts")
+}
+
+model AutoResponder {
+  id         String  @id @default(cuid())
+  guildId    String
+  trigger    String
+  reply      String
+  matchType  String  @default("exact") // "exact" | "startswith" | "endswith" | "contains"
+  autoDelete Boolean @default(false)
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("auto_responders")
+}
+
+model JailedMember {
+  guildId         String
+  userId          String
+  previousRoleIds String[] @default([])
+  jailedAt        DateTime @default(now())
+  reason          String?
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@id([guildId, userId])
+  @@map("jailed_members")
 }
