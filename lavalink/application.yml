@@ -11,11 +11,13 @@ plugins:
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
     clients:
-      - MUSIC
       - TV
+      - MUSIC
       - WEB
     oauth:
       enabled: true
+      refreshToken: "${YOUTUBE_OAUTH_REFRESH_TOKEN:}"
+      skipInitialization: true
 
 lavalink:
   plugins:
