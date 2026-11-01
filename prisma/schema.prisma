@@ -21,6 +21,7 @@ model GuildSettings {
   scheduledTasks  ScheduledTask[]
   userLevels      UserLevel[]
   giveaways       Giveaway[]
+  economies       UserEconomy[]
 
   @@map("guild_settings")
 }
@@ -132,4 +133,19 @@ model Giveaway {
   @@index([guildId])
   @@index([ended, endsAt])
   @@map("giveaways")
+}
+
+model UserEconomy {
+  guildId   String
+  userId    String
+  wallet    BigInt    @default(0)
+  bank      BigInt    @default(0)
+  lastDaily DateTime?
+  lastWork  DateTime?
+
+  guild GuildSettings @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@id([guildId, userId])
+  @@index([guildId, wallet])
+  @@map("user_economies")
 }

@@ -1,5 +1,6 @@
 import { ConfigError, loadConfig } from './config.js';
 import { createBot } from './bot.js';
+import { RifflyDashboardServer } from './dashboard/index.js';
 
 async function main(): Promise<void> {
   // Load local .env if present (Render supplies env vars via process.env directly)
@@ -27,20 +28,19 @@ async function main(): Promise<void> {
 
   const bot = createBot(config);
 
-  // If deployed as a Web Service (e.g. Render Web Service), bind HTTP health check to PORT
-  const rawPort = process.env.PORT;
-  let healthServer: import('node:http').Server | undefined;
+  // If deployed with a web port (e.g. Render Web Service), bind Dashboard & REST API
+  const rawPort = process.env.PORT ?? process.env.DASHBOARD_PORT;
+  let dashboardServer: RifflyDashboardServer | undefined;
   if (rawPort) {
     const port = Number.parseInt(rawPort, 10);
     if (!Number.isNaN(port)) {
-      const http = await import('node:http');
-      healthServer = http.createServer((_req, res) => {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'healthy', service: 'riffly' }));
+      dashboardServer = new RifflyDashboardServer({
+        port,
+        client: bot.client,
+        ...(bot.playerManager ? { playerManager: bot.playerManager } : {}),
       });
-      healthServer.listen(port, '0.0.0.0', () => {
-        console.log(`[Health] Web service HTTP health check listening on port ${port}`);
-      });
+      await dashboardServer.start(port);
+      console.log(`[Dashboard] Riffly Web Dashboard & API listening on port ${port}`);
     }
   }
 
@@ -51,8 +51,8 @@ async function main(): Promise<void> {
     }
     isShuttingDown = true;
     console.log(`[Shutdown] Received ${signal}. Starting graceful shutdown...`);
-    if (healthServer) {
-      healthServer.close();
+    if (dashboardServer) {
+      await dashboardServer.stop();
     }
     try {
       await bot.stop();

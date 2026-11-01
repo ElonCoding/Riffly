@@ -184,6 +184,54 @@ export interface UserLevelData {
 }
 
 /**
+ * Domain representation of user economy balances and activity.
+ */
+export interface UserEconomyData {
+  guildId: string;
+  userId: string;
+  wallet: bigint;
+  bank: bigint;
+  lastDaily: Date | null;
+  lastWork: Date | null;
+}
+
+/**
+ * Contract for virtual economy repository operations.
+ */
+export interface IEconomyRepository {
+  getEconomy(guildId: string, userId: string): Promise<UserEconomyData>;
+  addWallet(guildId: string, userId: string, amount: bigint): Promise<UserEconomyData>;
+  deposit(
+    guildId: string,
+    userId: string,
+    amount: bigint,
+  ): Promise<{ success: boolean; data?: UserEconomyData; error?: string }>;
+  withdraw(
+    guildId: string,
+    userId: string,
+    amount: bigint,
+  ): Promise<{ success: boolean; data?: UserEconomyData; error?: string }>;
+  transfer(
+    guildId: string,
+    fromUserId: string,
+    toUserId: string,
+    amount: bigint,
+  ): Promise<{ success: boolean; error?: string }>;
+  claimDaily(
+    guildId: string,
+    userId: string,
+    rewardAmount: bigint,
+  ): Promise<{ claimed: boolean; nextClaimAt?: Date; data?: UserEconomyData }>;
+  work(
+    guildId: string,
+    userId: string,
+    minReward: bigint,
+    maxReward: bigint,
+  ): Promise<{ worked: boolean; reward?: bigint; nextWorkAt?: Date; data?: UserEconomyData }>;
+  getLeaderboard(guildId: string, limit?: number): Promise<UserEconomyData[]>;
+}
+
+/**
  * Contract for guild configuration repository operations.
  */
 export interface IGuildRepository {

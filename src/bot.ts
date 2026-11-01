@@ -11,6 +11,7 @@ import { TrackResolver } from './provider/resolver.js';
 
 export interface RifflyBot {
   readonly client: Client;
+  readonly playerManager?: GuildPlayerManager;
   start(): Promise<void>;
   stop(): Promise<void>;
 }
@@ -95,6 +96,7 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
 
   return {
     client,
+    playerManager,
     async start(): Promise<void> {
       console.log(`[Bot] Connecting to Discord Gateway (Client ID: ${config.discordClientId})...`);
       try {

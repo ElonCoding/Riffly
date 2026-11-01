@@ -6,6 +6,7 @@ export * from './repositories/moderation-repository.js';
 export * from './repositories/ticket-repository.js';
 export * from './repositories/level-repository.js';
 export * from './repositories/giveaway-repository.js';
+export * from './repositories/economy-repository.js';
 
 
 

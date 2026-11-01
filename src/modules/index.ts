@@ -12,6 +12,8 @@ export * from './automod/index.js';
 export * from './giveaways/index.js';
 export * from './starboard/index.js';
 export * from './utility/index.js';
+export * from './economy/index.js';
+export * from './ai/index.js';
 
 
 
