@@ -1,5 +1,10 @@
 import { ChannelType, type Guild, type GuildMember, type TextChannel } from 'discord.js';
-import type { PrismaSecurityRepository, AntiNukeConfig, AntiRaidConfig, AutoModConfig } from '../../database/repositories/security-repository.js';
+import type {
+  PrismaSecurityRepository,
+  AntiNukeConfig,
+  AntiRaidConfig,
+  AutoModConfig,
+} from '../../database/repositories/security-repository.js';
 
 export interface SecurityViolationEvent {
   guildId: string;
@@ -26,7 +31,10 @@ export class SecurityService {
     return this.repository.getAntiNuke(guildId);
   }
 
-  public async setAntiNuke(guildId: string, data: Partial<AntiNukeConfig>): Promise<AntiNukeConfig> {
+  public async setAntiNuke(
+    guildId: string,
+    data: Partial<AntiNukeConfig>,
+  ): Promise<AntiNukeConfig> {
     return this.repository.setAntiNuke(guildId, data);
   }
 
@@ -83,11 +91,17 @@ export class SecurityService {
       // Threshold exceeded: execute sanction
       try {
         if (config.action === 'ban' && executor.bannable) {
-          await guild.members.ban(executor.id, { reason: `Riffly Anti-Nuke: Exceeded ${actionType} threshold (${recent.length}/${threshold})` });
+          await guild.members.ban(executor.id, {
+            reason: `Riffly Anti-Nuke: Exceeded ${actionType} threshold (${recent.length}/${threshold})`,
+          });
         } else if (config.action === 'kick' && executor.kickable) {
-          await executor.kick(`Riffly Anti-Nuke: Exceeded ${actionType} threshold (${recent.length}/${threshold})`);
+          await executor.kick(
+            `Riffly Anti-Nuke: Exceeded ${actionType} threshold (${recent.length}/${threshold})`,
+          );
         } else if (config.action === 'strip_roles') {
-          const removableRoles = executor.roles.cache.filter((r) => r.id !== guild.id && !r.managed);
+          const removableRoles = executor.roles.cache.filter(
+            (r) => r.id !== guild.id && !r.managed,
+          );
           await executor.roles.remove(removableRoles, 'Riffly Anti-Nuke: Role stripping sanction');
         }
         this.nukeTracker.delete(key);
@@ -104,7 +118,10 @@ export class SecurityService {
     return this.repository.getAntiRaid(guildId);
   }
 
-  public async setAntiRaid(guildId: string, data: Partial<AntiRaidConfig>): Promise<AntiRaidConfig> {
+  public async setAntiRaid(
+    guildId: string,
+    data: Partial<AntiRaidConfig>,
+  ): Promise<AntiRaidConfig> {
     return this.repository.setAntiRaid(guildId, data);
   }
 
@@ -132,7 +149,9 @@ export class SecurityService {
             if (config.action === 'kick' && target.kickable) {
               await target.kick('Riffly Anti-Raid: Mass join triggered');
             } else if (config.action === 'ban' && target.bannable) {
-              await member.guild.members.ban(target.id, { reason: 'Riffly Anti-Raid: Mass join triggered' });
+              await member.guild.members.ban(target.id, {
+                reason: 'Riffly Anti-Raid: Mass join triggered',
+              });
             } else if (config.action === 'timeout') {
               await target.timeout(3600000, 'Riffly Anti-Raid: Mass join triggered');
             }
@@ -159,9 +178,13 @@ export class SecurityService {
 
     for (const channel of channels) {
       try {
-        await channel.permissionOverwrites.edit(guild.roles.everyone, {
-          SendMessages: false,
-        }, { reason: reason ?? 'Riffly Anti-Raid Server Lockdown' });
+        await channel.permissionOverwrites.edit(
+          guild.roles.everyone,
+          {
+            SendMessages: false,
+          },
+          { reason: reason ?? 'Riffly Anti-Raid Server Lockdown' },
+        );
         count++;
       } catch {
         // continue
@@ -178,9 +201,13 @@ export class SecurityService {
 
     for (const channel of channels) {
       try {
-        await channel.permissionOverwrites.edit(guild.roles.everyone, {
-          SendMessages: null,
-        }, { reason: 'Riffly Anti-Raid Lockdown lifted' });
+        await channel.permissionOverwrites.edit(
+          guild.roles.everyone,
+          {
+            SendMessages: null,
+          },
+          { reason: 'Riffly Anti-Raid Lockdown lifted' },
+        );
         count++;
       } catch {
         // continue

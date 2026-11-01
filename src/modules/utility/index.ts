@@ -25,7 +25,9 @@ export function createUtilityModule(
 
       try {
         if (channelId) {
-          const channel = (await client.channels.fetch(channelId).catch(() => null)) as TextChannel | null;
+          const channel = (await client.channels
+            .fetch(channelId)
+            .catch(() => null)) as TextChannel | null;
           if (channel && 'send' in channel) {
             await channel.send({
               content: `⏰ <@${userId}>, here is your reminder: **${reason ?? 'No reason provided'}**`,
@@ -49,12 +51,8 @@ export function createUtilityModule(
   return defineModule({
     id: 'utility',
     name: 'Riffly Community Utilities',
-    description:
-      'Member information, server statistics, avatars, polls, and reminder scheduling.',
+    description: 'Member information, server statistics, avatars, polls, and reminder scheduling.',
     version: '1.0.0',
-    commands: [
-      ...createUtilityCommands(options.scheduler),
-      ...createExtendedUtilityCommands(),
-    ],
+    commands: [...createUtilityCommands(options.scheduler), ...createExtendedUtilityCommands()],
   });
 }

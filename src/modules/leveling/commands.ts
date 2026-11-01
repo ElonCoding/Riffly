@@ -57,7 +57,11 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
         )
         .addFields(
           { name: 'Level 5', value: 'Bronze Tier • Standard perks', inline: true },
-          { name: 'Level 10', value: 'Silver Tier • Image attachment in media channels', inline: true },
+          {
+            name: 'Level 10',
+            value: 'Silver Tier • Image attachment in media channels',
+            inline: true,
+          },
           { name: 'Level 25', value: 'Gold Tier • Priority voice bitrate', inline: true },
           { name: 'Level 50', value: 'Platinum Tier • Custom nickname privileges', inline: true },
           { name: 'Level 100', value: 'Diamond Champion • Hall of Fame access', inline: true },
@@ -80,7 +84,11 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
           .setName('view')
           .setDescription('View the top active members by XP on the server')
           .addIntegerOption((opt) =>
-            opt.setName('page').setDescription('Leaderboard page number (1-10)').setMinValue(1).setMaxValue(10),
+            opt
+              .setName('page')
+              .setDescription('Leaderboard page number (1-10)')
+              .setMinValue(1)
+              .setMaxValue(10),
           ),
       )
       .addSubcommand((sub) =>
@@ -88,7 +96,11 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
           .setName('setup')
           .setDescription('Spawn a self-updating live leaderboard message (updates every 15s)')
           .addChannelOption((opt) =>
-            opt.setName('channel').setDescription('Channel to host leaderboard').addChannelTypes(ChannelType.GuildText).setRequired(true),
+            opt
+              .setName('channel')
+              .setDescription('Channel to host leaderboard')
+              .addChannelTypes(ChannelType.GuildText)
+              .setRequired(true),
           )
           .addStringOption((opt) =>
             opt
@@ -112,18 +124,25 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
               ),
           ),
       )
-      .addSubcommand((sub) => sub.setName('list').setDescription('List active live leaderboards in this server'))
+      .addSubcommand((sub) =>
+        sub.setName('list').setDescription('List active live leaderboards in this server'),
+      )
       .addSubcommand((sub) =>
         sub
           .setName('remove')
           .setDescription('Delete an active live leaderboard embed')
-          .addStringOption((opt) => opt.setName('id').setDescription('Leaderboard ID').setRequired(true)),
+          .addStringOption((opt) =>
+            opt.setName('id').setDescription('Leaderboard ID').setRequired(true),
+          ),
       ),
     guildOnly: true,
     execute: async (interaction: ChatInputCommandInteraction) => {
       const guild = interaction.guild;
       if (!guild) {
-        await interaction.reply({ content: 'Command can only be run in a server.', ephemeral: true });
+        await interaction.reply({
+          content: 'Command can only be run in a server.',
+          ephemeral: true,
+        });
         return;
       }
 
@@ -150,7 +169,9 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
 
       if (sub === 'setup') {
         if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
-          await interaction.editReply({ content: 'You need Manage Server permissions to setup live leaderboards.' });
+          await interaction.editReply({
+            content: 'You need Manage Server permissions to setup live leaderboards.',
+          });
           return;
         }
 
@@ -168,14 +189,21 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
       if (sub === 'list') {
         const list = await service.listLiveLeaderboards(guild.id);
         if (list.length === 0) {
-          await interaction.editReply('No live leaderboards are currently registered in this server.');
+          await interaction.editReply(
+            'No live leaderboards are currently registered in this server.',
+          );
           return;
         }
         const embed = new EmbedBuilder()
           .setTitle('📊 Active Live Leaderboards')
           .setColor(0x6366f1)
           .setDescription(
-            list.map((lb) => `• **${lb.id}**: <#${lb.channelId}> (Msg: \`${lb.messageId}\`) — \`${lb.type}\` [${lb.timeframe}]`).join('\n'),
+            list
+              .map(
+                (lb) =>
+                  `• **${lb.id}**: <#${lb.channelId}> (Msg: \`${lb.messageId}\`) — \`${lb.type}\` [${lb.timeframe}]`,
+              )
+              .join('\n'),
           );
         await interaction.editReply({ embeds: [embed] });
         return;
@@ -183,7 +211,9 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
 
       if (sub === 'remove') {
         if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
-          await interaction.editReply({ content: 'You need Manage Server permissions to remove leaderboards.' });
+          await interaction.editReply({
+            content: 'You need Manage Server permissions to remove leaderboards.',
+          });
           return;
         }
         const id = interaction.options.getString('id', true);
@@ -205,24 +235,32 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
       .setName('reset')
       .setDescription('Reset server statistics, economy, or leveling progression.')
       .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-      .addSubcommand((sub) => sub.setName('all').setDescription('Reset all server economy and leveling data'))
+      .addSubcommand((sub) =>
+        sub.setName('all').setDescription('Reset all server economy and leveling data'),
+      )
       .addSubcommand((sub) =>
         sub
           .setName('xp')
           .setDescription('Reset XP for a specific member or the entire server')
-          .addUserOption((opt) => opt.setName('user').setDescription('Target member (leave blank for all)')),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Target member (leave blank for all)'),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('messages')
           .setDescription('Reset message count statistics')
-          .addUserOption((opt) => opt.setName('user').setDescription('Target member (leave blank for all)')),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Target member (leave blank for all)'),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('voice')
           .setDescription('Reset voice activity statistics')
-          .addUserOption((opt) => opt.setName('user').setDescription('Target member (leave blank for all)')),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Target member (leave blank for all)'),
+          ),
       )
       .addSubcommand((sub) =>
         sub
@@ -255,7 +293,9 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
 
       if (sub === 'all') {
         await service.resetStats(guild.id, { field: 'all' });
-        await interaction.editReply('⚠️ **Server Reset Complete:** All XP, levels, and messages have been cleared.');
+        await interaction.editReply(
+          '⚠️ **Server Reset Complete:** All XP, levels, and messages have been cleared.',
+        );
         return;
       }
 
@@ -291,7 +331,9 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
 
       if (sub === 'timeframe') {
         const period = interaction.options.getString('period', true);
-        await interaction.editReply(`✅ Reset periodic leaderboard metrics for timeframe: **${period}**.`);
+        await interaction.editReply(
+          `✅ Reset periodic leaderboard metrics for timeframe: **${period}**.`,
+        );
       }
     },
   };
@@ -302,13 +344,31 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
     description: 'Configure server leveling parameters, announcement channels, and XP multipliers.',
     data: new SlashCommandBuilder()
       .setName('setup-leveling')
-      .setDescription('Configure server leveling parameters, announcement channels, and XP multipliers.')
+      .setDescription(
+        'Configure server leveling parameters, announcement channels, and XP multipliers.',
+      )
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
       .addChannelOption((opt) =>
-        opt.setName('channel').setDescription('Channel for level-up announcements').addChannelTypes(ChannelType.GuildText).setRequired(true),
+        opt
+          .setName('channel')
+          .setDescription('Channel for level-up announcements')
+          .addChannelTypes(ChannelType.GuildText)
+          .setRequired(true),
       )
-      .addNumberOption((opt) => opt.setName('multiplier').setDescription('Global XP multiplier (e.g. 1.5, 2.0)').setMinValue(0.5).setMaxValue(5.0))
-      .addIntegerOption((opt) => opt.setName('rate').setDescription('XP cooldown rate in seconds (default 60)').setMinValue(5).setMaxValue(300)),
+      .addNumberOption((opt) =>
+        opt
+          .setName('multiplier')
+          .setDescription('Global XP multiplier (e.g. 1.5, 2.0)')
+          .setMinValue(0.5)
+          .setMaxValue(5.0),
+      )
+      .addIntegerOption((opt) =>
+        opt
+          .setName('rate')
+          .setDescription('XP cooldown rate in seconds (default 60)')
+          .setMinValue(5)
+          .setMaxValue(300),
+      ),
     guildOnly: true,
     defaultMemberPermissions: PermissionFlagsBits.ManageGuild,
     execute: async (interaction: ChatInputCommandInteraction) => {
@@ -331,8 +391,17 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
       .setName('xp-set')
       .setDescription("Set a member's level and XP directly.")
       .addUserOption((opt) => opt.setName('target').setDescription('Target user').setRequired(true))
-      .addIntegerOption((opt) => opt.setName('level').setDescription('Target level').setMinValue(0).setMaxValue(1000).setRequired(true))
-      .addIntegerOption((opt) => opt.setName('xp').setDescription('Target XP').setMinValue(0).setRequired(true))
+      .addIntegerOption((opt) =>
+        opt
+          .setName('level')
+          .setDescription('Target level')
+          .setMinValue(0)
+          .setMaxValue(1000)
+          .setRequired(true),
+      )
+      .addIntegerOption((opt) =>
+        opt.setName('xp').setDescription('Target XP').setMinValue(0).setRequired(true),
+      )
       .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     guildOnly: true,
     defaultMemberPermissions: PermissionFlagsBits.Administrator,
@@ -361,5 +430,12 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
     },
   };
 
-  return [rankCommand, levelsCommand, leaderboardCommand, resetCommand, setupLevelingCommand, xpSetCommand];
+  return [
+    rankCommand,
+    levelsCommand,
+    leaderboardCommand,
+    resetCommand,
+    setupLevelingCommand,
+    xpSetCommand,
+  ];
 }

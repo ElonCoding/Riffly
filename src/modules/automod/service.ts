@@ -56,12 +56,22 @@ export class AutoModService {
 
     // 1. Anti-Invite Filter
     if (settings.antiInvite && DISCORD_INVITE_REGEX.test(content)) {
-      return this.handleViolation(message, 'anti-invite', 'Discord invite links are not permitted.', settings);
+      return this.handleViolation(
+        message,
+        'anti-invite',
+        'Discord invite links are not permitted.',
+        settings,
+      );
     }
 
     // 2. Anti-Link Filter (Generic URLs)
     if (settings.antiLink && URL_REGEX.test(content)) {
-      return this.handleViolation(message, 'anti-link', 'External links are not permitted.', settings);
+      return this.handleViolation(
+        message,
+        'anti-link',
+        'External links are not permitted.',
+        settings,
+      );
     }
 
     // 3. Banned Words Filter
@@ -196,10 +206,14 @@ export class AutoModService {
         const embed = new EmbedBuilder()
           .setTitle('🛡️ AutoMod Violation')
           .setColor(0xef4444)
-          .setDescription(`**User:** <@${message.author.id}> (\`${message.author.id}\`)\n**Rule:** \`${rule}\`\n**Action:** \`${action}\`\n**Reason:** ${reason}`)
+          .setDescription(
+            `**User:** <@${message.author.id}> (\`${message.author.id}\`)\n**Rule:** \`${rule}\`\n**Action:** \`${action}\`\n**Reason:** ${reason}`,
+          )
           .addFields({
             name: 'Message Content',
-            value: message.content ? `\`\`\`${message.content.slice(0, 1000)}\`\`\`` : '*No text content*',
+            value: message.content
+              ? `\`\`\`${message.content.slice(0, 1000)}\`\`\``
+              : '*No text content*',
           })
           .setTimestamp();
 

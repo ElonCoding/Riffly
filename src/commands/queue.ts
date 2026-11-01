@@ -54,8 +54,12 @@ export function makeQueueCommand(playerManager: GuildPlayerManager): Command {
       const lines: string[] = [];
       if (state.current) {
         const status = state.engineState === 'paused' ? '⏸️' : '▶️';
-        const dur = state.current.isStream ? '🔴 Live' : formatDuration(state.current.lengthMs, true);
-        lines.push(`**${status} Now Playing:** [${state.current.title}](${state.current.uri ?? '#'}) — ${state.current.author} \`[${dur}]\``);
+        const dur = state.current.isStream
+          ? '🔴 Live'
+          : formatDuration(state.current.lengthMs, true);
+        lines.push(
+          `**${status} Now Playing:** [${state.current.title}](${state.current.uri ?? '#'}) — ${state.current.author} \`[${dur}]\``,
+        );
       }
 
       if (slice.length > 0) {
@@ -63,16 +67,14 @@ export function makeQueueCommand(playerManager: GuildPlayerManager): Command {
         lines.push('**Up Next:**');
         for (const [i, track] of slice.entries()) {
           const dur = track.isStream ? '🔴 Live' : formatDuration(track.lengthMs, true);
-          lines.push(`\`${offset + i + 1}.\` [${track.title}](${track.uri ?? '#'}) — ${track.author} \`[${dur}]\``);
+          lines.push(
+            `\`${offset + i + 1}.\` [${track.title}](${track.uri ?? '#'}) — ${track.author} \`[${dur}]\``,
+          );
         }
       }
 
       const loopDisplay =
-        state.loopMode === 'off'
-          ? 'Off'
-          : state.loopMode === 'track'
-            ? '🔂 Track'
-            : '🔁 Queue';
+        state.loopMode === 'off' ? 'Off' : state.loopMode === 'track' ? '🔂 Track' : '🔁 Queue';
 
       const totalTracks = (state.current ? 1 : 0) + upcoming.length;
       const embed = new EmbedBuilder()

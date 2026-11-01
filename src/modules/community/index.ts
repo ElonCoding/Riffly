@@ -13,7 +13,8 @@ export function createCommunityModule(service?: CommunityService): ModuleDefinit
   return {
     id: 'community',
     name: 'Community Engine',
-    description: 'AutoRoles, Reaction Roles, Vanity Roles, Clownboard, Counting, AutoResponders, Timers, Bumpers, Social Alerts, and Booster Roles.',
+    description:
+      'AutoRoles, Reaction Roles, Vanity Roles, Clownboard, Counting, AutoResponders, Timers, Bumpers, Social Alerts, and Booster Roles.',
     commands,
   };
 }

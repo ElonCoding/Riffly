@@ -64,7 +64,11 @@ export class CommunityService {
     await this.repository.addReactionRole(guildId, channelId, messageId, emoji, roleId);
   }
 
-  public async removeReactionRole(guildId: string, messageId: string, emoji: string): Promise<boolean> {
+  public async removeReactionRole(
+    guildId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<boolean> {
     return this.repository.removeReactionRole(guildId, messageId, emoji);
   }
 
@@ -76,14 +80,22 @@ export class CommunityService {
     return this.repository.listReactionRoles(guildId);
   }
 
-  public async handleReaction(reaction: MessageReaction, user: User, added: boolean): Promise<void> {
+  public async handleReaction(
+    reaction: MessageReaction,
+    user: User,
+    added: boolean,
+  ): Promise<void> {
     if (user.bot || !reaction.message.guild) return;
     const guild = reaction.message.guild;
-    const emojiStr = reaction.emoji.id ? `<:${reaction.emoji.name}:${reaction.emoji.id}>` : (reaction.emoji.name ?? '');
+    const emojiStr = reaction.emoji.id
+      ? `<:${reaction.emoji.name}:${reaction.emoji.id}>`
+      : (reaction.emoji.name ?? '');
 
     const all = await this.repository.listReactionRoles(guild.id);
     const match = all.find(
-      (rr) => rr.messageId === reaction.message.id && (rr.emoji === emojiStr || rr.emoji === reaction.emoji.name),
+      (rr) =>
+        rr.messageId === reaction.message.id &&
+        (rr.emoji === emojiStr || rr.emoji === reaction.emoji.name),
     );
 
     if (match) {
@@ -264,7 +276,11 @@ export class CommunityService {
     await this.repository.addSocialAlert(guildId, platform, account, channelId);
   }
 
-  public async removeSocialAlert(guildId: string, platform: string, account: string): Promise<boolean> {
+  public async removeSocialAlert(
+    guildId: string,
+    platform: string,
+    account: string,
+  ): Promise<boolean> {
     return this.repository.removeSocialAlert(guildId, platform, account);
   }
 

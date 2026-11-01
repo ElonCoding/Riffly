@@ -19,9 +19,16 @@ export function createPrefixCommands(service: PrefixService): CommandDefinition[
         sub
           .setName('set')
           .setDescription('Change the custom command prefix for this server')
-          .addStringOption((opt) => opt.setName('symbol').setDescription('Prefix symbol (e.g. !, ?, $, .)').setRequired(true)),
+          .addStringOption((opt) =>
+            opt
+              .setName('symbol')
+              .setDescription('Prefix symbol (e.g. !, ?, $, .)')
+              .setRequired(true),
+          ),
       )
-      .addSubcommand((sub) => sub.setName('view').setDescription('Display the active command prefix'))
+      .addSubcommand((sub) =>
+        sub.setName('view').setDescription('Display the active command prefix'),
+      )
       .addSubcommandGroup((grp) =>
         grp
           .setName('noprefix')
@@ -30,16 +37,24 @@ export function createPrefixCommands(service: PrefixService): CommandDefinition[
             sub
               .setName('grant')
               .setDescription('Grant no-prefix execution privilege to a user')
-              .addUserOption((opt) => opt.setName('user').setDescription('Target user').setRequired(true))
-              .addIntegerOption((opt) => opt.setName('days').setDescription('Duration in days (leave blank for permanent)')),
+              .addUserOption((opt) =>
+                opt.setName('user').setDescription('Target user').setRequired(true),
+              )
+              .addIntegerOption((opt) =>
+                opt.setName('days').setDescription('Duration in days (leave blank for permanent)'),
+              ),
           )
           .addSubcommand((sub) =>
             sub
               .setName('revoke')
               .setDescription('Revoke no-prefix privilege from a user')
-              .addUserOption((opt) => opt.setName('user').setDescription('Target user').setRequired(true)),
+              .addUserOption((opt) =>
+                opt.setName('user').setDescription('Target user').setRequired(true),
+              ),
           )
-          .addSubcommand((sub) => sub.setName('list').setDescription('List all members with no-prefix privileges')),
+          .addSubcommand((sub) =>
+            sub.setName('list').setDescription('List all members with no-prefix privileges'),
+          ),
       ),
     guildOnly: true,
     execute: async (interaction: ChatInputCommandInteraction) => {
@@ -55,7 +70,10 @@ export function createPrefixCommands(service: PrefixService): CommandDefinition[
       if (group === 'noprefix') {
         // Owner only check
         if (interaction.user.id !== guild.ownerId) {
-          await interaction.reply({ content: '❌ Only the Server Owner can manage No-Prefix exemptions.', ephemeral: true });
+          await interaction.reply({
+            content: '❌ Only the Server Owner can manage No-Prefix exemptions.',
+            ephemeral: true,
+          });
           return;
         }
 
@@ -76,7 +94,9 @@ export function createPrefixCommands(service: PrefixService): CommandDefinition[
           const target = interaction.options.getUser('user', true);
           const ok = await service.revokeNoPrefix(target.id);
           await interaction.editReply(
-            ok ? `Revoked No-Prefix privileges from <@${target.id}>.` : 'User does not have an active exemption.',
+            ok
+              ? `Revoked No-Prefix privileges from <@${target.id}>.`
+              : 'User does not have an active exemption.',
           );
           return;
         }
@@ -105,7 +125,10 @@ export function createPrefixCommands(service: PrefixService): CommandDefinition[
 
       if (sub === 'set') {
         if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
-          await interaction.reply({ content: 'You need Manage Server permissions to change the prefix.', ephemeral: true });
+          await interaction.reply({
+            content: 'You need Manage Server permissions to change the prefix.',
+            ephemeral: true,
+          });
           return;
         }
 
@@ -140,20 +163,28 @@ export function createPrefixCommands(service: PrefixService): CommandDefinition[
         sub
           .setName('save')
           .setDescription('Take a complete snapshot of server channels and roles')
-          .addStringOption((opt) => opt.setName('name').setDescription('Template name').setRequired(true)),
+          .addStringOption((opt) =>
+            opt.setName('name').setDescription('Template name').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('view')
           .setDescription('Inspect a saved server template')
-          .addStringOption((opt) => opt.setName('name').setDescription('Template name').setRequired(true)),
+          .addStringOption((opt) =>
+            opt.setName('name').setDescription('Template name').setRequired(true),
+          ),
       )
-      .addSubcommand((sub) => sub.setName('list').setDescription('List all saved templates for this server'))
+      .addSubcommand((sub) =>
+        sub.setName('list').setDescription('List all saved templates for this server'),
+      )
       .addSubcommand((sub) =>
         sub
           .setName('delete')
           .setDescription('Delete a saved template')
-          .addStringOption((opt) => opt.setName('name').setDescription('Template name').setRequired(true)),
+          .addStringOption((opt) =>
+            opt.setName('name').setDescription('Template name').setRequired(true),
+          ),
       ),
     guildOnly: true,
     defaultMemberPermissions: PermissionFlagsBits.Administrator,
@@ -170,7 +201,9 @@ export function createPrefixCommands(service: PrefixService): CommandDefinition[
       if (sub === 'save') {
         const name = interaction.options.getString('name', true);
         const id = await service.saveTemplate(guild, name, interaction.user.id);
-        await interaction.editReply(`✅ Server template **${name}** saved successfully! (ID: \`${id}\`)`);
+        await interaction.editReply(
+          `✅ Server template **${name}** saved successfully! (ID: \`${id}\`)`,
+        );
         return;
       }
 
@@ -190,7 +223,11 @@ export function createPrefixCommands(service: PrefixService): CommandDefinition[
             { name: 'Server Name', value: data.name ?? 'Unknown', inline: true },
             { name: 'Roles Saved', value: `${data.roles?.length ?? 0}`, inline: true },
             { name: 'Channels Saved', value: `${data.channels?.length ?? 0}`, inline: true },
-            { name: 'Saved At', value: `<t:${Math.floor(tmpl.createdAt.getTime() / 1000)}:R>`, inline: true },
+            {
+              name: 'Saved At',
+              value: `<t:${Math.floor(tmpl.createdAt.getTime() / 1000)}:R>`,
+              inline: true,
+            },
           )
           .setFooter({ text: 'Riffly Template Engine' });
 
@@ -207,7 +244,14 @@ export function createPrefixCommands(service: PrefixService): CommandDefinition[
         const embed = new EmbedBuilder()
           .setTitle('📦 Saved Server Templates')
           .setColor(0x6366f1)
-          .setDescription(list.map((t) => `• **${t.name}** (\`${t.id}\`) — Saved <t:${Math.floor(t.createdAt.getTime() / 1000)}:R>`).join('\n'));
+          .setDescription(
+            list
+              .map(
+                (t) =>
+                  `• **${t.name}** (\`${t.id}\`) — Saved <t:${Math.floor(t.createdAt.getTime() / 1000)}:R>`,
+              )
+              .join('\n'),
+          );
         await interaction.editReply({ embeds: [embed] });
         return;
       }

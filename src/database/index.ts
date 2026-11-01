@@ -10,6 +10,3 @@ export * from './repositories/economy-repository.js';
 export * from './repositories/staff-repository.js';
 export * from './repositories/security-repository.js';
 export * from './repositories/community-repository.js';
-
-
-

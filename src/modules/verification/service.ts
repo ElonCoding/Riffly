@@ -1,14 +1,5 @@
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  EmbedBuilder,
-} from 'discord.js';
-import type {
-  GuildMember,
-  PartialGuildMember,
-  TextChannel,
-} from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
+import type { GuildMember, PartialGuildMember, TextChannel } from 'discord.js';
 import { getPrismaClient } from '../../database/client.js';
 
 export interface VerificationConfig {
@@ -183,4 +174,3 @@ export class VerificationService {
     }
   }
 }
-

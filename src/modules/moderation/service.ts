@@ -1,11 +1,4 @@
-import type {
-  Guild,
-  GuildMember,
-  Role,
-  TextChannel,
-  User,
-  VoiceBasedChannel,
-} from 'discord.js';
+import type { Guild, GuildMember, Role, TextChannel, User, VoiceBasedChannel } from 'discord.js';
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import type { IModerationRepository, ModerationCaseData } from '../../database/types.js';
 import type { ModerationResult } from './types.js';
@@ -66,7 +59,8 @@ export class ModerationService {
     deleteMessageDays = 0,
   ): Promise<ModerationResult> {
     const targetId = target.id;
-    const targetMember = 'roles' in target ? target : await guild.members.fetch(targetId).catch(() => null);
+    const targetMember =
+      'roles' in target ? target : await guild.members.fetch(targetId).catch(() => null);
 
     if (targetMember) {
       this.checkHierarchy(moderator, targetMember, guild.members.me ?? undefined);
@@ -337,11 +331,15 @@ export class ModerationService {
 
     for (const channel of channels) {
       try {
-        await channel.permissionOverwrites.edit(guild.roles.everyone, {
-          [PermissionFlagsBits.SendMessages.toString()]: !lock,
-        }, {
-          reason: `Server lockdown ${lock ? 'engaged' : 'released'} by ${moderatorTag}`,
-        });
+        await channel.permissionOverwrites.edit(
+          guild.roles.everyone,
+          {
+            [PermissionFlagsBits.SendMessages.toString()]: !lock,
+          },
+          {
+            reason: `Server lockdown ${lock ? 'engaged' : 'released'} by ${moderatorTag}`,
+          },
+        );
         affected++;
       } catch {
         // Continue across remaining channels
@@ -359,11 +357,15 @@ export class ModerationService {
     visible: boolean,
     moderatorTag: string,
   ): Promise<void> {
-    await channel.permissionOverwrites.edit(role, {
-      [PermissionFlagsBits.ViewChannel.toString()]: visible,
-    }, {
-      reason: `Channel visibility updated by ${moderatorTag}`,
-    });
+    await channel.permissionOverwrites.edit(
+      role,
+      {
+        [PermissionFlagsBits.ViewChannel.toString()]: visible,
+      },
+      {
+        reason: `Channel visibility updated by ${moderatorTag}`,
+      },
+    );
   }
 
   /**
@@ -375,11 +377,15 @@ export class ModerationService {
     lock: boolean,
     moderatorTag: string,
   ): Promise<void> {
-    await channel.permissionOverwrites.edit(role, {
-      [PermissionFlagsBits.Connect.toString()]: !lock,
-    }, {
-      reason: `Voice channel ${lock ? 'locked' : 'unlocked'} by ${moderatorTag}`,
-    });
+    await channel.permissionOverwrites.edit(
+      role,
+      {
+        [PermissionFlagsBits.Connect.toString()]: !lock,
+      },
+      {
+        reason: `Voice channel ${lock ? 'locked' : 'unlocked'} by ${moderatorTag}`,
+      },
+    );
   }
 
   /**
@@ -404,12 +410,16 @@ export class ModerationService {
   ): Promise<void> {
     if (moderator.guild.ownerId !== moderator.id) {
       if (moderator.roles.highest.position <= role.position) {
-        throw new ModerationHierarchyError('Cannot manage a role equal or higher than your highest role.');
+        throw new ModerationHierarchyError(
+          'Cannot manage a role equal or higher than your highest role.',
+        );
       }
     }
     const botMe = member.guild.members.me;
     if (botMe && botMe.roles.highest.position <= role.position) {
-      throw new ModerationHierarchyError('Cannot manage a role equal or higher than bot highest role.');
+      throw new ModerationHierarchyError(
+        'Cannot manage a role equal or higher than bot highest role.',
+      );
     }
 
     if (isAdd) {
@@ -429,7 +439,10 @@ export class ModerationService {
     isAdd: boolean,
     moderator: GuildMember,
   ): Promise<number> {
-    if (moderator.guild.ownerId !== moderator.id && moderator.roles.highest.position <= role.position) {
+    if (
+      moderator.guild.ownerId !== moderator.id &&
+      moderator.roles.highest.position <= role.position
+    ) {
       throw new ModerationHierarchyError('Role position exceeds your permissions.');
     }
 
@@ -536,10 +549,7 @@ export class ModerationService {
   /**
    * Releases member from jail, restoring original roles.
    */
-  public async releaseJail(
-    member: GuildMember,
-    previousRoleIds: string[],
-  ): Promise<void> {
+  public async releaseJail(member: GuildMember, previousRoleIds: string[]): Promise<void> {
     await member.roles.set(previousRoleIds, 'Released from jail by staff');
   }
 }

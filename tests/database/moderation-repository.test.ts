@@ -24,9 +24,7 @@ function createMockPrismaClient(): PrismaClient {
     },
     moderationCase: {
       findFirst: ({ where }: { where: { guildId: string } }) => {
-        const matches = Array.from(caseStore.values()).filter(
-          (c) => c.guildId === where.guildId,
-        );
+        const matches = Array.from(caseStore.values()).filter((c) => c.guildId === where.guildId);
         matches.sort((a, b) => b.caseNumber - a.caseNumber);
         return Promise.resolve(matches[0] ?? null);
       },
@@ -58,9 +56,7 @@ function createMockPrismaClient(): PrismaClient {
         take?: number;
         skip?: number;
       }) => {
-        let matches = Array.from(caseStore.values()).filter(
-          (c) => c.guildId === where.guildId,
-        );
+        let matches = Array.from(caseStore.values()).filter((c) => c.guildId === where.guildId);
         if (where.targetId) {
           matches = matches.filter((c) => c.targetId === where.targetId);
         }
@@ -93,10 +89,20 @@ function createMockPrismaClient(): PrismaClient {
         ).length;
         return Promise.resolve(count);
       },
-      updateMany: ({ where, data }: { where: { guildId: string; targetId: string; active: boolean; action?: string }; data: Partial<ModerationCase> }) => {
+      updateMany: ({
+        where,
+        data,
+      }: {
+        where: { guildId: string; targetId: string; active: boolean; action?: string };
+        data: Partial<ModerationCase>;
+      }) => {
         let count = 0;
         for (const [key, val] of caseStore.entries()) {
-          if (val.guildId === where.guildId && val.targetId === where.targetId && val.active === where.active) {
+          if (
+            val.guildId === where.guildId &&
+            val.targetId === where.targetId &&
+            val.active === where.active
+          ) {
             if (!where.action || val.action === where.action) {
               caseStore.set(key, { ...val, ...data });
               count++;
@@ -105,7 +111,11 @@ function createMockPrismaClient(): PrismaClient {
         }
         return Promise.resolve({ count });
       },
-      delete: ({ where }: { where: { guildId_caseNumber: { guildId: string; caseNumber: number } } }) => {
+      delete: ({
+        where,
+      }: {
+        where: { guildId_caseNumber: { guildId: string; caseNumber: number } };
+      }) => {
         const key = `${where.guildId_caseNumber.guildId}:${where.guildId_caseNumber.caseNumber}`;
         const existed = caseStore.delete(key);
         if (!existed) throw new Error('Not found');
@@ -256,4 +266,3 @@ describe('ModerationRepository', () => {
     expect(deletedNonExistent).toBe(false);
   });
 });
-

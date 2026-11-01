@@ -18,9 +18,9 @@ export function createAiModule(options: CreateAiModuleOptions = {}): ModuleDefin
   return defineModule({
     id: 'ai',
     name: 'Riffly AI Assistant',
-    description: 'Contextual AI assistant answering inquiries about Riffly platform features and controls.',
+    description:
+      'Contextual AI assistant answering inquiries about Riffly platform features and controls.',
     version: '1.0.0',
     commands: createAiCommands(service),
   });
 }
-

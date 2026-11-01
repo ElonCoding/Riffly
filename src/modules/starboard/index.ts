@@ -13,7 +13,8 @@ export function createStarboardModule(serviceInstance?: StarboardService): Modul
   return defineModule({
     id: 'starboard',
     name: 'Riffly Starboard',
-    description: 'Pin standout server messages to a starboard channel using star reaction milestones.',
+    description:
+      'Pin standout server messages to a starboard channel using star reaction milestones.',
     version: '1.0.0',
     events: [
       {
@@ -39,4 +40,3 @@ export function createStarboardModule(serviceInstance?: StarboardService): Modul
     ],
   });
 }
-

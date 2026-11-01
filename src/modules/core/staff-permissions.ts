@@ -81,10 +81,7 @@ export class StaffPermissionEngine {
   /**
    * Resolves whether a member possesses a required BotPermission flag.
    */
-  public async hasPermission(
-    member: GuildMember,
-    requiredPerm: BotPermission,
-  ): Promise<boolean> {
+  public async hasPermission(member: GuildMember, requiredPerm: BotPermission): Promise<boolean> {
     // Tier 1: Server Owner or Global Bot Owner
     if (member.guild.ownerId === member.id || this.isGlobalOwner(member.id)) {
       return true;
@@ -95,9 +92,7 @@ export class StaffPermissionEngine {
 
     // Check Extra Owner (Tier 2) - full access
     const isExtraOwner = staffList.some(
-      (s) =>
-        s.tier === 'extraowner' &&
-        (s.targetId === member.id || memberRoleIds.has(s.targetId)),
+      (s) => s.tier === 'extraowner' && (s.targetId === member.id || memberRoleIds.has(s.targetId)),
     );
     if (isExtraOwner) {
       return true;

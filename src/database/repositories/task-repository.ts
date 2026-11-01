@@ -1,10 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { getPrismaClient } from '../client.js';
-import type {
-  CreateTaskInput,
-  ITaskRepository,
-  ScheduledTaskData,
-} from '../types.js';
+import type { CreateTaskInput, ITaskRepository, ScheduledTaskData } from '../types.js';
 
 /**
  * Repository for atomic persistent task operations.
@@ -51,10 +47,7 @@ export class TaskRepository implements ITaskRepository {
   /**
    * Fetch unexecuted tasks that are due for execution at or before the given timestamp.
    */
-  public async fetchDueTasks(
-    now: Date = new Date(),
-    limit = 50,
-  ): Promise<ScheduledTaskData[]> {
+  public async fetchDueTasks(now: Date = new Date(), limit = 50): Promise<ScheduledTaskData[]> {
     const records = await this.client.scheduledTask.findMany({
       where: {
         executed: false,

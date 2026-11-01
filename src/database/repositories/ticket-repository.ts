@@ -237,4 +237,3 @@ export class TicketRepository implements ITicketRepository {
     }));
   }
 }
-

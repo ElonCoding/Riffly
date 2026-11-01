@@ -122,11 +122,7 @@ export class LevelRepository implements ILevelRepository {
   /**
    * Retrieves the guild leaderboard ordered by XP descending.
    */
-  public async getLeaderboard(
-    guildId: string,
-    limit = 10,
-    offset = 0,
-  ): Promise<UserLevelData[]> {
+  public async getLeaderboard(guildId: string, limit = 10, offset = 0): Promise<UserLevelData[]> {
     const records = await this.client.userLevel.findMany({
       where: { guildId },
       orderBy: { xp: 'desc' },
@@ -264,7 +260,9 @@ export class LevelRepository implements ILevelRepository {
 
   public async listLiveLeaderboards(
     guildId: string,
-  ): Promise<Array<{ id: string; channelId: string; messageId: string; type: string; timeframe: string }>> {
+  ): Promise<
+    Array<{ id: string; channelId: string; messageId: string; type: string; timeframe: string }>
+  > {
     return this.client.liveLeaderboard.findMany({
       where: { guildId },
     });
@@ -277,4 +275,3 @@ export class LevelRepository implements ILevelRepository {
     return deleted.count > 0;
   }
 }
-

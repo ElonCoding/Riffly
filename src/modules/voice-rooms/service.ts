@@ -1,13 +1,5 @@
-import {
-  ChannelType,
-  PermissionFlagsBits,
-} from 'discord.js';
-import type {
-  Guild,
-  GuildMember,
-  VoiceChannel,
-  VoiceState,
-} from 'discord.js';
+import { ChannelType, PermissionFlagsBits } from 'discord.js';
+import type { Guild, GuildMember, VoiceChannel, VoiceState } from 'discord.js';
 import type { ActiveVoiceRoom } from './types.js';
 
 export class VoiceRoomError extends Error {
@@ -63,10 +55,7 @@ export class VoiceRoomService {
     const guild = newState.guild ?? oldState.guild;
 
     // 1. Join to create: User entered the designated generator channel
-    if (
-      options.joinToCreateChannelId &&
-      newState.channelId === options.joinToCreateChannelId
-    ) {
+    if (options.joinToCreateChannelId && newState.channelId === options.joinToCreateChannelId) {
       return this.createTemporaryRoom(guild, member, options);
     }
 
@@ -246,7 +235,11 @@ export class VoiceRoomService {
   /**
    * Disconnects a target member from the channel without banning.
    */
-  public async kick(channel: VoiceChannel, member: GuildMember, target: GuildMember): Promise<void> {
+  public async kick(
+    channel: VoiceChannel,
+    member: GuildMember,
+    target: GuildMember,
+  ): Promise<void> {
     this.assertOwnership(channel.id, member.id);
     if (target.voice.channelId === channel.id) {
       await target.voice.disconnect('Kicked by room owner');

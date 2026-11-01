@@ -61,13 +61,18 @@ export class ModuleRegistry {
   /**
    * Registers a single module with the platform.
    */
-  public register<S extends ModuleSettingsSchema = ModuleSettingsSchema>(module: ModuleDefinition<S>): this {
+  public register<S extends ModuleSettingsSchema = ModuleSettingsSchema>(
+    module: ModuleDefinition<S>,
+  ): this {
     if (!module || typeof module.id !== 'string') {
       throw new ModuleRegistryError('Invalid module definition provided.');
     }
 
     if (this.modules.has(module.id)) {
-      throw new ModuleRegistryError(`Module with ID "${module.id}" is already registered.`, module.id);
+      throw new ModuleRegistryError(
+        `Module with ID "${module.id}" is already registered.`,
+        module.id,
+      );
     }
 
     this.modules.set(module.id, module as ModuleDefinition);
@@ -194,9 +199,7 @@ export class ModuleRegistry {
   /**
    * Loads all registered modules in topological dependency order.
    */
-  public async loadAll(
-    contextFactory?: (mod: ModuleDefinition) => ModuleContext,
-  ): Promise<void> {
+  public async loadAll(contextFactory?: (mod: ModuleDefinition) => ModuleContext): Promise<void> {
     const ordered = this.getDependencyOrder();
 
     for (const mod of ordered) {
@@ -364,7 +367,9 @@ export class ModuleRegistry {
 
     const result: Record<string, unknown> = {};
     if (mod.settings) {
-      for (const [key, field] of Object.entries(mod.settings as Record<string, SettingField<unknown>>)) {
+      for (const [key, field] of Object.entries(
+        mod.settings as Record<string, SettingField<unknown>>,
+      )) {
         result[key] = field.defaultValue;
       }
     }

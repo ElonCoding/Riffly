@@ -37,10 +37,10 @@ export function createTicketsModule(
   return defineModule({
     id: 'tickets',
     name: 'Riffly Support Tickets',
-    description: 'Private support channels, transcripts, assignment claims, and resolution tracking.',
+    description:
+      'Private support channels, transcripts, assignment claims, and resolution tracking.',
     version: '1.0.0',
     settings: ticketSettingsSchema,
     commands,
   });
 }
-

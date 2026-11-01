@@ -35,4 +35,3 @@ export interface IBackupService {
   createBackup(guild: unknown): Promise<GuildBackupSnapshot>;
   getBackups(guildId: string): Promise<readonly GuildBackupSnapshot[]>;
 }
-

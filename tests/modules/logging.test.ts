@@ -113,7 +113,8 @@ describe('Server Logging Module', () => {
   });
 
   it('executes one-click log setup creating category and 6 dedicated channels', async () => {
-    const { executeOneClickLogSetup, MemoryLoggingStore } = await import('../../src/modules/logging/commands.js');
+    const { executeOneClickLogSetup, MemoryLoggingStore } =
+      await import('../../src/modules/logging/commands.js');
     const store = new MemoryLoggingStore();
     const createdChannels: Array<{ name: string; type: number }> = [];
 

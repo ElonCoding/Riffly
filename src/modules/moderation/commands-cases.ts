@@ -54,10 +54,12 @@ export function createCaseModerationCommands(service: ModerationService): Comman
         return;
       }
 
-      const lines = filtered.slice(0, 15).map(
-        (c) =>
-          `• **#${c.caseNumber}** [${c.action.toUpperCase()}] <t:${Math.floor(new Date(c.createdAt).getTime() / 1000)}:d> — ${c.reason ?? 'No reason provided.'}`,
-      );
+      const lines = filtered
+        .slice(0, 15)
+        .map(
+          (c) =>
+            `• **#${c.caseNumber}** [${c.action.toUpperCase()}] <t:${Math.floor(new Date(c.createdAt).getTime() / 1000)}:d> — ${c.reason ?? 'No reason provided.'}`,
+        );
 
       const embed = new EmbedBuilder()
         .setTitle(`📋 Infraction Record: ${user.tag}`)
@@ -102,20 +104,28 @@ export function createCaseModerationCommands(service: ModerationService): Comman
         sub
           .setName('add')
           .setDescription('Add a private staff note for a member.')
-          .addUserOption((opt) => opt.setName('user').setDescription('Target user').setRequired(true))
-          .addStringOption((opt) => opt.setName('note').setDescription('Note content').setRequired(true)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Target user').setRequired(true),
+          )
+          .addStringOption((opt) =>
+            opt.setName('note').setDescription('Note content').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('view')
           .setDescription('View all staff notes for a member.')
-          .addUserOption((opt) => opt.setName('user').setDescription('Target user').setRequired(true)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Target user').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('remove')
           .setDescription('Remove a staff note by case number.')
-          .addIntegerOption((opt) => opt.setName('case_id').setDescription('Case number').setRequired(true)),
+          .addIntegerOption((opt) =>
+            opt.setName('case_id').setDescription('Case number').setRequired(true),
+          ),
       ),
     async execute(interaction: ChatInputCommandInteraction) {
       if (!interaction.inGuild() || !interaction.guild) {
@@ -127,7 +137,12 @@ export function createCaseModerationCommands(service: ModerationService): Comman
       if (sub === 'add') {
         const user = interaction.options.getUser('user', true);
         const content = interaction.options.getString('note', true);
-        const modCase = await service.addNote(interaction.guild.id, user.id, interaction.user.id, content);
+        const modCase = await service.addNote(
+          interaction.guild.id,
+          user.id,
+          interaction.user.id,
+          content,
+        );
         await interaction.reply({
           content: `📝 Added staff note for <@${user.id}> (Case #${modCase.caseNumber}).`,
           ephemeral: true,
@@ -140,13 +155,14 @@ export function createCaseModerationCommands(service: ModerationService): Comman
         const allCases = await service.getHistory(interaction.guild.id, user.id);
         const notes = allCases.filter((c) => c.action === 'note');
         if (notes.length === 0) {
-          await interaction.reply({ content: `📂 No staff notes on file for <@${user.id}>.`, ephemeral: true });
+          await interaction.reply({
+            content: `📂 No staff notes on file for <@${user.id}>.`,
+            ephemeral: true,
+          });
           return;
         }
 
-        const lines = notes.map(
-          (n) => `• **#${n.caseNumber}** (<@${n.moderatorId}>): ${n.reason}`,
-        );
+        const lines = notes.map((n) => `• **#${n.caseNumber}** (<@${n.moderatorId}>): ${n.reason}`);
 
         const embed = new EmbedBuilder()
           .setTitle(`📝 Staff Notes: ${user.tag}`)
@@ -182,10 +198,17 @@ export function createCaseModerationCommands(service: ModerationService): Comman
         return;
       }
       const caseNumber = interaction.options.getInteger('id', true);
-      const modCase = await (service as unknown as { repository: import('../../database/types.js').IModerationRepository }).repository.getCase(interaction.guild.id, caseNumber);
+      const modCase = await (
+        service as unknown as {
+          repository: import('../../database/types.js').IModerationRepository;
+        }
+      ).repository.getCase(interaction.guild.id, caseNumber);
 
       if (!modCase) {
-        await interaction.reply({ content: `❌ Case #${caseNumber} does not exist.`, ephemeral: true });
+        await interaction.reply({
+          content: `❌ Case #${caseNumber} does not exist.`,
+          ephemeral: true,
+        });
         return;
       }
 
@@ -193,7 +216,11 @@ export function createCaseModerationCommands(service: ModerationService): Comman
         .setTitle(`⚖️ Case #${modCase.caseNumber} • ${modCase.action.toUpperCase()}`)
         .setColor(0x34495e)
         .addFields(
-          { name: 'Target', value: `<@${modCase.targetId}> (\`${modCase.targetId}\`)`, inline: true },
+          {
+            name: 'Target',
+            value: `<@${modCase.targetId}> (\`${modCase.targetId}\`)`,
+            inline: true,
+          },
           { name: 'Moderator', value: `<@${modCase.moderatorId}>`, inline: true },
           { name: 'Status', value: modCase.active ? '🟢 Active' : '⚪ Resolved', inline: true },
           { name: 'Reason', value: modCase.reason ?? 'No reason provided.', inline: false },
@@ -211,7 +238,9 @@ export function createCaseModerationCommands(service: ModerationService): Comman
       .setName('editcase')
       .setDescription('Edit case reason.')
       .addIntegerOption((opt) => opt.setName('id').setDescription('Case number').setRequired(true))
-      .addStringOption((opt) => opt.setName('reason').setDescription('Updated reason').setRequired(true))
+      .addStringOption((opt) =>
+        opt.setName('reason').setDescription('Updated reason').setRequired(true),
+      )
       .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
     async execute(interaction: ChatInputCommandInteraction) {
       if (!interaction.inGuild() || !interaction.guild) {
@@ -221,8 +250,14 @@ export function createCaseModerationCommands(service: ModerationService): Comman
       const caseNumber = interaction.options.getInteger('id', true);
       const newReason = interaction.options.getString('reason', true);
 
-      const repo = (service as unknown as { repository: import('../../database/types.js').IModerationRepository }).repository;
-      const updated = await repo.updateCase(interaction.guild.id, caseNumber, { reason: newReason });
+      const repo = (
+        service as unknown as {
+          repository: import('../../database/types.js').IModerationRepository;
+        }
+      ).repository;
+      const updated = await repo.updateCase(interaction.guild.id, caseNumber, {
+        reason: newReason,
+      });
 
       if (!updated) {
         await interaction.reply({ content: `❌ Case #${caseNumber} not found.`, ephemeral: true });
@@ -246,19 +281,33 @@ export function createCaseModerationCommands(service: ModerationService): Comman
         sub
           .setName('member')
           .setDescription('Jail a member, strip their roles, and confine them.')
-          .addUserOption((opt) => opt.setName('user').setDescription('Member to jail').setRequired(true))
-          .addRoleOption((opt) => opt.setName('jail_role').setDescription('Jail isolation role').setRequired(true))
-          .addStringOption((opt) => opt.setName('reason').setDescription('Reason').setRequired(false)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Member to jail').setRequired(true),
+          )
+          .addRoleOption((opt) =>
+            opt.setName('jail_role').setDescription('Jail isolation role').setRequired(true),
+          )
+          .addStringOption((opt) =>
+            opt.setName('reason').setDescription('Reason').setRequired(false),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('remove')
           .setDescription('Release a member from jail and restore roles.')
-          .addUserOption((opt) => opt.setName('user').setDescription('Member to release').setRequired(true))
-          .addRoleOption((opt) => opt.setName('jail_role').setDescription('Jail role to remove').setRequired(true)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Member to release').setRequired(true),
+          )
+          .addRoleOption((opt) =>
+            opt.setName('jail_role').setDescription('Jail role to remove').setRequired(true),
+          ),
       ),
     async execute(interaction: ChatInputCommandInteraction) {
-      if (!interaction.inGuild() || !interaction.guild || !(interaction.member instanceof GuildMember)) {
+      if (
+        !interaction.inGuild() ||
+        !interaction.guild ||
+        !(interaction.member instanceof GuildMember)
+      ) {
         await interaction.reply({ content: '❌ Guild only.', ephemeral: true });
         return;
       }
@@ -276,7 +325,11 @@ export function createCaseModerationCommands(service: ModerationService): Comman
 
       if (sub === 'member') {
         const reason = interaction.options.getString('reason') ?? undefined;
-        service.checkHierarchy(interaction.member, member, interaction.guild.members.me ?? undefined);
+        service.checkHierarchy(
+          interaction.member,
+          member,
+          interaction.guild.members.me ?? undefined,
+        );
         await service.jailMember(interaction.guild, member, jailRole, reason);
         await interaction.reply({
           content: `🚨 Jailed <@${user.id}>. Roles stripped and isolation role applied.`,
@@ -295,4 +348,3 @@ export function createCaseModerationCommands(service: ModerationService): Comman
 
   return [warningsCmd, clearwarnsCmd, noteCmd, caseCmd, editcaseCmd, jailCmd];
 }
-

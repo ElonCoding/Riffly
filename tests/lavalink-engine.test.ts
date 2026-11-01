@@ -156,10 +156,17 @@ describe('LavalinkMusicEngine', () => {
     expect(engine.getState('guild-1')).toBe('buffering');
 
     // trackStart arrives -> transitions to playing
-    listeners.get('trackStart')?.({ guildId: 'guild-1' }, {
-      encoded: sampleTrack.encoded,
-      info: { title: sampleTrack.title, author: sampleTrack.author, duration: sampleTrack.lengthMs },
-    });
+    listeners.get('trackStart')?.(
+      { guildId: 'guild-1' },
+      {
+        encoded: sampleTrack.encoded,
+        info: {
+          title: sampleTrack.title,
+          author: sampleTrack.author,
+          duration: sampleTrack.lengthMs,
+        },
+      },
+    );
     expect(engine.getState('guild-1')).toBe('playing');
   });
 
@@ -184,10 +191,17 @@ describe('LavalinkMusicEngine', () => {
     });
 
     // Fire trackStart to clear buffering flag
-    listeners.get('trackStart')?.({ guildId: 'guild-1' }, {
-      encoded: sampleTrack.encoded,
-      info: { title: sampleTrack.title, author: sampleTrack.author, duration: sampleTrack.lengthMs },
-    });
+    listeners.get('trackStart')?.(
+      { guildId: 'guild-1' },
+      {
+        encoded: sampleTrack.encoded,
+        info: {
+          title: sampleTrack.title,
+          author: sampleTrack.author,
+          duration: sampleTrack.lengthMs,
+        },
+      },
+    );
     (fakePlayer as { queue: { current: unknown } }).queue = { current: sampleTrack };
 
     await engine.pause('guild-1');

@@ -354,7 +354,6 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
     return player?.position ?? 0;
   }
 
-
   override on<E extends keyof MusicEngineEvents>(event: E, listener: MusicEngineEvents[E]): this {
     return super.on(event, listener as (...args: unknown[]) => void);
   }

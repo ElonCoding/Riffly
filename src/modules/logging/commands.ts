@@ -18,7 +18,11 @@ export const DEDICATED_LOG_CHANNELS = [
   { key: 'member', name: '👤・member-logs', topic: 'Member joins, leaves, roles, and nicknames' },
   { key: 'mod', name: '🛡️・mod-logs', topic: 'Bans, kicks, warns, timeouts, and jails' },
   { key: 'server', name: '⚙️・server-logs', topic: 'Channels, roles, invites, and guild updates' },
-  { key: 'bot', name: '🤖・bot-logs', topic: 'Slash commands, bot admin actions, and system events' },
+  {
+    key: 'bot',
+    name: '🤖・bot-logs',
+    topic: 'Slash commands, bot admin actions, and system events',
+  },
 ] as const;
 
 export type LogTypeKey = (typeof DEDICATED_LOG_CHANNELS)[number]['key'];
@@ -109,7 +113,9 @@ export async function executeOneClickLogSetup(
   return { categoryName: category.name, channelsCreated };
 }
 
-export function createLoggingCommands(store: ILoggingStore = new MemoryLoggingStore()): CommandDefinition[] {
+export function createLoggingCommands(
+  store: ILoggingStore = new MemoryLoggingStore(),
+): CommandDefinition[] {
   const loggingCmd: CommandDefinition = {
     name: 'logging',
     description: 'Manage automated server audit logging.',
@@ -120,7 +126,9 @@ export function createLoggingCommands(store: ILoggingStore = new MemoryLoggingSt
       .addSubcommand((sub) =>
         sub
           .setName('setup')
-          .setDescription('One-click automatic log setup: creates RIFFLY LOGS category and 6 dedicated channels.'),
+          .setDescription(
+            'One-click automatic log setup: creates RIFFLY LOGS category and 6 dedicated channels.',
+          ),
       )
       .addSubcommand((sub) =>
         sub

@@ -344,9 +344,7 @@ export class GuildPlayerManager {
         throw RifflyError.invalidInput('Current track is not seekable.');
       }
       if (!Number.isFinite(positionMs) || positionMs < 0 || positionMs > track.lengthMs) {
-        throw RifflyError.invalidInput(
-          `Seek position must be between 0 and ${track.lengthMs}ms.`,
-        );
+        throw RifflyError.invalidInput(`Seek position must be between 0 and ${track.lengthMs}ms.`);
       }
       await this.engine.seek(guildId, positionMs);
     });
@@ -406,9 +404,7 @@ export class GuildPlayerManager {
       throw RifflyError.emptyQueue();
     }
     if (!Number.isInteger(index) || index < 1 || index > queue.length) {
-      throw RifflyError.invalidInput(
-        `Track index must be between 1 and ${queue.length}.`,
-      );
+      throw RifflyError.invalidInput(`Track index must be between 1 and ${queue.length}.`);
     }
     return queue.remove(index);
   }

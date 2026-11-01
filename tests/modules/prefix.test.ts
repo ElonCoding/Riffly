@@ -42,11 +42,12 @@ describe('PrefixService', () => {
 
   it('resolves commands using custom prefix, fallback ?, and bot mention', async () => {
     const known = new Set(['play', 'skip', 'pause', 'ban']);
-    const makeMsg = (content: string, authorId = 'user_1') => ({
-      content,
-      guildId: 'g1',
-      author: { id: authorId },
-    } as unknown as Message);
+    const makeMsg = (content: string, authorId = 'user_1') =>
+      ({
+        content,
+        guildId: 'g1',
+        author: { id: authorId },
+      }) as unknown as Message;
 
     // 1. Custom prefix ($)
     const res1 = await service.resolveCommand(makeMsg('$play bohemian rhapsody'), known, 'bot_1');
@@ -68,13 +69,21 @@ describe('PrefixService', () => {
     expect(res3.prefixUsed).toBe('@mention');
 
     // 4. No-prefix exemption for exempt_user
-    const res4 = await service.resolveCommand(makeMsg('ban @troll reason', 'exempt_user'), known, 'bot_1');
+    const res4 = await service.resolveCommand(
+      makeMsg('ban @troll reason', 'exempt_user'),
+      known,
+      'bot_1',
+    );
     expect(res4.isCommand).toBe(true);
     expect(res4.commandName).toBe('ban');
     expect(res4.isNoPrefix).toBe(true);
 
     // 5. Regular chatter (not a command)
-    const res5 = await service.resolveCommand(makeMsg('hello world how are you', 'regular_user'), known, 'bot_1');
+    const res5 = await service.resolveCommand(
+      makeMsg('hello world how are you', 'regular_user'),
+      known,
+      'bot_1',
+    );
     expect(res5.isCommand).toBe(false);
   });
 

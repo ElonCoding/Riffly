@@ -1,5 +1,11 @@
 import { EmbedBuilder } from 'discord.js';
-import type { MessageReaction, PartialMessageReaction, PartialUser, TextChannel, User } from 'discord.js';
+import type {
+  MessageReaction,
+  PartialMessageReaction,
+  PartialUser,
+  TextChannel,
+  User,
+} from 'discord.js';
 import type { StarboardSettings } from './types.js';
 
 /**
@@ -94,4 +100,3 @@ export class StarboardService {
     return false;
   }
 }
-

@@ -84,7 +84,9 @@ export const adminCommandData = new SlashCommandBuilder()
       .addRoleOption((opt) => opt.setName('role').setDescription('Target role').setRequired(false)),
   )
   .addSubcommand((sub) =>
-    sub.setName('list').setDescription('List all Server Administrators and their active permissions.'),
+    sub
+      .setName('list')
+      .setDescription('List all Server Administrators and their active permissions.'),
   );
 
 export const modCommandData = new SlashCommandBuilder()
@@ -311,8 +313,7 @@ export function createStaffCommands(engine: StaffPermissionEngine): CommandDefin
           return;
         }
 
-        const defaultMask =
-          tier === 'admin' ? ADMIN_DEFAULT_PERMISSIONS : MOD_DEFAULT_PERMISSIONS;
+        const defaultMask = tier === 'admin' ? ADMIN_DEFAULT_PERMISSIONS : MOD_DEFAULT_PERMISSIONS;
         const existing = staffList.find((s) => s.targetId === targetId && s.tier === tier);
         const activeMask = existing ? existing.permissions : defaultMask;
 
@@ -323,12 +324,7 @@ export function createStaffCommands(engine: StaffPermissionEngine): CommandDefin
           permissions: activeMask,
         });
 
-        const embed = buildStaffPermissionEmbed(
-          targetName,
-          tier,
-          activeMask,
-          interaction.user.tag,
-        );
+        const embed = buildStaffPermissionEmbed(targetName, tier, activeMask, interaction.user.tag);
         const components = buildPermissionComponents(tier, activeMask);
 
         await interaction.reply({

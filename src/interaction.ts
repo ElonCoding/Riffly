@@ -136,18 +136,30 @@ async function handleButtonInteraction(
     const prisma = getPrismaClient();
     const setting = await prisma.verificationSetting.findUnique({ where: { guildId } });
     if (!setting || !setting.roleId) {
-      await interaction.reply({ content: '❌ Verification role is not configured for this server.', ephemeral: true });
+      await interaction.reply({
+        content: '❌ Verification role is not configured for this server.',
+        ephemeral: true,
+      });
       return;
     }
     if (member.roles instanceof GuildMemberRoleManager && member.roles.cache.has(setting.roleId)) {
-      await interaction.reply({ content: 'ℹ️ You are already verified on this server.', ephemeral: true });
+      await interaction.reply({
+        content: 'ℹ️ You are already verified on this server.',
+        ephemeral: true,
+      });
       return;
     }
     try {
       await member.roles.add(setting.roleId);
-      await interaction.reply({ content: '✅ You have been successfully verified! Welcome to the server.', ephemeral: true });
+      await interaction.reply({
+        content: '✅ You have been successfully verified! Welcome to the server.',
+        ephemeral: true,
+      });
     } catch {
-      await interaction.reply({ content: '❌ Failed to assign verified role. Please check role hierarchy.', ephemeral: true });
+      await interaction.reply({
+        content: '❌ Failed to assign verified role. Please check role hierarchy.',
+        ephemeral: true,
+      });
     }
     return;
   }
@@ -165,9 +177,13 @@ async function handleButtonInteraction(
       const ticketRepo = new TicketRepository();
       const ticketService = new TicketService(ticketRepo);
       const ticketResult = await ticketService.createTicket(guild, member, 'Support Request');
-      await interaction.editReply({ content: `✅ Ticket opened! Head over to <#${ticketResult.channel.id}>.` });
+      await interaction.editReply({
+        content: `✅ Ticket opened! Head over to <#${ticketResult.channel.id}>.`,
+      });
     } catch (err: unknown) {
-      await interaction.editReply({ content: `❌ Failed to open ticket: ${err instanceof Error ? err.message : String(err)}` });
+      await interaction.editReply({
+        content: `❌ Failed to open ticket: ${err instanceof Error ? err.message : String(err)}`,
+      });
     }
     return;
   }
@@ -186,7 +202,9 @@ async function handleButtonInteraction(
       await ticketService.closeTicket(channel as TextChannel, member);
       await interaction.editReply({ content: '🔒 Ticket has been successfully closed.' });
     } catch (err: unknown) {
-      await interaction.editReply({ content: `❌ Failed to close ticket: ${err instanceof Error ? err.message : String(err)}` });
+      await interaction.editReply({
+        content: `❌ Failed to close ticket: ${err instanceof Error ? err.message : String(err)}`,
+      });
     }
     return;
   }
@@ -205,7 +223,9 @@ async function handleButtonInteraction(
       await ticketService.claimTicket(channel as TextChannel, member);
       await interaction.editReply({ content: `🙋 <@${member.id}> has claimed this ticket.` });
     } catch (err: unknown) {
-      await interaction.editReply({ content: `❌ Failed to claim ticket: ${err instanceof Error ? err.message : String(err)}` });
+      await interaction.editReply({
+        content: `❌ Failed to claim ticket: ${err instanceof Error ? err.message : String(err)}`,
+      });
     }
     return;
   }
@@ -214,7 +234,8 @@ async function handleButtonInteraction(
   if (customId === 'riffly_suggest_up' || customId === 'riffly_suggest_down') {
     try {
       const message = interaction.message;
-      const firstRow = message.components[0] as { components?: Array<{ label?: string }> } | undefined;
+      const firstRow = message.components[0] as
+        { components?: Array<{ label?: string }> } | undefined;
       if (firstRow?.components && firstRow.components.length >= 2) {
         const row = ActionRowBuilder.from(message.components[0] as never);
         const upBtn = row.components[0] as ButtonBuilder;
@@ -235,7 +256,10 @@ async function handleButtonInteraction(
         downBtn.setLabel(`Downvote (${downCount})`);
 
         await message.edit({ components: [row as never] });
-        await interaction.reply({ content: `🗳️ Vote registered! Current: 👍 ${upCount} / 👎 ${downCount}`, ephemeral: true });
+        await interaction.reply({
+          content: `🗳️ Vote registered! Current: 👍 ${upCount} / 👎 ${downCount}`,
+          ephemeral: true,
+        });
         return;
       }
     } catch {

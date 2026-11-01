@@ -67,7 +67,14 @@ export class LevelingService {
     } = {},
   ): Promise<XpAwardResult> {
     if (member.user.bot) {
-      return { awarded: false, xpGained: 0, leveledUp: false, oldLevel: 0, newLevel: 0, totalXp: BigInt(0) };
+      return {
+        awarded: false,
+        xpGained: 0,
+        leveledUp: false,
+        oldLevel: 0,
+        newLevel: 0,
+        totalXp: BigInt(0),
+      };
     }
 
     const cooldownKey = `${member.guild.id}:${member.id}`;
@@ -142,7 +149,11 @@ export class LevelingService {
       .addFields(
         { name: 'Level', value: `\`${progress.level}\``, inline: true },
         { name: 'Total XP', value: `\`${totalXp.toLocaleString()}\``, inline: true },
-        { name: 'Messages Sent', value: `\`${data.messagesCount.toLocaleString()}\``, inline: true },
+        {
+          name: 'Messages Sent',
+          value: `\`${data.messagesCount.toLocaleString()}\``,
+          inline: true,
+        },
         {
           name: 'Progress to Next Level',
           value: `\`${bar}\` ${progress.percent}%\n${progress.currentLevelXp} / ${progress.nextLevelXpNeeded} XP`,
@@ -266,4 +277,3 @@ export class LevelingService {
     return false;
   }
 }
-

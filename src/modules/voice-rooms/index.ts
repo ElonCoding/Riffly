@@ -42,7 +42,8 @@ export function createVoiceRoomsModule(): ModuleDefinition<typeof voiceRoomSetti
   return defineModule({
     id: 'voice-rooms',
     name: 'Riffly Join-To-Create Voice Rooms',
-    description: 'Dynamic temporary voice channel generation, auto-deletion on empty, and room ownership controls.',
+    description:
+      'Dynamic temporary voice channel generation, auto-deletion on empty, and room ownership controls.',
     version: '1.0.0',
     settings: voiceRoomSettingsSchema,
     commands,
@@ -68,7 +69,9 @@ export function createVoiceRoomsModule(): ModuleDefinition<typeof voiceRoomSetti
           await service.handleVoiceStateUpdate(oldState, newState, {
             joinToCreateChannelId: settings.joinToCreateChannelId,
             ...(settings.categoryId ? { categoryId: settings.categoryId } : {}),
-            ...(settings.defaultUserLimit !== undefined ? { defaultUserLimit: settings.defaultUserLimit } : {}),
+            ...(settings.defaultUserLimit !== undefined
+              ? { defaultUserLimit: settings.defaultUserLimit }
+              : {}),
           });
         },
       },

@@ -12,20 +12,22 @@ describe('CommunityService', () => {
     mockRepo = {
       addAutoRole: vi.fn().mockResolvedValue(undefined),
       removeAutoRole: vi.fn().mockResolvedValue(true),
-      listAutoRoles: vi.fn().mockResolvedValue([
-        { id: 'ar1', roleId: 'role_newbie', targetType: 'all' },
-      ]),
+      listAutoRoles: vi
+        .fn()
+        .mockResolvedValue([{ id: 'ar1', roleId: 'role_newbie', targetType: 'all' }]),
       addReactionRole: vi.fn().mockResolvedValue(undefined),
       removeReactionRole: vi.fn().mockResolvedValue(true),
       deleteReactionRoleByMessage: vi.fn().mockResolvedValue(true),
-      listReactionRoles: vi.fn().mockResolvedValue([
-        { id: 'rr1', channelId: 'c1', messageId: 'm1', emoji: '⭐', roleId: 'role_star' },
-      ]),
+      listReactionRoles: vi
+        .fn()
+        .mockResolvedValue([
+          { id: 'rr1', channelId: 'c1', messageId: 'm1', emoji: '⭐', roleId: 'role_star' },
+        ]),
       addVanityRole: vi.fn().mockResolvedValue(undefined),
       removeVanityRole: vi.fn().mockResolvedValue(true),
-      listVanityRoles: vi.fn().mockResolvedValue([
-        { id: 'vr1', keyword: '.gg/riffly', roleId: 'role_supporter' },
-      ]),
+      listVanityRoles: vi
+        .fn()
+        .mockResolvedValue([{ id: 'vr1', keyword: '.gg/riffly', roleId: 'role_supporter' }]),
       getInvites: vi.fn().mockResolvedValue({
         joins: 10,
         leaves: 2,
@@ -65,7 +67,9 @@ describe('CommunityService', () => {
       ]),
       setupClownboard: vi.fn().mockResolvedValue(undefined),
       disableClownboard: vi.fn().mockResolvedValue(undefined),
-      getClownboard: vi.fn().mockResolvedValue({ guildId: 'g1', channelId: 'c1', threshold: 3, enabled: true }),
+      getClownboard: vi
+        .fn()
+        .mockResolvedValue({ guildId: 'g1', channelId: 'c1', threshold: 3, enabled: true }),
       setupBumpReminder: vi.fn().mockResolvedValue(undefined),
       disableBumpReminder: vi.fn().mockResolvedValue(undefined),
       getBumpReminder: vi.fn().mockResolvedValue(null),
@@ -92,7 +96,10 @@ describe('CommunityService', () => {
     } as unknown as GuildMember;
 
     await service.handleMemberJoin(mockMember);
-    expect(addRoleFn).toHaveBeenCalledWith(expect.objectContaining({ id: 'role_newbie' }), expect.any(String));
+    expect(addRoleFn).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'role_newbie' }),
+      expect.any(String),
+    );
   });
 
   it('handles reaction roles add and remove correctly', async () => {
@@ -118,11 +125,17 @@ describe('CommunityService', () => {
 
     // Reaction Add
     await service.handleReaction(mockReaction, mockUser, true);
-    expect(addRoleFn).toHaveBeenCalledWith(expect.objectContaining({ id: 'role_star' }), expect.any(String));
+    expect(addRoleFn).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'role_star' }),
+      expect.any(String),
+    );
 
     // Reaction Remove
     await service.handleReaction(mockReaction, mockUser, false);
-    expect(removeRoleFn).toHaveBeenCalledWith(expect.objectContaining({ id: 'role_star' }), expect.any(String));
+    expect(removeRoleFn).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'role_star' }),
+      expect.any(String),
+    );
   });
 
   it('evaluates autoresponders with exact and substring matching', async () => {
@@ -140,13 +153,14 @@ describe('CommunityService', () => {
     const reactFn = vi.fn().mockResolvedValue(undefined);
     const sendFn = vi.fn().mockResolvedValue(undefined);
 
-    const makeMsg = (content: string, authorId: string) => ({
-      guild: { id: 'g1' },
-      channel: { id: 'count_chan', send: sendFn },
-      author: { id: authorId, bot: false },
-      content,
-      react: reactFn,
-    } as unknown as Message);
+    const makeMsg = (content: string, authorId: string) =>
+      ({
+        guild: { id: 'g1' },
+        channel: { id: 'count_chan', send: sendFn },
+        author: { id: authorId, bot: false },
+        content,
+        react: reactFn,
+      }) as unknown as Message;
 
     // Correct next number (current = 5, expected = 6)
     const success = await service.handleCountingMessage(makeMsg('6', 'user_new'));

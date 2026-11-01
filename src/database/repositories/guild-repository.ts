@@ -70,10 +70,7 @@ export class GuildRepository implements IGuildRepository {
   /**
    * Retrieve configuration for a specific module in a guild.
    */
-  public async getModuleConfig(
-    guildId: string,
-    moduleId: string,
-  ): Promise<GuildModuleData | null> {
+  public async getModuleConfig(guildId: string, moduleId: string): Promise<GuildModuleData | null> {
     const record = await this.client.guildModule.findUnique({
       where: {
         guildId_moduleId: {

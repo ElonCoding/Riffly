@@ -75,4 +75,3 @@ export function makeRemoveCommand(playerManager: GuildPlayerManager): Command {
     },
   };
 }
-

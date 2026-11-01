@@ -41,4 +41,3 @@ export function createAiCommands(service: AiService): CommandDefinition[] {
 
   return [askCmd];
 }
-

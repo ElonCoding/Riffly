@@ -8,14 +8,7 @@ import type {
   Prisma,
 } from '@prisma/client';
 
-export type {
-  GuildSettings,
-  GuildModule,
-  ModerationCase,
-  Ticket,
-  ScheduledTask,
-  UserLevel,
-};
+export type { GuildSettings, GuildModule, ModerationCase, Ticket, ScheduledTask, UserLevel };
 
 /**
  * Domain representation of guild settings.
@@ -166,7 +159,10 @@ export interface IGiveawayRepository {
   createGiveaway(data: CreateGiveawayInput): Promise<GiveawayData>;
   getGiveaway(messageId: string): Promise<GiveawayData | null>;
   addEntry(messageId: string, userId: string): Promise<{ added: boolean; totalEntries: number }>;
-  removeEntry(messageId: string, userId: string): Promise<{ removed: boolean; totalEntries: number }>;
+  removeEntry(
+    messageId: string,
+    userId: string,
+  ): Promise<{ removed: boolean; totalEntries: number }>;
   endGiveaway(messageId: string, winners: string[]): Promise<GiveawayData>;
   getActiveGiveaways(guildId?: string): Promise<GiveawayData[]>;
 }
@@ -252,7 +248,11 @@ export interface IGuildRepository {
 export interface IModerationRepository {
   createCase(data: CreateModerationCaseInput): Promise<ModerationCaseData>;
   getCase(guildId: string, caseNumber: number): Promise<ModerationCaseData | null>;
-  getCasesForTarget(guildId: string, targetId: string, limit?: number): Promise<ModerationCaseData[]>;
+  getCasesForTarget(
+    guildId: string,
+    targetId: string,
+    limit?: number,
+  ): Promise<ModerationCaseData[]>;
   getGuildCases(guildId: string, limit?: number, offset?: number): Promise<ModerationCaseData[]>;
   updateCase(
     guildId: string,
@@ -296,10 +296,24 @@ export interface ILevelRepository {
   ): Promise<{ data: UserLevelData; leveledUp: boolean; oldLevel: number; newLevel: number }>;
   getLeaderboard(guildId: string, limit?: number, offset?: number): Promise<UserLevelData[]>;
   setUserLevel(guildId: string, userId: string, level: number, xp: bigint): Promise<UserLevelData>;
-  resetUser?(guildId: string, userId: string, field?: 'all' | 'xp' | 'messages' | 'voice'): Promise<void>;
+  resetUser?(
+    guildId: string,
+    userId: string,
+    field?: 'all' | 'xp' | 'messages' | 'voice',
+  ): Promise<void>;
   resetGuild?(guildId: string, field?: 'all' | 'xp' | 'messages' | 'voice'): Promise<void>;
-  createLiveLeaderboard?(guildId: string, channelId: string, messageId: string, type: string, timeframe: string): Promise<{ id: string }>;
-  listLiveLeaderboards?(guildId: string): Promise<Array<{ id: string; channelId: string; messageId: string; type: string; timeframe: string }>>;
+  createLiveLeaderboard?(
+    guildId: string,
+    channelId: string,
+    messageId: string,
+    type: string,
+    timeframe: string,
+  ): Promise<{ id: string }>;
+  listLiveLeaderboards?(
+    guildId: string,
+  ): Promise<
+    Array<{ id: string; channelId: string; messageId: string; type: string; timeframe: string }>
+  >;
   removeLiveLeaderboard?(guildId: string, id: string): Promise<boolean>;
 }
 
@@ -310,11 +324,7 @@ export interface ITaskRepository {
   createTask(data: CreateTaskInput): Promise<ScheduledTaskData>;
   fetchDueTasks(now?: Date, limit?: number): Promise<ScheduledTaskData[]>;
   markComplete(taskId: string): Promise<ScheduledTaskData>;
-  incrementRetry(
-    taskId: string,
-    error: string,
-    nextExecuteAt?: Date,
-  ): Promise<ScheduledTaskData>;
+  incrementRetry(taskId: string, error: string, nextExecuteAt?: Date): Promise<ScheduledTaskData>;
   getTaskById(taskId: string): Promise<ScheduledTaskData | null>;
   deleteTask(taskId: string): Promise<boolean>;
 }

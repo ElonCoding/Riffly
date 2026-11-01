@@ -92,7 +92,9 @@ describe('AutoModService', () => {
   });
 
   it('detects and deletes discord invite links when antiInvite is enabled', async () => {
-    const { msg, deleteFn } = createMockMessage({ content: 'Join here: https://discord.gg/xyz123' });
+    const { msg, deleteFn } = createMockMessage({
+      content: 'Join here: https://discord.gg/xyz123',
+    });
     const result = await service.evaluateMessage(msg, { antiInvite: true });
     expect(result.triggered).toBe(true);
     expect(result.rule).toBe('anti-invite');

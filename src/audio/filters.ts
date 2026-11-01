@@ -2,13 +2,7 @@
  * Supported DSP audio filter presets.
  */
 export type AudioFilterPreset =
-  | 'bassboost'
-  | 'nightcore'
-  | 'vaporwave'
-  | '8d'
-  | 'tremolo'
-  | 'karaoke'
-  | 'clear';
+  'bassboost' | 'nightcore' | 'vaporwave' | '8d' | 'tremolo' | 'karaoke' | 'clear';
 
 export interface EqualizerBand {
   band: number;
@@ -88,4 +82,3 @@ export async function applyFilterPreset(
       break;
   }
 }
-

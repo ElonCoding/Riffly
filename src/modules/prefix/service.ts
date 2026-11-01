@@ -68,7 +68,11 @@ export class PrefixService {
     return true;
   }
 
-  public async grantNoPrefix(userId: string, grantedBy: string, durationDays?: number): Promise<void> {
+  public async grantNoPrefix(
+    userId: string,
+    grantedBy: string,
+    durationDays?: number,
+  ): Promise<void> {
     const expiresAt = durationDays ? new Date(Date.now() + durationDays * 86400 * 1000) : null;
     await this.client.noPrefixExemption.upsert({
       where: { userId },
@@ -190,7 +194,11 @@ export class PrefixService {
   public async saveTemplate(guild: Guild, name: string, creatorId: string): Promise<string> {
     const roles = Array.from(guild.roles.cache.values())
       .filter((r) => r.id !== guild.id)
-      .map((r) => ({ name: r.name, color: r.color, permissions: r.permissions.bitfield.toString() }));
+      .map((r) => ({
+        name: r.name,
+        color: r.color,
+        permissions: r.permissions.bitfield.toString(),
+      }));
 
     const channels = Array.from(guild.channels.cache.values()).map((c) => ({
       name: c.name,

@@ -135,7 +135,9 @@ export function createFunCommands(): CommandDefinition[] {
       const embed = new EmbedBuilder()
         .setTitle('🎮 Tic-Tac-Toe')
         .setColor(0x3b82f6)
-        .setDescription(`**${interaction.user.username}** (❌) vs **${opp.username}** (⭕)\nTurn: <@${interaction.user.id}>`);
+        .setDescription(
+          `**${interaction.user.username}** (❌) vs **${opp.username}** (⭕)\nTurn: <@${interaction.user.id}>`,
+        );
 
       await interaction.reply({ embeds: [embed], components: rows });
     },
@@ -174,10 +176,22 @@ export function createFunCommands(): CommandDefinition[] {
         .setFooter({ text: 'Answer with the buttons below!' });
 
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder().setCustomId('trivia_a').setLabel('A: FLAC').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('trivia_b').setLabel('B: MP3 (Correct)').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId('trivia_c').setLabel('C: WAV').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('trivia_d').setLabel('D: OGG').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId('trivia_a')
+          .setLabel('A: FLAC')
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId('trivia_b')
+          .setLabel('B: MP3 (Correct)')
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId('trivia_c')
+          .setLabel('C: WAV')
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId('trivia_d')
+          .setLabel('D: OGG')
+          .setStyle(ButtonStyle.Primary),
       );
 
       await interaction.reply({ embeds: [embed], components: [row] });
@@ -197,7 +211,9 @@ export function createFunCommands(): CommandDefinition[] {
       const embed = new EmbedBuilder()
         .setTitle(`📖 Urban Dictionary: ${term}`)
         .setColor(0x1b2838)
-        .setDescription(`**${term}**\n\nA term of supreme approval and undeniable vibe.\n\n*Example:* "That new Riffly track queue is totally ${term}."`)
+        .setDescription(
+          `**${term}**\n\nA term of supreme approval and undeniable vibe.\n\n*Example:* "That new Riffly track queue is totally ${term}."`,
+        )
         .setFooter({ text: 'Urban Dictionary' });
 
       await interaction.reply({ embeds: [embed] });
@@ -215,20 +231,32 @@ export function createFunCommands(): CommandDefinition[] {
         sub
           .setName('8ball')
           .setDescription('Ask the Magic 8-Ball a question')
-          .addStringOption((opt) => opt.setName('question').setDescription('Your question').setRequired(true)),
+          .addStringOption((opt) =>
+            opt.setName('question').setDescription('Your question').setRequired(true),
+          ),
       )
-      .addSubcommand((sub) => sub.setName('coinflip').setDescription('Flip a coin (Heads or Tails)'))
+      .addSubcommand((sub) =>
+        sub.setName('coinflip').setDescription('Flip a coin (Heads or Tails)'),
+      )
       .addSubcommand((sub) =>
         sub
           .setName('roll')
           .setDescription('Roll a random dice')
-          .addIntegerOption((opt) => opt.setName('sides').setDescription('Number of dice sides (default 6)').setMinValue(2).setMaxValue(100)),
+          .addIntegerOption((opt) =>
+            opt
+              .setName('sides')
+              .setDescription('Number of dice sides (default 6)')
+              .setMinValue(2)
+              .setMaxValue(100),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('choose')
           .setDescription('Pick randomly between choices')
-          .addStringOption((opt) => opt.setName('options').setDescription('Choices separated by commas').setRequired(true)),
+          .addStringOption((opt) =>
+            opt.setName('options').setDescription('Choices separated by commas').setRequired(true),
+          ),
       ),
     execute: async (interaction: ChatInputCommandInteraction) => {
       const sub = interaction.options.getSubcommand();
@@ -242,7 +270,7 @@ export function createFunCommands(): CommandDefinition[] {
           'Ask again later.',
           'Better not tell you now.',
           'Cannot predict now.',
-          'Don\'t count on it.',
+          "Don't count on it.",
           'My reply is no.',
           'Outlook not so good.',
           'Very doubtful.',
@@ -274,9 +302,15 @@ export function createFunCommands(): CommandDefinition[] {
 
       if (sub === 'choose') {
         const raw = interaction.options.getString('options', true);
-        const parts = raw.split(',').map((p) => p.trim()).filter((p) => p.length > 0);
+        const parts = raw
+          .split(',')
+          .map((p) => p.trim())
+          .filter((p) => p.length > 0);
         if (parts.length < 2) {
-          await interaction.reply({ content: 'Please provide at least 2 options separated by commas.', ephemeral: true });
+          await interaction.reply({
+            content: 'Please provide at least 2 options separated by commas.',
+            ephemeral: true,
+          });
           return;
         }
         const pick = parts[Math.floor(Math.random() * parts.length)];
@@ -311,7 +345,9 @@ export function createFunCommands(): CommandDefinition[] {
     data: new SlashCommandBuilder()
       .setName('fortnite')
       .setDescription('Lookup Fortnite player battle royale career statistics.')
-      .addStringOption((opt) => opt.setName('player').setDescription('Epic Games display name').setRequired(true)),
+      .addStringOption((opt) =>
+        opt.setName('player').setDescription('Epic Games display name').setRequired(true),
+      ),
     execute: async (interaction: ChatInputCommandInteraction) => {
       const player = interaction.options.getString('player', true);
       const embed = new EmbedBuilder()

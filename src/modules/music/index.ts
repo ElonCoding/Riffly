@@ -50,11 +50,11 @@ export function createMusicModule(
   return defineModule({
     id: 'music',
     name: 'Riffly Music',
-    description: 'High-performance audio playback, queue management, and Lavalink streaming engine.',
+    description:
+      'High-performance audio playback, queue management, and Lavalink streaming engine.',
     version: '1.0.0',
     alwaysOn: true,
     settings: musicSettingsSchema,
     commands,
   });
 }
-

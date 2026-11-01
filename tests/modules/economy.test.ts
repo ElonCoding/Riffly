@@ -20,11 +20,19 @@ describe('EconomyModule', () => {
     repository = {
       getEconomy: vi.fn().mockResolvedValue(mockEconomy),
       addWallet: vi.fn().mockResolvedValue(mockEconomy),
-      deposit: vi.fn().mockResolvedValue({ success: true, data: { ...mockEconomy, wallet: 100n, bank: 1400n } }),
-      withdraw: vi.fn().mockResolvedValue({ success: true, data: { ...mockEconomy, wallet: 700n, bank: 800n } }),
+      deposit: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: { ...mockEconomy, wallet: 100n, bank: 1400n } }),
+      withdraw: vi
+        .fn()
+        .mockResolvedValue({ success: true, data: { ...mockEconomy, wallet: 700n, bank: 800n } }),
       transfer: vi.fn().mockResolvedValue({ success: true }),
-      claimDaily: vi.fn().mockResolvedValue({ claimed: true, data: { ...mockEconomy, wallet: 750n } }),
-      work: vi.fn().mockResolvedValue({ worked: true, reward: 100n, data: { ...mockEconomy, wallet: 600n } }),
+      claimDaily: vi
+        .fn()
+        .mockResolvedValue({ claimed: true, data: { ...mockEconomy, wallet: 750n } }),
+      work: vi
+        .fn()
+        .mockResolvedValue({ worked: true, reward: 100n, data: { ...mockEconomy, wallet: 600n } }),
       getLeaderboard: vi.fn().mockResolvedValue([mockEconomy]),
     };
 
@@ -124,4 +132,3 @@ describe('EconomyModule', () => {
     expect(callArg?.content).toContain('Successfully transferred');
   });
 });
-

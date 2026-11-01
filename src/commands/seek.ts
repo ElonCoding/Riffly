@@ -87,4 +87,3 @@ export function makeSeekCommand(playerManager: GuildPlayerManager): Command {
     },
   };
 }
-

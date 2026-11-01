@@ -9,4 +9,3 @@ export interface StarboardSettings {
 export interface StarboardContext {
   getSettings?: (guildId: string, moduleId: string) => Promise<Record<string, unknown> | null>;
 }
-

@@ -138,7 +138,9 @@ describe('Backup Module & Service', () => {
 
     it('creates backup on create subcommand', async () => {
       const command = createBackupCommands(service)[0]!;
-      const { interaction, deferReplyMock, editReplyMock } = createInteraction({ subcommand: 'create' });
+      const { interaction, deferReplyMock, editReplyMock } = createInteraction({
+        subcommand: 'create',
+      });
       await command.execute(interaction);
 
       expect(deferReplyMock).toHaveBeenCalled();

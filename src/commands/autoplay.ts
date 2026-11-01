@@ -58,4 +58,3 @@ export function makeAutoplayCommand(playerManager: GuildPlayerManager): Command 
     },
   };
 }
-

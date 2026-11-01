@@ -52,4 +52,3 @@ export function makeShuffleCommand(playerManager: GuildPlayerManager): Command {
     },
   };
 }
-

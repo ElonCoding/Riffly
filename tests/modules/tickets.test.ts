@@ -12,26 +12,30 @@ describe('TicketService', () => {
   beforeEach(() => {
     tickets = [];
     mockRepo = {
-      createTicket: vi.fn().mockImplementation((input: {
-        guildId: string;
-        channelId: string;
-        creatorId: string;
-        category?: string | null;
-      }) => {
-        const t: TicketData = {
-          id: `t_${tickets.length + 1}`,
-          guildId: input.guildId,
-          channelId: input.channelId,
-          creatorId: input.creatorId,
-          claimedBy: null,
-          status: 'open',
-          category: input.category ?? null,
-          createdAt: new Date(),
-          closedAt: null,
-        };
-        tickets.push(t);
-        return Promise.resolve(t);
-      }),
+      createTicket: vi
+        .fn()
+        .mockImplementation(
+          (input: {
+            guildId: string;
+            channelId: string;
+            creatorId: string;
+            category?: string | null;
+          }) => {
+            const t: TicketData = {
+              id: `t_${tickets.length + 1}`,
+              guildId: input.guildId,
+              channelId: input.channelId,
+              creatorId: input.creatorId,
+              claimedBy: null,
+              status: 'open',
+              category: input.category ?? null,
+              createdAt: new Date(),
+              closedAt: null,
+            };
+            tickets.push(t);
+            return Promise.resolve(t);
+          },
+        ),
       getTicketByChannel: vi.fn().mockImplementation((_g: string, channelId: string) => {
         return Promise.resolve(tickets.find((t) => t.channelId === channelId) ?? null);
       }),
@@ -101,9 +105,39 @@ describe('TicketService', () => {
 
   it('rejects ticket creation if user already has 3 open tickets', async () => {
     tickets.push(
-      { id: '1', guildId: 'g1', channelId: 'c1', creatorId: 'u1', claimedBy: null, status: 'open', category: null, createdAt: new Date(), closedAt: null },
-      { id: '2', guildId: 'g1', channelId: 'c2', creatorId: 'u1', claimedBy: null, status: 'open', category: null, createdAt: new Date(), closedAt: null },
-      { id: '3', guildId: 'g1', channelId: 'c3', creatorId: 'u1', claimedBy: null, status: 'open', category: null, createdAt: new Date(), closedAt: null },
+      {
+        id: '1',
+        guildId: 'g1',
+        channelId: 'c1',
+        creatorId: 'u1',
+        claimedBy: null,
+        status: 'open',
+        category: null,
+        createdAt: new Date(),
+        closedAt: null,
+      },
+      {
+        id: '2',
+        guildId: 'g1',
+        channelId: 'c2',
+        creatorId: 'u1',
+        claimedBy: null,
+        status: 'open',
+        category: null,
+        createdAt: new Date(),
+        closedAt: null,
+      },
+      {
+        id: '3',
+        guildId: 'g1',
+        channelId: 'c3',
+        creatorId: 'u1',
+        claimedBy: null,
+        status: 'open',
+        category: null,
+        createdAt: new Date(),
+        closedAt: null,
+      },
     );
 
     const mockGuild = { id: 'g1' } as unknown as Guild;
@@ -212,4 +246,3 @@ describe('TicketService', () => {
     expect(modDef.commands?.[0]?.name).toBe('ticket');
   });
 });
-

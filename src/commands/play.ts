@@ -32,7 +32,9 @@ function buildEnqueuedEmbed(resolved: ResolveResult, started: boolean): EmbedBui
         { name: 'Total Tracks', value: `${resolved.tracks.length}`, inline: true },
         {
           name: 'Playback',
-          value: started ? `▶️ Now playing: **${firstTrack?.title ?? 'Track'}**` : '📋 Added to queue',
+          value: started
+            ? `▶️ Now playing: **${firstTrack?.title ?? 'Track'}**`
+            : '📋 Added to queue',
           inline: true,
         },
       )
@@ -55,9 +57,7 @@ function buildEnqueuedEmbed(resolved: ResolveResult, started: boolean): EmbedBui
   const titlePrefix = started ? '▶️ Now Playing' : '📋 Added to Queue';
   const embed = new EmbedBuilder()
     .setTitle(titlePrefix)
-    .setDescription(
-      track.uri ? `**[${track.title}](${track.uri})**` : `**${track.title}**`,
-    )
+    .setDescription(track.uri ? `**[${track.title}](${track.uri})**` : `**${track.title}**`)
     .addFields(
       { name: 'Artist', value: track.author, inline: true },
       {

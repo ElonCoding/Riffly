@@ -3,7 +3,12 @@
  */
 
 import type { Guild, Role, GuildBasedChannel } from 'discord.js';
-import type { GuildBackupSnapshot, IBackupService, RoleSnapshot, ChannelSnapshot } from './types.js';
+import type {
+  GuildBackupSnapshot,
+  IBackupService,
+  RoleSnapshot,
+  ChannelSnapshot,
+} from './types.js';
 
 export class BackupService implements IBackupService {
   private readonly backups = new Map<string, GuildBackupSnapshot[]>();
@@ -23,8 +28,8 @@ export class BackupService implements IBackupService {
         permissions: r.permissions.bitfield.toString(),
       }));
 
-    const channels: ChannelSnapshot[] = Array.from(guild.channels.cache.values())
-      .map((c: GuildBasedChannel) => {
+    const channels: ChannelSnapshot[] = Array.from(guild.channels.cache.values()).map(
+      (c: GuildBasedChannel) => {
         const textChan = 'topic' in c ? (c as { topic: string | null; nsfw: boolean }) : undefined;
         const voiceChan = 'bitrate' in c ? (c as { bitrate: number }) : undefined;
         const position = 'position' in c ? (c as { position: number }).position : 0;
@@ -39,7 +44,8 @@ export class BackupService implements IBackupService {
           ...(textChan?.nsfw ? { nsfw: textChan.nsfw } : {}),
           ...(voiceChan?.bitrate ? { bitrate: voiceChan.bitrate } : {}),
         };
-      });
+      },
+    );
 
     const snapshot: GuildBackupSnapshot = {
       id: backupId,

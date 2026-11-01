@@ -84,4 +84,3 @@ export function makeFilterCommand(playerManager: GuildPlayerManager): Command {
     },
   };
 }
-

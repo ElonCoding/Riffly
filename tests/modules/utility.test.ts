@@ -84,7 +84,12 @@ describe('UtilityModule', () => {
         ownerId: 'owner-1',
         createdTimestamp: Date.now() - 50000000,
         memberCount: 250,
-        channels: { cache: new Map([['c1', {}], ['c2', {}]]) },
+        channels: {
+          cache: new Map([
+            ['c1', {}],
+            ['c2', {}],
+          ]),
+        },
         premiumTier: 2,
         premiumSubscriptionCount: 7,
         iconURL: () => 'https://cdn.discordapp.com/icon.png',

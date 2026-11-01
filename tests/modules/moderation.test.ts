@@ -15,29 +15,33 @@ describe('ModerationService', () => {
   beforeEach(() => {
     cases = [];
     mockRepo = {
-      createCase: vi.fn().mockImplementation((input: {
-        guildId: string;
-        targetId: string;
-        moderatorId: string;
-        action: string;
-        reason?: string | null;
-        durationMs?: bigint | null;
-      }) => {
-        const c: ModerationCaseData = {
-          id: `case_${cases.length + 1}`,
-          caseNumber: cases.length + 1,
-          guildId: input.guildId,
-          targetId: input.targetId,
-          moderatorId: input.moderatorId,
-          action: input.action,
-          reason: input.reason ?? null,
-          durationMs: input.durationMs ?? null,
-          active: true,
-          createdAt: new Date(),
-        };
-        cases.push(c);
-        return Promise.resolve(c);
-      }),
+      createCase: vi
+        .fn()
+        .mockImplementation(
+          (input: {
+            guildId: string;
+            targetId: string;
+            moderatorId: string;
+            action: string;
+            reason?: string | null;
+            durationMs?: bigint | null;
+          }) => {
+            const c: ModerationCaseData = {
+              id: `case_${cases.length + 1}`,
+              caseNumber: cases.length + 1,
+              guildId: input.guildId,
+              targetId: input.targetId,
+              moderatorId: input.moderatorId,
+              action: input.action,
+              reason: input.reason ?? null,
+              durationMs: input.durationMs ?? null,
+              active: true,
+              createdAt: new Date(),
+            };
+            cases.push(c);
+            return Promise.resolve(c);
+          },
+        ),
       getCase: vi.fn(),
       getCasesForTarget: vi.fn().mockImplementation((_g: string, targetId: string) => {
         return Promise.resolve(cases.filter((c) => c.targetId === targetId));
@@ -233,7 +237,12 @@ describe('ModerationService', () => {
   });
 
   it('purges messages in text channel', async () => {
-    const bulkDeleteFn = vi.fn().mockResolvedValue(new Map([['m1', {}], ['m2', {}]]));
+    const bulkDeleteFn = vi.fn().mockResolvedValue(
+      new Map([
+        ['m1', {}],
+        ['m2', {}],
+      ]),
+    );
     const mockChannel = {
       bulkDelete: bulkDeleteFn,
     } as unknown as TextChannel;

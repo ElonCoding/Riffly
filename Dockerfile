@@ -2,6 +2,7 @@
 FROM node:24-bookworm-slim AS builder
 WORKDIR /app
 COPY package*.json tsconfig*.json ./
+COPY prisma ./prisma
 RUN npm ci
 COPY src ./src
 RUN npm run build
@@ -22,6 +23,7 @@ COPY lavalink/application.yml /app/lavalink/application.yml
 
 # Copy built application and production dependencies
 COPY package*.json ./
+COPY prisma ./prisma
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 

@@ -14,13 +14,7 @@ function createMockPrismaClient(): PrismaClient {
 
   return {
     guildSettings: {
-      upsert: ({
-        where,
-        create,
-      }: {
-        where: { guildId: string };
-        create: GuildSettings;
-      }) => {
+      upsert: ({ where, create }: { where: { guildId: string }; create: GuildSettings }) => {
         const existing = settingsStore.get(where.guildId);
         if (existing) return Promise.resolve(existing);
         const created: GuildSettings = {
@@ -35,7 +29,11 @@ function createMockPrismaClient(): PrismaClient {
       },
     },
     scheduledTask: {
-      create: ({ data }: { data: Omit<ScheduledTask, 'id' | 'createdAt' | 'updatedAt' | 'lastError'> }) => {
+      create: ({
+        data,
+      }: {
+        data: Omit<ScheduledTask, 'id' | 'createdAt' | 'updatedAt' | 'lastError'>;
+      }) => {
         const id = `task_${idCounter++}`;
         const record: ScheduledTask = {
           id,
@@ -258,20 +256,13 @@ describe('TaskRepository', () => {
       });
 
       const nextAt = new Date(Date.now() + 15_000);
-      const updated = await repository.incrementRetry(
-        task.id,
-        'Connection timeout',
-        nextAt,
-      );
+      const updated = await repository.incrementRetry(task.id, 'Connection timeout', nextAt);
 
       expect(updated.retries).toBe(1);
       expect(updated.lastError).toBe('Connection timeout');
       expect(updated.executeAt).toEqual(nextAt);
 
-      const updated2 = await repository.incrementRetry(
-        task.id,
-        'Rate limited',
-      );
+      const updated2 = await repository.incrementRetry(task.id, 'Rate limited');
       expect(updated2.retries).toBe(2);
       expect(updated2.lastError).toBe('Rate limited');
     });

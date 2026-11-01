@@ -1,12 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-  defineModule,
-  ModuleValidationError,
-} from '../../src/modules/core/define-module.js';
-import {
-  ModuleRegistry,
-  ModuleRegistryError,
-} from '../../src/modules/core/registry.js';
+import { defineModule, ModuleValidationError } from '../../src/modules/core/define-module.js';
+import { ModuleRegistry, ModuleRegistryError } from '../../src/modules/core/registry.js';
 import type { ModuleDefinition } from '../../src/modules/core/types.js';
 
 describe('Modular Core — defineModule', () => {
@@ -524,10 +518,11 @@ describe('Modular Core — ModuleRegistry', () => {
     registry.register(mod);
 
     // Defaults before any override
-    const defaults = registry.getSettings<{ channelId: string; sendDm: boolean; maxAttempts: number }>(
-      'guild-1',
-      'welcome',
-    );
+    const defaults = registry.getSettings<{
+      channelId: string;
+      sendDm: boolean;
+      maxAttempts: number;
+    }>('guild-1', 'welcome');
     expect(defaults).toEqual({
       channelId: 'default-channel',
       sendDm: false,

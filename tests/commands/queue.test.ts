@@ -164,4 +164,3 @@ describe('/queue command', () => {
     expect(embed?.data.description).toContain('Upcoming Song 15');
   });
 });
-

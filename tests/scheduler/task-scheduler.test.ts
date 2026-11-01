@@ -32,10 +32,7 @@ class InMemoryTaskRepository implements ITaskRepository {
     return Promise.resolve(task);
   }
 
-  public fetchDueTasks(
-    now: Date = new Date(),
-    limit = 50,
-  ): Promise<ScheduledTaskData[]> {
+  public fetchDueTasks(now: Date = new Date(), limit = 50): Promise<ScheduledTaskData[]> {
     const due = Array.from(this.tasks.values())
       .filter((t) => !t.executed && t.executeAt.getTime() <= now.getTime())
       .sort((a, b) => a.executeAt.getTime() - b.executeAt.getTime())
@@ -347,14 +344,10 @@ describe('TaskScheduler', () => {
       );
 
       customScheduler.start();
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Task scheduler started'),
-      );
+      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('Task scheduler started'));
 
       customScheduler.stop();
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Task scheduler stopped'),
-      );
+      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('Task scheduler stopped'));
     });
   });
 });

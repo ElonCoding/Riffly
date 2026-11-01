@@ -4,11 +4,7 @@
  * Provides voice channel co-location verification and interaction safety guards.
  */
 
-import {
-  ButtonInteraction,
-  ChatInputCommandInteraction,
-  GuildMember,
-} from 'discord.js';
+import { ButtonInteraction, ChatInputCommandInteraction, GuildMember } from 'discord.js';
 
 /**
  * Common shape for interactions that have guild, member, and client access.
@@ -40,11 +36,13 @@ export function getMemberVoiceChannelId(member: unknown): string | null {
 export function getBotVoiceChannelId(interaction: VoiceGuardedInteraction): string | null {
   if (!interaction.guildId) return null;
 
-  const guild = (interaction as { guild?: { members?: { me?: { voice?: { channelId?: string | null } } } } }).guild ??
-    interaction.client.guilds.cache.get(interaction.guildId) as { members?: { me?: { voice?: { channelId?: string | null } } } } | undefined;
+  const guild =
+    (interaction as { guild?: { members?: { me?: { voice?: { channelId?: string | null } } } } })
+      .guild ??
+    (interaction.client.guilds.cache.get(interaction.guildId) as
+      { members?: { me?: { voice?: { channelId?: string | null } } } } | undefined);
   const me =
-    guild?.members?.me ??
-    (guild as { me?: { voice?: { channelId?: string | null } } } | null)?.me;
+    guild?.members?.me ?? (guild as { me?: { voice?: { channelId?: string | null } } } | null)?.me;
 
   if (me?.voice?.channelId) {
     return me.voice.channelId;
@@ -115,13 +113,11 @@ export function formatDuration(ms: number, padMinutes = false): string {
  * Generates an ASCII visual progress bar for track playback.
  * e.g. 🔘▬▬▬▬▬▬▬▬▬▬ 01:23 / 03:45
  */
-export function createProgressBar(
-  currentMs: number,
-  totalMs: number,
-  barLength = 12,
-): string {
+export function createProgressBar(currentMs: number, totalMs: number, barLength = 12): string {
   if (totalMs <= 0) {
-    return '🔘' + '▬'.repeat(Math.max(1, barLength - 1)) + ` ${formatDuration(currentMs, true)} / ∞`;
+    return (
+      '🔘' + '▬'.repeat(Math.max(1, barLength - 1)) + ` ${formatDuration(currentMs, true)} / ∞`
+    );
   }
 
   const clampedCurrent = Math.max(0, Math.min(currentMs, totalMs));
@@ -184,4 +180,3 @@ export function parseTimestamp(input: string): number | null {
 
   return null;
 }
-

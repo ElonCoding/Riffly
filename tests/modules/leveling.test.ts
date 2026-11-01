@@ -99,12 +99,20 @@ describe('LevelingService', () => {
     } as unknown as GuildMember;
 
     // First message awards XP
-    const first = await service.handleMessage(member, { minXp: 20, maxXp: 20, cooldownSeconds: 60 });
+    const first = await service.handleMessage(member, {
+      minXp: 20,
+      maxXp: 20,
+      cooldownSeconds: 60,
+    });
     expect(first.awarded).toBe(true);
     expect(first.xpGained).toBe(20);
 
     // Second message immediately within cooldown is throttled
-    const second = await service.handleMessage(member, { minXp: 20, maxXp: 20, cooldownSeconds: 60 });
+    const second = await service.handleMessage(member, {
+      minXp: 20,
+      maxXp: 20,
+      cooldownSeconds: 60,
+    });
     expect(second.awarded).toBe(false);
     expect(second.xpGained).toBe(0);
   });
@@ -162,7 +170,15 @@ describe('LevelingService', () => {
     expect(modDef.id).toBe('leveling');
     expect(modDef.commands).toHaveLength(6);
     const names = modDef.commands?.map((c) => c.name);
-    expect(names).toEqual(expect.arrayContaining(['rank', 'levels', 'leaderboard', 'reset', 'setup-leveling', 'xp-set']));
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'rank',
+        'levels',
+        'leaderboard',
+        'reset',
+        'setup-leveling',
+        'xp-set',
+      ]),
+    );
   });
 });
-

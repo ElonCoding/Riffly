@@ -63,7 +63,10 @@ export class PrismaSecurityRepository {
     };
   }
 
-  public async setAntiNuke(guildId: string, data: Partial<AntiNukeConfig>): Promise<AntiNukeConfig> {
+  public async setAntiNuke(
+    guildId: string,
+    data: Partial<AntiNukeConfig>,
+  ): Promise<AntiNukeConfig> {
     await this.ensureGuild(guildId);
     const updated = await this.client.antiNukeSetting.upsert({
       where: { guildId },
@@ -71,7 +74,9 @@ export class PrismaSecurityRepository {
         ...(data.enabled !== undefined ? { enabled: data.enabled } : {}),
         ...(data.banThreshold !== undefined ? { banThreshold: data.banThreshold } : {}),
         ...(data.kickThreshold !== undefined ? { kickThreshold: data.kickThreshold } : {}),
-        ...(data.channelDeleteThreshold !== undefined ? { channelDeleteThreshold: data.channelDeleteThreshold } : {}),
+        ...(data.channelDeleteThreshold !== undefined
+          ? { channelDeleteThreshold: data.channelDeleteThreshold }
+          : {}),
         ...(data.action !== undefined ? { action: data.action } : {}),
         ...(data.whitelist !== undefined ? { whitelist: data.whitelist } : {}),
       },
@@ -119,7 +124,10 @@ export class PrismaSecurityRepository {
     };
   }
 
-  public async setAntiRaid(guildId: string, data: Partial<AntiRaidConfig>): Promise<AntiRaidConfig> {
+  public async setAntiRaid(
+    guildId: string,
+    data: Partial<AntiRaidConfig>,
+  ): Promise<AntiRaidConfig> {
     await this.ensureGuild(guildId);
     const updated = await this.client.antiRaidSetting.upsert({
       where: { guildId },
@@ -195,7 +203,9 @@ export class PrismaSecurityRepository {
         ...(data.maxMentions !== undefined ? { maxMentions: data.maxMentions } : {}),
         ...(data.maxMessagesPer5s !== undefined ? { maxMessagesPer5s: data.maxMessagesPer5s } : {}),
         ...(data.bannedWords !== undefined ? { bannedWords: data.bannedWords } : {}),
-        ...(data.whitelistedChannels !== undefined ? { whitelistedChannels: data.whitelistedChannels } : {}),
+        ...(data.whitelistedChannels !== undefined
+          ? { whitelistedChannels: data.whitelistedChannels }
+          : {}),
         ...(data.whitelistedRoles !== undefined ? { whitelistedRoles: data.whitelistedRoles } : {}),
       },
       create: {

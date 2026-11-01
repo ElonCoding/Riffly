@@ -1,9 +1,4 @@
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  EmbedBuilder,
-} from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
 import type { ButtonInteraction, Client, TextChannel } from 'discord.js';
 import type { IGiveawayRepository, GiveawayData } from '../../database/types.js';
 import type { TaskScheduler } from '../../scheduler/task-scheduler.js';
@@ -131,7 +126,9 @@ export class GiveawayService {
           `**Ends:** <t:${Math.floor(giveaway.endsAt.getTime() / 1000)}:R>`,
       );
 
-      await interaction.message.edit({ embeds: [updatedEmbed], components: [row] }).catch(() => null);
+      await interaction.message
+        .edit({ embeds: [updatedEmbed], components: [row] })
+        .catch(() => null);
     }
 
     await interaction.reply({ content: responseMessage, ephemeral: true });
@@ -229,13 +226,17 @@ export class GiveawayService {
 
       if (winners.length > 0) {
         const prefix = isReroll ? '🔄 **Reroll!**' : '🎉 **Congratulations**';
-        await channel.send({
-          content: `${prefix} ${winnersText}! You won **${giveaway.prize}**!`,
-        }).catch(() => null);
+        await channel
+          .send({
+            content: `${prefix} ${winnersText}! You won **${giveaway.prize}**!`,
+          })
+          .catch(() => null);
       } else {
-        await channel.send({
-          content: `⚠️ Giveaway for **${giveaway.prize}** ended with no valid entries.`,
-        }).catch(() => null);
+        await channel
+          .send({
+            content: `⚠️ Giveaway for **${giveaway.prize}** ended with no valid entries.`,
+          })
+          .catch(() => null);
       }
     } catch {
       // Channel or message fetch error ignored gracefully

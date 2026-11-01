@@ -25,60 +25,86 @@ export function createRoleModerationCommands(service: ModerationService): Comman
         sub
           .setName('add')
           .setDescription('Add a role to a member.')
-          .addUserOption((opt) => opt.setName('user').setDescription('Target user').setRequired(true))
-          .addRoleOption((opt) => opt.setName('role').setDescription('Role to assign').setRequired(true)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Target user').setRequired(true),
+          )
+          .addRoleOption((opt) =>
+            opt.setName('role').setDescription('Role to assign').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('remove')
           .setDescription('Remove a role from a member.')
-          .addUserOption((opt) => opt.setName('user').setDescription('Target user').setRequired(true))
-          .addRoleOption((opt) => opt.setName('role').setDescription('Role to remove').setRequired(true)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Target user').setRequired(true),
+          )
+          .addRoleOption((opt) =>
+            opt.setName('role').setDescription('Role to remove').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('info')
           .setDescription('View detailed metrics about a role.')
-          .addRoleOption((opt) => opt.setName('role').setDescription('Role to inspect').setRequired(true)),
+          .addRoleOption((opt) =>
+            opt.setName('role').setDescription('Role to inspect').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('bots')
           .setDescription('Mass assign a role to all bots in the server.')
-          .addRoleOption((opt) => opt.setName('role').setDescription('Role to assign').setRequired(true)),
+          .addRoleOption((opt) =>
+            opt.setName('role').setDescription('Role to assign').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('remove-bots')
           .setDescription('Mass remove a role from all bots in the server.')
-          .addRoleOption((opt) => opt.setName('role').setDescription('Role to remove').setRequired(true)),
+          .addRoleOption((opt) =>
+            opt.setName('role').setDescription('Role to remove').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('humans')
           .setDescription('Mass assign a role to all human members.')
-          .addRoleOption((opt) => opt.setName('role').setDescription('Role to assign').setRequired(true)),
+          .addRoleOption((opt) =>
+            opt.setName('role').setDescription('Role to assign').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('remove-humans')
           .setDescription('Mass remove a role from all human members.')
-          .addRoleOption((opt) => opt.setName('role').setDescription('Role to remove').setRequired(true)),
+          .addRoleOption((opt) =>
+            opt.setName('role').setDescription('Role to remove').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('all')
           .setDescription('Mass assign a role to all server members.')
-          .addRoleOption((opt) => opt.setName('role').setDescription('Role to assign').setRequired(true)),
+          .addRoleOption((opt) =>
+            opt.setName('role').setDescription('Role to assign').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('remove-all')
           .setDescription('Mass remove a role from all server members.')
-          .addRoleOption((opt) => opt.setName('role').setDescription('Role to remove').setRequired(true)),
+          .addRoleOption((opt) =>
+            opt.setName('role').setDescription('Role to remove').setRequired(true),
+          ),
       ),
     async execute(interaction: ChatInputCommandInteraction) {
-      if (!interaction.inGuild() || !interaction.guild || !(interaction.member instanceof GuildMember)) {
+      if (
+        !interaction.inGuild() ||
+        !interaction.guild ||
+        !(interaction.member instanceof GuildMember)
+      ) {
         await interaction.reply({ content: '❌ Guild only.', ephemeral: true });
         return;
       }
@@ -133,7 +159,13 @@ export function createRoleModerationCommands(service: ModerationService): Comman
       const targetType = sub.includes('bots') ? 'bots' : sub.includes('humans') ? 'humans' : 'all';
 
       try {
-        const count = await service.massRole(interaction.guild, role, targetType, isAdd, interaction.member);
+        const count = await service.massRole(
+          interaction.guild,
+          role,
+          targetType,
+          isAdd,
+          interaction.member,
+        );
         await interaction.editReply({
           content: `✅ Mass role executed: ${isAdd ? 'assigned' : 'removed'} **${role.name}** for **${count}** members.`,
         });
@@ -152,7 +184,9 @@ export function createRoleModerationCommands(service: ModerationService): Comman
       .setName('nick')
       .setDescription('Set or reset server nickname for a member.')
       .addUserOption((opt) => opt.setName('user').setDescription('Target user').setRequired(true))
-      .addStringOption((opt) => opt.setName('nickname').setDescription('New nickname (omit to reset)').setRequired(false))
+      .addStringOption((opt) =>
+        opt.setName('nickname').setDescription('New nickname (omit to reset)').setRequired(false),
+      )
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageNicknames),
     async execute(interaction: ChatInputCommandInteraction) {
       if (!interaction.inGuild() || !interaction.guild) {
@@ -187,4 +221,3 @@ export function createRoleModerationCommands(service: ModerationService): Comman
 
   return [roleCmd, nickCmd];
 }
-

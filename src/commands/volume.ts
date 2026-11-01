@@ -69,10 +69,11 @@ export function makeVolumeCommand(playerManager: GuildPlayerManager): Command {
         await interaction.editReply({ embeds: [embed] });
       } catch (err) {
         await interaction.editReply(
-          err instanceof Error ? `❌ Could not set volume: ${err.message}` : '💥 Could not set volume.',
+          err instanceof Error
+            ? `❌ Could not set volume: ${err.message}`
+            : '💥 Could not set volume.',
         );
       }
     },
   };
 }
-

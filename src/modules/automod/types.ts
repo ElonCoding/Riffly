@@ -7,12 +7,7 @@ export type AutoModAction = 'delete' | 'warn' | 'timeout';
  * Filter rule identifier for AutoMod violations.
  */
 export type AutoModRule =
-  | 'anti-invite'
-  | 'anti-link'
-  | 'anti-caps'
-  | 'mention-spam'
-  | 'banned-words'
-  | 'anti-spam';
+  'anti-invite' | 'anti-link' | 'anti-caps' | 'mention-spam' | 'banned-words' | 'anti-spam';
 
 /**
  * Configurable settings for the Riffly AutoMod module.

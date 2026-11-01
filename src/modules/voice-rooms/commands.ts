@@ -17,14 +17,21 @@ export function createVoiceRoomCommands(service: VoiceRoomService): CommandDefin
           .setName('limit')
           .setDescription('Set user limit (0 = unlimited, max 99).')
           .addIntegerOption((opt) =>
-            opt.setName('number').setDescription('Maximum participants').setMinValue(0).setMaxValue(99).setRequired(true),
+            opt
+              .setName('number')
+              .setDescription('Maximum participants')
+              .setMinValue(0)
+              .setMaxValue(99)
+              .setRequired(true),
           ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('rename')
           .setDescription('Rename your voice channel.')
-          .addStringOption((opt) => opt.setName('name').setDescription('New name').setRequired(true)),
+          .addStringOption((opt) =>
+            opt.setName('name').setDescription('New name').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub.setName('lock').setDescription('Lock voice channel for @everyone.'),
@@ -42,19 +49,25 @@ export function createVoiceRoomCommands(service: VoiceRoomService): CommandDefin
         sub
           .setName('permit')
           .setDescription('Allow a specific user into your locked VC.')
-          .addUserOption((opt) => opt.setName('user').setDescription('Target user').setRequired(true)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Target user').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('ban')
           .setDescription('Remove and block a user from your VC.')
-          .addUserOption((opt) => opt.setName('user').setDescription('Target user').setRequired(true)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Target user').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('transfer')
           .setDescription('Transfer VC ownership to another member.')
-          .addUserOption((opt) => opt.setName('user').setDescription('New owner').setRequired(true)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('New owner').setRequired(true),
+          ),
       );
   };
 
@@ -96,7 +109,8 @@ export function createVoiceRoomCommands(service: VoiceRoomService): CommandDefin
         const limit = interaction.options.getInteger('number', true);
         await service.setLimit(voiceChannel, member, limit);
         await interaction.editReply({
-          content: limit === 0 ? '✅ Removed user limit.' : `✅ Set room limit to **${limit}** members.`,
+          content:
+            limit === 0 ? '✅ Removed user limit.' : `✅ Set room limit to **${limit}** members.`,
         });
         return;
       }
@@ -145,7 +159,9 @@ export function createVoiceRoomCommands(service: VoiceRoomService): CommandDefin
           return;
         }
         await service.reject(voiceChannel, member, targetMember);
-        await interaction.editReply({ content: `🚫 Blocked <@${targetUser.id}> from this voice room.` });
+        await interaction.editReply({
+          content: `🚫 Blocked <@${targetUser.id}> from this voice room.`,
+        });
         return;
       }
 
@@ -157,7 +173,9 @@ export function createVoiceRoomCommands(service: VoiceRoomService): CommandDefin
           return;
         }
         await service.transferOwnership(voiceChannel, member, targetMember);
-        await interaction.editReply({ content: `👑 Transferred room ownership to <@${targetUser.id}>.` });
+        await interaction.editReply({
+          content: `👑 Transferred room ownership to <@${targetUser.id}>.`,
+        });
       }
     } catch (err: unknown) {
       await interaction.editReply({
@@ -169,7 +187,11 @@ export function createVoiceRoomCommands(service: VoiceRoomService): CommandDefin
   const vcCommand: CommandDefinition = {
     name: 'vc',
     description: 'Manage your self-managed VoiceMaster voice channel.',
-    data: buildVcSubcommands(new SlashCommandBuilder().setName('vc').setDescription('Manage your VoiceMaster voice channel.')),
+    data: buildVcSubcommands(
+      new SlashCommandBuilder()
+        .setName('vc')
+        .setDescription('Manage your VoiceMaster voice channel.'),
+    ),
     guildOnly: true,
     execute: executeVcLogic,
   };
@@ -211,7 +233,8 @@ export function createVoiceRoomCommands(service: VoiceRoomService): CommandDefin
       const sub = interaction.options.getSubcommand();
       if (sub === 'setup') {
         await interaction.deferReply();
-        const type = (interaction.options.getString('type') ?? 'normal') as 'normal' | 'duo' | 'trio' | 'quad';
+        const type = (interaction.options.getString('type') ?? 'normal') as
+          'normal' | 'duo' | 'trio' | 'quad';
         const res = await service.setupVoiceMaster(interaction.guild, type);
 
         const embed = new EmbedBuilder()
@@ -274,7 +297,8 @@ export function createVoiceRoomCommands(service: VoiceRoomService): CommandDefin
         return;
       }
       await interaction.deferReply();
-      const type = (interaction.options.getString('type') ?? 'normal') as 'normal' | 'duo' | 'trio' | 'quad';
+      const type = (interaction.options.getString('type') ?? 'normal') as
+        'normal' | 'duo' | 'trio' | 'quad';
       const res = await service.setupVoiceMaster(interaction.guild, type);
 
       const embed = new EmbedBuilder()

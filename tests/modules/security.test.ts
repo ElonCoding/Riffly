@@ -18,15 +18,17 @@ describe('SecurityService', () => {
         action: 'ban',
         whitelist: ['trusted_admin'],
       }),
-      setAntiNuke: vi.fn().mockImplementation((_gid, data) => Promise.resolve({
-        enabled: true,
-        banThreshold: 2,
-        kickThreshold: 3,
-        channelDeleteThreshold: 2,
-        action: 'ban',
-        whitelist: [],
-        ...data,
-      })),
+      setAntiNuke: vi.fn().mockImplementation((_gid, data) =>
+        Promise.resolve({
+          enabled: true,
+          banThreshold: 2,
+          kickThreshold: 3,
+          channelDeleteThreshold: 2,
+          action: 'ban',
+          whitelist: [],
+          ...data,
+        }),
+      ),
       getAntiRaid: vi.fn().mockResolvedValue({
         enabled: true,
         joinThreshold: 3,
@@ -34,14 +36,16 @@ describe('SecurityService', () => {
         action: 'kick',
         autoLockdown: true,
       }),
-      setAntiRaid: vi.fn().mockImplementation((_gid, data) => Promise.resolve({
-        enabled: true,
-        joinThreshold: 3,
-        windowSeconds: 5,
-        action: 'kick',
-        autoLockdown: true,
-        ...data,
-      })),
+      setAntiRaid: vi.fn().mockImplementation((_gid, data) =>
+        Promise.resolve({
+          enabled: true,
+          joinThreshold: 3,
+          windowSeconds: 5,
+          action: 'kick',
+          autoLockdown: true,
+          ...data,
+        }),
+      ),
       getAutoMod: vi.fn().mockResolvedValue({
         antiSpam: true,
         antiLinks: true,
@@ -54,19 +58,21 @@ describe('SecurityService', () => {
         whitelistedChannels: ['chan_1'],
         whitelistedRoles: ['role_1'],
       }),
-      setAutoMod: vi.fn().mockImplementation((_gid, data) => Promise.resolve({
-        antiSpam: true,
-        antiLinks: true,
-        antiCaps: true,
-        antiMention: false,
-        capsPercentage: 70,
-        maxMentions: 5,
-        maxMessagesPer5s: 5,
-        bannedWords: ['badword'],
-        whitelistedChannels: ['chan_1'],
-        whitelistedRoles: ['role_1'],
-        ...data,
-      })),
+      setAutoMod: vi.fn().mockImplementation((_gid, data) =>
+        Promise.resolve({
+          antiSpam: true,
+          antiLinks: true,
+          antiCaps: true,
+          antiMention: false,
+          capsPercentage: 70,
+          maxMentions: 5,
+          maxMessagesPer5s: 5,
+          bannedWords: ['badword'],
+          whitelistedChannels: ['chan_1'],
+          whitelistedRoles: ['role_1'],
+          ...data,
+        }),
+      ),
     } as unknown as PrismaSecurityRepository;
 
     service = new SecurityService(mockRepo);
@@ -143,13 +149,14 @@ describe('SecurityService', () => {
     } as unknown as Guild;
 
     const kickFn = vi.fn().mockResolvedValue(undefined);
-    const createMember = (id: string) => ({
-      id,
-      guild: mockGuild,
-      user: { bot: false },
-      kickable: true,
-      kick: kickFn,
-    } as unknown as GuildMember);
+    const createMember = (id: string) =>
+      ({
+        id,
+        guild: mockGuild,
+        user: { bot: false },
+        kickable: true,
+        kick: kickFn,
+      }) as unknown as GuildMember;
 
     // Join 1 and 2 (threshold = 3)
     expect(await service.handleMemberJoin(createMember('r1'))).toBe(false);
@@ -181,11 +188,19 @@ describe('SecurityService', () => {
 
     const lockedCount = await service.lockdown(mockGuild, 'Emergency test');
     expect(lockedCount).toBe(1);
-    expect(editPermsFn).toHaveBeenCalledWith(expect.anything(), { SendMessages: false }, expect.any(Object));
+    expect(editPermsFn).toHaveBeenCalledWith(
+      expect.anything(),
+      { SendMessages: false },
+      expect.any(Object),
+    );
 
     const unlockedCount = await service.unlockdown(mockGuild);
     expect(unlockedCount).toBe(1);
-    expect(editPermsFn).toHaveBeenCalledWith(expect.anything(), { SendMessages: null }, expect.any(Object));
+    expect(editPermsFn).toHaveBeenCalledWith(
+      expect.anything(),
+      { SendMessages: null },
+      expect.any(Object),
+    );
   });
 
   it('manages automod banned words and whitelists', async () => {
@@ -203,6 +218,10 @@ describe('SecurityService', () => {
     const mod = createSecurityModule(service);
     expect(mod.id).toBe('security');
     expect(mod.commands).toHaveLength(3);
-    expect(mod.commands?.map((c: { name: string }) => c.name)).toEqual(['antinuke', 'antiraid', 'automod']);
+    expect(mod.commands?.map((c: { name: string }) => c.name)).toEqual([
+      'antinuke',
+      'antiraid',
+      'automod',
+    ]);
   });
 });

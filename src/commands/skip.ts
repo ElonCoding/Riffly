@@ -40,9 +40,7 @@ export function makeSkipCommand(playerManager: GuildPlayerManager): Command {
         const embed = new EmbedBuilder()
           .setTitle('⏭️ Skipped')
           .setDescription(
-            next
-              ? `Now playing: **${next.title}** by ${next.author}`
-              : 'Queue is now empty.',
+            next ? `Now playing: **${next.title}** by ${next.author}` : 'Queue is now empty.',
           )
           .setColor(0x5865f2);
 

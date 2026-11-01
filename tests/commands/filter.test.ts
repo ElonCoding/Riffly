@@ -85,7 +85,9 @@ describe('/filter command', () => {
   });
 
   it('applies bassboost preset and edits reply with confirmation embed', async () => {
-    const { interaction, deferReplyMock, editReplyMock } = createInteraction({ preset: 'bassboost' });
+    const { interaction, deferReplyMock, editReplyMock } = createInteraction({
+      preset: 'bassboost',
+    });
     await command.execute(interaction);
 
     expect(setFilterMock).toHaveBeenCalledWith('guild-1', 'bassboost');
@@ -96,7 +98,9 @@ describe('/filter command', () => {
   });
 
   it('handles Lavalink filter application errors gracefully', async () => {
-    (setFilterMock as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Lavalink filter failed'));
+    (setFilterMock as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('Lavalink filter failed'),
+    );
     const { interaction, editReplyMock } = createInteraction({ preset: '8d' });
     await command.execute(interaction);
 

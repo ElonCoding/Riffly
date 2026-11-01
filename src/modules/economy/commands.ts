@@ -29,9 +29,17 @@ export function createEconomyCommands(
         .setColor(0x10b981)
         .setThumbnail(targetUser.displayAvatarURL())
         .addFields(
-          { name: 'Wallet', value: `${currency} **${data.wallet.toLocaleString()}**`, inline: true },
+          {
+            name: 'Wallet',
+            value: `${currency} **${data.wallet.toLocaleString()}**`,
+            inline: true,
+          },
           { name: 'Bank', value: `${currency} **${data.bank.toLocaleString()}**`, inline: true },
-          { name: 'Net Worth', value: `${currency} **${netWorth.toLocaleString()}**`, inline: true },
+          {
+            name: 'Net Worth',
+            value: `${currency} **${netWorth.toLocaleString()}**`,
+            inline: true,
+          },
         )
         .setFooter({ text: 'Riffly Virtual Economy' })
         .setTimestamp();
@@ -269,7 +277,9 @@ export function createEconomyCommands(
 
       const reward = BigInt(Math.floor(Math.random() * 40) + 10);
       await repository.addWallet(interaction.guildId, interaction.user.id, reward);
-      await interaction.editReply(`🪙 A kind stranger dropped ${currency} **${reward}** into your cup!`);
+      await interaction.editReply(
+        `🪙 A kind stranger dropped ${currency} **${reward}** into your cup!`,
+      );
     },
   };
 
@@ -290,17 +300,23 @@ export function createEconomyCommands(
       const bet = BigInt(interaction.options.getInteger('amount', true));
       const userEco = await repository.getEconomy(interaction.guildId, interaction.user.id);
       if (userEco.wallet < bet) {
-        await interaction.editReply(`❌ You only have ${currency} **${userEco.wallet.toLocaleString()}** in your wallet.`);
+        await interaction.editReply(
+          `❌ You only have ${currency} **${userEco.wallet.toLocaleString()}** in your wallet.`,
+        );
         return;
       }
 
       const roll = Math.floor(Math.random() * 100) + 1;
       if (roll >= 52) {
         await repository.addWallet(interaction.guildId, interaction.user.id, bet);
-        await interaction.editReply(`🎲 You rolled **${roll}** (Win!) and doubled your bet! Won ${currency} **${bet.toLocaleString()}**.`);
+        await interaction.editReply(
+          `🎲 You rolled **${roll}** (Win!) and doubled your bet! Won ${currency} **${bet.toLocaleString()}**.`,
+        );
       } else {
         await repository.addWallet(interaction.guildId, interaction.user.id, -bet);
-        await interaction.editReply(`🎲 You rolled **${roll}** (Loss). You lost ${currency} **${bet.toLocaleString()}**.`);
+        await interaction.editReply(
+          `🎲 You rolled **${roll}** (Loss). You lost ${currency} **${bet.toLocaleString()}**.`,
+        );
       }
     },
   };
@@ -315,6 +331,16 @@ export function createEconomyCommands(
     execute: leaderboardCmd.execute,
   };
 
-  return [balanceCmd, dailyCmd, workCmd, payCmd, depositCmd, withdrawCmd, leaderboardCmd, begCmd, gambleCmd, richCmd];
+  return [
+    balanceCmd,
+    dailyCmd,
+    workCmd,
+    payCmd,
+    depositCmd,
+    withdrawCmd,
+    leaderboardCmd,
+    begCmd,
+    gambleCmd,
+    richCmd,
+  ];
 }
-

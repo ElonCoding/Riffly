@@ -61,7 +61,8 @@ export function createLevelingModule(
   return defineModule({
     id: 'leveling',
     name: 'Riffly XP & Leveling',
-    description: 'Chat activity progression, configurable XP cooldowns, rank cards, and leaderboards.',
+    description:
+      'Chat activity progression, configurable XP cooldowns, rank cards, and leaderboards.',
     version: '1.0.0',
     settings: levelingSettingsSchema,
     commands,
@@ -85,8 +86,14 @@ export function createLevelingModule(
 
           let levelUpChannel: TextChannel | undefined;
           if (settings.levelUpChannelId) {
-            const fetched = await message.guild.channels.fetch(settings.levelUpChannelId).catch(() => null);
-            if (fetched && 'send' in fetched && typeof (fetched as TextChannel).send === 'function') {
+            const fetched = await message.guild.channels
+              .fetch(settings.levelUpChannelId)
+              .catch(() => null);
+            if (
+              fetched &&
+              'send' in fetched &&
+              typeof (fetched as TextChannel).send === 'function'
+            ) {
               levelUpChannel = fetched as TextChannel;
             }
           }
@@ -94,7 +101,9 @@ export function createLevelingModule(
           await service.handleMessage(message.member, {
             ...(settings.minXpPerMessage !== undefined ? { minXp: settings.minXpPerMessage } : {}),
             ...(settings.maxXpPerMessage !== undefined ? { maxXp: settings.maxXpPerMessage } : {}),
-            ...(settings.cooldownSeconds !== undefined ? { cooldownSeconds: settings.cooldownSeconds } : {}),
+            ...(settings.cooldownSeconds !== undefined
+              ? { cooldownSeconds: settings.cooldownSeconds }
+              : {}),
             ...(levelUpChannel ? { levelUpChannel } : {}),
           });
         },

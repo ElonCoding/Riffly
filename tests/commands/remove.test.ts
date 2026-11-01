@@ -144,4 +144,3 @@ describe('/remove command', () => {
     expect(callArg.embeds?.[0]?.data.description).toContain('#1');
   });
 });
-

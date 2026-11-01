@@ -39,7 +39,10 @@ export class TicketService {
       throw new TicketError('You already have 3 open tickets. Please resolve them first.');
     }
 
-    const channelName = `ticket-${creator.user.username.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15)}-${Date.now().toString().slice(-4)}`;
+    const channelName = `ticket-${creator.user.username
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 15)}-${Date.now().toString().slice(-4)}`;
 
     const permissionOverwrites = [
       {
@@ -129,10 +132,7 @@ export class TicketService {
   /**
    * Closes an active ticket and records the resolution timestamp.
    */
-  public async closeTicket(
-    channel: TextChannel,
-    moderator: GuildMember,
-  ): Promise<TicketData> {
+  public async closeTicket(channel: TextChannel, moderator: GuildMember): Promise<TicketData> {
     const ticket = await this.repository.getTicketByChannel(channel.guild.id, channel.id);
     if (!ticket) {
       throw new TicketError('This channel is not an active support ticket.');
@@ -168,10 +168,7 @@ export class TicketService {
   /**
    * Claims a ticket on behalf of a staff moderator.
    */
-  public async claimTicket(
-    channel: TextChannel,
-    moderator: GuildMember,
-  ): Promise<TicketData> {
+  public async claimTicket(channel: TextChannel, moderator: GuildMember): Promise<TicketData> {
     const ticket = await this.repository.getTicketByChannel(channel.guild.id, channel.id);
     if (!ticket) {
       throw new TicketError('This channel is not an active support ticket.');
@@ -199,10 +196,7 @@ export class TicketService {
   /**
    * Releases claim on an active ticket.
    */
-  public async unclaimTicket(
-    channel: TextChannel,
-    moderator: GuildMember,
-  ): Promise<TicketData> {
+  public async unclaimTicket(channel: TextChannel, moderator: GuildMember): Promise<TicketData> {
     const ticket = await this.repository.getTicketByChannel(channel.guild.id, channel.id);
     if (!ticket) {
       throw new TicketError('This channel is not an active support ticket.');
@@ -220,7 +214,9 @@ export class TicketService {
     const unclaimEmbed = new EmbedBuilder()
       .setTitle('🔓 Ticket Unclaimed')
       .setColor(0xf59e0b)
-      .setDescription(`Ticket has been unclaimed by <@${moderator.id}> and is open for support staff.`)
+      .setDescription(
+        `Ticket has been unclaimed by <@${moderator.id}> and is open for support staff.`,
+      )
       .setTimestamp();
 
     await channel.send({ embeds: [unclaimEmbed] });

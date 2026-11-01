@@ -244,4 +244,3 @@ export class ModerationRepository implements IModerationRepository {
     }
   }
 }
-

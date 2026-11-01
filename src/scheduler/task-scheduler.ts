@@ -1,14 +1,6 @@
 import { TaskRepository } from '../database/repositories/task-repository.js';
-import type {
-  CreateTaskInput,
-  ITaskRepository,
-  ScheduledTaskData,
-} from '../database/types.js';
-import type {
-  SchedulerStatus,
-  TaskHandler,
-  TaskSchedulerOptions,
-} from './types.js';
+import type { CreateTaskInput, ITaskRepository, ScheduledTaskData } from '../database/types.js';
+import type { SchedulerStatus, TaskHandler, TaskSchedulerOptions } from './types.js';
 
 /**
  * Atomic persistent task scheduler for Riffly.

@@ -7,9 +7,7 @@ import type {
   VoiceState,
 } from 'discord.js';
 
-export function formatMessageDeleteEmbed(
-  message: Message | PartialMessage,
-): EmbedBuilder | null {
+export function formatMessageDeleteEmbed(message: Message | PartialMessage): EmbedBuilder | null {
   if (!message.guild || message.author?.bot) {
     return null;
   }
@@ -18,9 +16,17 @@ export function formatMessageDeleteEmbed(
     .setTitle('🗑️ Message Deleted')
     .setColor(0xef4444)
     .addFields(
-      { name: 'Author', value: message.author ? `<@${message.author.id}> (${message.author.id})` : 'Unknown', inline: true },
+      {
+        name: 'Author',
+        value: message.author ? `<@${message.author.id}> (${message.author.id})` : 'Unknown',
+        inline: true,
+      },
       { name: 'Channel', value: `<#${message.channelId}>`, inline: true },
-      { name: 'Content', value: message.content ? message.content.slice(0, 1024) : '*No text content / embed only*', inline: false },
+      {
+        name: 'Content',
+        value: message.content ? message.content.slice(0, 1024) : '*No text content / embed only*',
+        inline: false,
+      },
     )
     .setTimestamp();
 }
@@ -41,10 +47,22 @@ export function formatMessageUpdateEmbed(
     .setTitle('✏️ Message Edited')
     .setColor(0x3b82f6)
     .addFields(
-      { name: 'Author', value: newMessage.author ? `<@${newMessage.author.id}>` : 'Unknown', inline: true },
+      {
+        name: 'Author',
+        value: newMessage.author ? `<@${newMessage.author.id}>` : 'Unknown',
+        inline: true,
+      },
       { name: 'Channel', value: `<#${newMessage.channelId}>`, inline: true },
-      { name: 'Before', value: oldMessage.content ? oldMessage.content.slice(0, 1024) : '*Unknown*', inline: false },
-      { name: 'After', value: newMessage.content ? newMessage.content.slice(0, 1024) : '*Empty*', inline: false },
+      {
+        name: 'Before',
+        value: oldMessage.content ? oldMessage.content.slice(0, 1024) : '*Unknown*',
+        inline: false,
+      },
+      {
+        name: 'After',
+        value: newMessage.content ? newMessage.content.slice(0, 1024) : '*Empty*',
+        inline: false,
+      },
     )
     .setTimestamp();
 }
@@ -66,9 +84,7 @@ export function formatMemberJoinEmbed(member: GuildMember): EmbedBuilder {
     .setTimestamp();
 }
 
-export function formatMemberLeaveEmbed(
-  member: GuildMember | PartialGuildMember,
-): EmbedBuilder {
+export function formatMemberLeaveEmbed(member: GuildMember | PartialGuildMember): EmbedBuilder {
   return new EmbedBuilder()
     .setTitle('📤 Member Left')
     .setColor(0x6b7280)
@@ -120,4 +136,3 @@ export function formatVoiceStateEmbed(
 
   return null;
 }
-

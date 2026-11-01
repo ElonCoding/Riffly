@@ -55,7 +55,8 @@ describe('/autoplay command', () => {
     await command.execute(interaction);
 
     expect(replyMock).toHaveBeenCalled();
-    const arg = replyMock.mock.calls[0]?.[0] as { content?: string; ephemeral?: boolean } | undefined;
+    const arg = replyMock.mock.calls[0]?.[0] as
+      { content?: string; ephemeral?: boolean } | undefined;
     expect(arg?.content).toContain('only be used in a server');
     expect(arg?.ephemeral).toBe(true);
   });
@@ -65,7 +66,8 @@ describe('/autoplay command', () => {
     await command.execute(interaction);
 
     expect(replyMock).toHaveBeenCalled();
-    const arg = replyMock.mock.calls[0]?.[0] as { content?: string; ephemeral?: boolean } | undefined;
+    const arg = replyMock.mock.calls[0]?.[0] as
+      { content?: string; ephemeral?: boolean } | undefined;
     expect(arg?.content).toContain('same voice channel');
     expect(arg?.ephemeral).toBe(true);
   });

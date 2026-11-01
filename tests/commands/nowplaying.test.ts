@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ActionRowBuilder, ButtonBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import type {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ChatInputCommandInteraction,
+  EmbedBuilder,
+} from 'discord.js';
 import { makeNowPlayingCommand } from '../../src/commands/nowplaying.js';
 import type { GuildPlayerManager } from '../../src/player/guild-player.js';
 
@@ -120,4 +125,3 @@ describe('/nowplaying command', () => {
     ]);
   });
 });
-

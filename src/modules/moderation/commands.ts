@@ -1,9 +1,4 @@
-import {
-  EmbedBuilder,
-  GuildMember,
-  PermissionFlagsBits,
-  SlashCommandBuilder,
-} from 'discord.js';
+import { EmbedBuilder, GuildMember, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import type { TextChannel } from 'discord.js';
 import type { CommandDefinition } from '../core/types.js';
 import type { ModerationService } from './service.js';
@@ -76,12 +71,18 @@ export function createModerationCommands(service: ModerationService): CommandDef
     data: new SlashCommandBuilder()
       .setName('unban')
       .setDescription('Unban a user by their Discord user ID.')
-      .addStringOption((opt) => opt.setName('user_id').setDescription('User ID to unban').setRequired(true))
+      .addStringOption((opt) =>
+        opt.setName('user_id').setDescription('User ID to unban').setRequired(true),
+      )
       .addStringOption((opt) => opt.setName('reason').setDescription('Reason').setRequired(false))
       .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
     guildOnly: true,
     execute: async (interaction) => {
-      if (!interaction.inGuild() || !interaction.guild || !(interaction.member instanceof GuildMember)) {
+      if (
+        !interaction.inGuild() ||
+        !interaction.guild ||
+        !(interaction.member instanceof GuildMember)
+      ) {
         await interaction.reply({ content: '❌ Guild only.', ephemeral: true });
         return;
       }
@@ -250,7 +251,11 @@ export function createModerationCommands(service: ModerationService): CommandDef
       .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
     guildOnly: true,
     execute: async (interaction) => {
-      if (!interaction.inGuild() || !interaction.guild || !(interaction.member instanceof GuildMember)) {
+      if (
+        !interaction.inGuild() ||
+        !interaction.guild ||
+        !(interaction.member instanceof GuildMember)
+      ) {
         await interaction.reply({ content: '❌ Server only.', ephemeral: true });
         return;
       }
@@ -264,10 +269,19 @@ export function createModerationCommands(service: ModerationService): CommandDef
       const reason = interaction.options.getString('reason') ?? undefined;
 
       try {
-        const res = await service.timeout(interaction.guild, interaction.member, targetMember, durationMs, reason);
+        const res = await service.timeout(
+          interaction.guild,
+          interaction.member,
+          targetMember,
+          durationMs,
+          reason,
+        );
         await interaction.reply({ content: `🔇 ${res.message}` });
       } catch (err: unknown) {
-        await interaction.reply({ content: `❌ ${err instanceof Error ? err.message : String(err)}`, ephemeral: true });
+        await interaction.reply({
+          content: `❌ ${err instanceof Error ? err.message : String(err)}`,
+          ephemeral: true,
+        });
       }
     },
   };
@@ -278,12 +292,18 @@ export function createModerationCommands(service: ModerationService): CommandDef
     data: new SlashCommandBuilder()
       .setName('unmute')
       .setDescription('Remove timeout from a member.')
-      .addUserOption((opt) => opt.setName('target').setDescription('Target member').setRequired(true))
+      .addUserOption((opt) =>
+        opt.setName('target').setDescription('Target member').setRequired(true),
+      )
       .addStringOption((opt) => opt.setName('reason').setDescription('Reason').setRequired(false))
       .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
     guildOnly: true,
     execute: async (interaction) => {
-      if (!interaction.inGuild() || !interaction.guild || !(interaction.member instanceof GuildMember)) {
+      if (
+        !interaction.inGuild() ||
+        !interaction.guild ||
+        !(interaction.member instanceof GuildMember)
+      ) {
         await interaction.reply({ content: '❌ Server only.', ephemeral: true });
         return;
       }
@@ -298,7 +318,10 @@ export function createModerationCommands(service: ModerationService): CommandDef
         const res = await service.unmute(interaction.guild, member, interaction.member);
         await interaction.reply({ content: `🔊 ${res.message}` });
       } catch (err: unknown) {
-        await interaction.reply({ content: `❌ ${err instanceof Error ? err.message : String(err)}`, ephemeral: true });
+        await interaction.reply({
+          content: `❌ ${err instanceof Error ? err.message : String(err)}`,
+          ephemeral: true,
+        });
       }
     },
   };
@@ -314,7 +337,11 @@ export function createModerationCommands(service: ModerationService): CommandDef
       .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
     guildOnly: true,
     execute: async (interaction) => {
-      if (!interaction.inGuild() || !interaction.guild || !(interaction.member instanceof GuildMember)) {
+      if (
+        !interaction.inGuild() ||
+        !interaction.guild ||
+        !(interaction.member instanceof GuildMember)
+      ) {
         await interaction.reply({ content: '❌ Server only.', ephemeral: true });
         return;
       }
@@ -327,10 +354,18 @@ export function createModerationCommands(service: ModerationService): CommandDef
       const reason = interaction.options.getString('reason') ?? undefined;
 
       try {
-        const res = await service.softban(interaction.guild, interaction.member, targetMember, reason);
+        const res = await service.softban(
+          interaction.guild,
+          interaction.member,
+          targetMember,
+          reason,
+        );
         await interaction.reply({ content: `🧹 ${res.message}` });
       } catch (err: unknown) {
-        await interaction.reply({ content: `❌ ${err instanceof Error ? err.message : String(err)}`, ephemeral: true });
+        await interaction.reply({
+          content: `❌ ${err instanceof Error ? err.message : String(err)}`,
+          ephemeral: true,
+        });
       }
     },
   };
@@ -454,7 +489,12 @@ export function createModerationCommands(service: ModerationService): CommandDef
       await interaction.deferReply({ ephemeral: true });
       const channel = interaction.channel;
       const moderator = interaction.member;
-      if (!channel || !('bulkDelete' in channel) || !moderator || !(moderator instanceof GuildMember)) {
+      if (
+        !channel ||
+        !('bulkDelete' in channel) ||
+        !moderator ||
+        !(moderator instanceof GuildMember)
+      ) {
         await interaction.editReply({ content: 'Can only purge messages in text channels.' });
         return;
       }

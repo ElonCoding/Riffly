@@ -108,7 +108,11 @@ export class PrismaCommunityRepository {
     });
   }
 
-  public async removeReactionRole(guildId: string, messageId: string, emoji: string): Promise<boolean> {
+  public async removeReactionRole(
+    guildId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<boolean> {
     const deleted = await this.client.reactionRole.deleteMany({
       where: { guildId, messageId, emoji },
     });
@@ -405,7 +409,11 @@ export class PrismaCommunityRepository {
     });
   }
 
-  public async removeSocialAlert(guildId: string, platform: string, account: string): Promise<boolean> {
+  public async removeSocialAlert(
+    guildId: string,
+    platform: string,
+    account: string,
+  ): Promise<boolean> {
     const deleted = await this.client.socialAlert.deleteMany({
       where: {
         guildId,
@@ -430,11 +438,7 @@ export class PrismaCommunityRepository {
     });
   }
 
-  public async setBoosterRole(
-    guildId: string,
-    userId: string,
-    roleId: string,
-  ) {
+  public async setBoosterRole(guildId: string, userId: string, roleId: string) {
     await this.ensureGuild(guildId);
     return this.client.boosterRole.upsert({
       where: { guildId_userId: { guildId, userId } },

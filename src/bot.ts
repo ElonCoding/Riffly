@@ -112,7 +112,10 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
 
       // 2. AutoResponder matching
       try {
-        const autoReply = await commService.evaluateAutoResponder(message.guild.id, message.content);
+        const autoReply = await commService.evaluateAutoResponder(
+          message.guild.id,
+          message.content,
+        );
         if (autoReply) {
           await message.channel.send(autoReply);
         }

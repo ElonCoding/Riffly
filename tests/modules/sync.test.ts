@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { REST } from 'discord.js';
-import {
-  CommandSynchronizer,
-  formatCommandPayload,
-} from '../../src/modules/commands/sync.js';
+import { CommandSynchronizer, formatCommandPayload } from '../../src/modules/commands/sync.js';
 import type { CommandDefinition } from '../../src/modules/core/types.js';
 import { ModuleRegistry } from '../../src/modules/core/registry.js';
 import { defineModule } from '../../src/modules/core/define-module.js';

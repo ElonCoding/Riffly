@@ -134,7 +134,8 @@ describe('StarboardService', () => {
 
     expect(posted).toBe(true);
     expect(sendFn).toHaveBeenCalled();
-    const sendArg = sendFn.mock.calls[0]?.[0] as { content?: string; embeds?: unknown[] } | undefined;
+    const sendArg = sendFn.mock.calls[0]?.[0] as
+      { content?: string; embeds?: unknown[] } | undefined;
     expect(sendArg?.content).toContain('⭐ **3**');
     expect(sendArg?.embeds?.length).toBeGreaterThan(0);
   });

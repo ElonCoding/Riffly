@@ -1,7 +1,4 @@
-import {
-  EmbedBuilder,
-  SlashCommandBuilder,
-} from 'discord.js';
+import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import type { CommandDefinition } from '../core/types.js';
 import type { TaskScheduler } from '../../scheduler/task-scheduler.js';
 

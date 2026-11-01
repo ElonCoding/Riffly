@@ -1,10 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { getPrismaClient } from '../client.js';
-import type {
-  CreateGiveawayInput,
-  GiveawayData,
-  IGiveawayRepository,
-} from '../types.js';
+import type { CreateGiveawayInput, GiveawayData, IGiveawayRepository } from '../types.js';
 
 /**
  * Repository managing giveaways, entry lists, winner tracking, and expiration states.
@@ -198,4 +194,3 @@ export class GiveawayRepository implements IGiveawayRepository {
     }));
   }
 }
-

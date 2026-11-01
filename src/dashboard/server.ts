@@ -37,8 +37,7 @@ export class RifflyDashboardServer {
 
       this.server.listen(port, this.options.host ?? '0.0.0.0', () => {
         const address = this.server?.address();
-        const actualPort =
-          typeof address === 'object' && address ? address.port : port;
+        const actualPort = typeof address === 'object' && address ? address.port : port;
         resolve(actualPort);
       });
     });
@@ -140,12 +139,13 @@ export class RifflyDashboardServer {
       // 2. GET /api/guilds
       if (method === 'GET' && path === '/api/guilds') {
         const client = this.options.client;
-        const guilds = client?.guilds?.cache.map((g) => ({
-          id: g.id,
-          name: g.name,
-          icon: g.iconURL(),
-          memberCount: g.memberCount,
-        })) ?? [];
+        const guilds =
+          client?.guilds?.cache.map((g) => ({
+            id: g.id,
+            name: g.name,
+            icon: g.iconURL(),
+            memberCount: g.memberCount,
+          })) ?? [];
 
         this.sendJson(res, 200, { guilds });
         return;
@@ -270,8 +270,7 @@ export class RifflyDashboardServer {
 
         // 8. GET /api/guilds/:guildId/moderation/cases
         if (method === 'GET' && subPath === '/moderation/cases') {
-          const cases =
-            (await this.options.moderationRepository?.getGuildCases(guildId, 50)) ?? [];
+          const cases = (await this.options.moderationRepository?.getGuildCases(guildId, 50)) ?? [];
           this.sendJson(res, 200, { cases });
           return;
         }

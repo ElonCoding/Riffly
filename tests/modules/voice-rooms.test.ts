@@ -161,8 +161,7 @@ describe('VoiceRoomService', () => {
     const modDef = createVoiceRoomsModule();
     expect(modDef.id).toBe('voice-rooms');
     expect(modDef.commands).toHaveLength(3);
-    expect(modDef.commands?.map(c => c.name)).toEqual(['vc', 'voicemaster', 'setup-vc']);
+    expect(modDef.commands?.map((c) => c.name)).toEqual(['vc', 'voicemaster', 'setup-vc']);
     expect(modDef.events).toHaveLength(1);
   });
 });
-

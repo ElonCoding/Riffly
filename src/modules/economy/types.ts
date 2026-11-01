@@ -5,4 +5,3 @@ export interface EconomySettings {
   workMaxReward?: number;
   currencySymbol?: string;
 }
-

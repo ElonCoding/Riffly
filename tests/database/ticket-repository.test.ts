@@ -65,9 +65,7 @@ function createMockPrismaClient(): PrismaClient {
         take?: number;
         skip?: number;
       }) => {
-        let matches = Array.from(ticketStore.values()).filter(
-          (t) => t.guildId === where.guildId,
-        );
+        let matches = Array.from(ticketStore.values()).filter((t) => t.guildId === where.guildId);
         if (where.status) {
           matches = matches.filter((t) => t.status === where.status);
         }
@@ -150,4 +148,3 @@ describe('TicketRepository', () => {
     expect(allList).toHaveLength(2);
   });
 });
-

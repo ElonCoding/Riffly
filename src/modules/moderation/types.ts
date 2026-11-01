@@ -35,4 +35,3 @@ export interface ModerationModuleSettings {
   readonly dmOnSanction: boolean;
   readonly defaultPurgeLimit: number;
 }
-

@@ -18,9 +18,7 @@ export const backupCommandData = new SlashCommandBuilder()
   .addSubcommand((sub) =>
     sub.setName('create').setDescription('Create a fresh structural backup of channels and roles.'),
   )
-  .addSubcommand((sub) =>
-    sub.setName('list').setDescription('List available server snapshots.'),
-  );
+  .addSubcommand((sub) => sub.setName('list').setDescription('List available server snapshots.'));
 
 export function createBackupCommands(backupService: BackupService): CommandDefinition[] {
   const backupCmd: CommandDefinition = {

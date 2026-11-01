@@ -20,9 +20,15 @@ export function createVerificationCommands(service: VerificationService): Comman
         sub
           .setName('setup')
           .setDescription('Configure the verified role and verification channel')
-          .addRoleOption((opt) => opt.setName('role').setDescription('Role granted upon verification').setRequired(true))
+          .addRoleOption((opt) =>
+            opt.setName('role').setDescription('Role granted upon verification').setRequired(true),
+          )
           .addChannelOption((opt) =>
-            opt.setName('channel').setDescription('Channel where users verify').addChannelTypes(ChannelType.GuildText).setRequired(true),
+            opt
+              .setName('channel')
+              .setDescription('Channel where users verify')
+              .addChannelTypes(ChannelType.GuildText)
+              .setRequired(true),
           )
           .addStringOption((opt) =>
             opt
@@ -39,13 +45,21 @@ export function createVerificationCommands(service: VerificationService): Comman
           .setName('panel')
           .setDescription('Dispatch an interactive verification panel')
           .addChannelOption((opt) =>
-            opt.setName('channel').setDescription('Target text channel').addChannelTypes(ChannelType.GuildText).setRequired(true),
+            opt
+              .setName('channel')
+              .setDescription('Target text channel')
+              .addChannelTypes(ChannelType.GuildText)
+              .setRequired(true),
           )
           .addStringOption((opt) => opt.setName('title').setDescription('Panel title'))
           .addStringOption((opt) => opt.setName('description').setDescription('Panel instructions'))
-          .addStringOption((opt) => opt.setName('button_label').setDescription('Custom button label')),
+          .addStringOption((opt) =>
+            opt.setName('button_label').setDescription('Custom button label'),
+          ),
       )
-      .addSubcommand((sub) => sub.setName('view').setDescription('View current verification configuration')),
+      .addSubcommand((sub) =>
+        sub.setName('view').setDescription('View current verification configuration'),
+      ),
     guildOnly: true,
     defaultMemberPermissions: PermissionFlagsBits.Administrator,
     execute: async (interaction: ChatInputCommandInteraction) => {
@@ -72,7 +86,9 @@ export function createVerificationCommands(service: VerificationService): Comman
       if (subcommand === 'panel') {
         const channel = interaction.options.getChannel<ChannelType.GuildText>('channel', true);
         const title = interaction.options.getString('title') ?? 'Server Verification';
-        const description = interaction.options.getString('description') ?? 'Click the button below to verify your account.';
+        const description =
+          interaction.options.getString('description') ??
+          'Click the button below to verify your account.';
         const buttonLabel = interaction.options.getString('button_label') ?? 'Verify';
 
         await service.sendVerificationPanel(channel, title, description, buttonLabel);
@@ -83,7 +99,9 @@ export function createVerificationCommands(service: VerificationService): Comman
       if (subcommand === 'view') {
         const settings = await service.getSettings(guild.id);
         if (!settings) {
-          await interaction.editReply('Verification is not yet configured for this server. Use `/verify setup`.');
+          await interaction.editReply(
+            'Verification is not yet configured for this server. Use `/verify setup`.',
+          );
           return;
         }
 

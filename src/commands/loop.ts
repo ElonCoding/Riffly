@@ -72,4 +72,3 @@ export function makeLoopCommand(playerManager: GuildPlayerManager): Command {
     },
   };
 }
-

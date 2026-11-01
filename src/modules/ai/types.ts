@@ -7,4 +7,3 @@ export interface AiSettings {
 export interface IAiProvider {
   generateResponse(prompt: string, systemPrompt?: string): Promise<string>;
 }
-

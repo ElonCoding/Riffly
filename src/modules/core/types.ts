@@ -9,13 +9,7 @@ import type {
  * Supported primitive and semantic types for module configuration settings.
  */
 export type SettingType =
-  | 'string'
-  | 'number'
-  | 'boolean'
-  | 'string[]'
-  | 'channel'
-  | 'role'
-  | 'json';
+  'string' | 'number' | 'boolean' | 'string[]' | 'channel' | 'role' | 'json';
 
 /**
  * Definition of an individual configurable setting field.
@@ -139,8 +133,9 @@ export interface ScheduledTaskDefinition {
 /**
  * Complete declarative module contract for Riffly modular platform features.
  */
-export interface ModuleDefinition<S extends ModuleSettingsSchema = ModuleSettingsSchema>
-  extends ModuleLifecycleHooks<S> {
+export interface ModuleDefinition<
+  S extends ModuleSettingsSchema = ModuleSettingsSchema,
+> extends ModuleLifecycleHooks<S> {
   readonly id: string;
   readonly name: string;
   readonly description: string;

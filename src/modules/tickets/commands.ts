@@ -23,11 +23,20 @@ export function createTicketCommands(service: TicketService): CommandDefinition[
           .setName('setup')
           .setDescription('Configure ticket category and default support roles')
           .addChannelOption((opt) =>
-            opt.setName('category').setDescription('Parent category for new tickets').addChannelTypes(ChannelType.GuildCategory).setRequired(true),
+            opt
+              .setName('category')
+              .setDescription('Parent category for new tickets')
+              .addChannelTypes(ChannelType.GuildCategory)
+              .setRequired(true),
           )
-          .addRoleOption((opt) => opt.setName('support_role').setDescription('Role granted access to all tickets'))
+          .addRoleOption((opt) =>
+            opt.setName('support_role').setDescription('Role granted access to all tickets'),
+          )
           .addChannelOption((opt) =>
-            opt.setName('transcripts_channel').setDescription('Channel for saved transcripts').addChannelTypes(ChannelType.GuildText),
+            opt
+              .setName('transcripts_channel')
+              .setDescription('Channel for saved transcripts')
+              .addChannelTypes(ChannelType.GuildText),
           ),
       )
       .addSubcommand((sub) =>
@@ -35,17 +44,29 @@ export function createTicketCommands(service: TicketService): CommandDefinition[
           .setName('panel')
           .setDescription('Send a ticket creation panel to a channel')
           .addChannelOption((opt) =>
-            opt.setName('channel').setDescription('Target text channel').addChannelTypes(ChannelType.GuildText).setRequired(true),
+            opt
+              .setName('channel')
+              .setDescription('Target text channel')
+              .addChannelTypes(ChannelType.GuildText)
+              .setRequired(true),
           )
-          .addStringOption((opt) => opt.setName('title').setDescription('Panel title').setRequired(true))
-          .addStringOption((opt) => opt.setName('description').setDescription('Panel instructions').setRequired(true))
-          .addStringOption((opt) => opt.setName('button_text').setDescription('Custom button label')),
+          .addStringOption((opt) =>
+            opt.setName('title').setDescription('Panel title').setRequired(true),
+          )
+          .addStringOption((opt) =>
+            opt.setName('description').setDescription('Panel instructions').setRequired(true),
+          )
+          .addStringOption((opt) =>
+            opt.setName('button_text').setDescription('Custom button label'),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('create')
           .setDescription('Create a new private support ticket channel.')
-          .addStringOption((opt) => opt.setName('category').setDescription('Ticket category/topic')),
+          .addStringOption((opt) =>
+            opt.setName('category').setDescription('Ticket category/topic'),
+          ),
       )
       .addSubcommand((sub) =>
         sub
@@ -53,28 +74,42 @@ export function createTicketCommands(service: TicketService): CommandDefinition[
           .setDescription('Close the current ticket channel.')
           .addStringOption((opt) => opt.setName('reason').setDescription('Closure reason')),
       )
-      .addSubcommand((sub) => sub.setName('claim').setDescription('Claim the current ticket as support staff.'))
-      .addSubcommand((sub) => sub.setName('unclaim').setDescription('Release your claim on this ticket.'))
+      .addSubcommand((sub) =>
+        sub.setName('claim').setDescription('Claim the current ticket as support staff.'),
+      )
+      .addSubcommand((sub) =>
+        sub.setName('unclaim').setDescription('Release your claim on this ticket.'),
+      )
       .addSubcommand((sub) =>
         sub
           .setName('add')
           .setDescription('Add a user to this ticket.')
-          .addUserOption((opt) => opt.setName('user').setDescription('User to add').setRequired(true)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('User to add').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('remove')
           .setDescription('Remove a user from this ticket.')
-          .addUserOption((opt) => opt.setName('user').setDescription('User to remove').setRequired(true)),
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('User to remove').setRequired(true),
+          ),
       )
       .addSubcommand((sub) =>
         sub
           .setName('rename')
           .setDescription('Rename the current ticket channel.')
-          .addStringOption((opt) => opt.setName('name').setDescription('New channel name').setRequired(true)),
+          .addStringOption((opt) =>
+            opt.setName('name').setDescription('New channel name').setRequired(true),
+          ),
       )
-      .addSubcommand((sub) => sub.setName('list').setDescription('List all currently open support tickets.'))
-      .addSubcommand((sub) => sub.setName('transcript').setDescription('Generate a text transcript of this ticket.')),
+      .addSubcommand((sub) =>
+        sub.setName('list').setDescription('List all currently open support tickets.'),
+      )
+      .addSubcommand((sub) =>
+        sub.setName('transcript').setDescription('Generate a text transcript of this ticket.'),
+      ),
     guildOnly: true,
     execute: async (interaction: ChatInputCommandInteraction) => {
       await interaction.deferReply({ ephemeral: true });
@@ -91,7 +126,9 @@ export function createTicketCommands(service: TicketService): CommandDefinition[
       try {
         if (subcommand === 'setup') {
           if (!member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            await interaction.editReply({ content: 'You need Manage Server permissions to setup tickets.' });
+            await interaction.editReply({
+              content: 'You need Manage Server permissions to setup tickets.',
+            });
             return;
           }
           const cat = interaction.options.getChannel('category', true);
@@ -106,7 +143,9 @@ export function createTicketCommands(service: TicketService): CommandDefinition[
 
         if (subcommand === 'panel') {
           if (!member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            await interaction.editReply({ content: 'You need Manage Server permissions to send panels.' });
+            await interaction.editReply({
+              content: 'You need Manage Server permissions to send panels.',
+            });
             return;
           }
           const targetChan = interaction.options.getChannel<ChannelType.GuildText>('channel', true);
@@ -179,7 +218,9 @@ export function createTicketCommands(service: TicketService): CommandDefinition[
         if (subcommand === 'rename') {
           const newName = interaction.options.getString('name', true);
           await service.renameTicket(textChannel, newName);
-          await interaction.editReply({ content: `✅ Ticket renamed to #${newName.toLowerCase().replace(/\s+/g, '-')}.` });
+          await interaction.editReply({
+            content: `✅ Ticket renamed to #${newName.toLowerCase().replace(/\s+/g, '-')}.`,
+          });
           return;
         }
 
@@ -203,7 +244,9 @@ export function createTicketCommands(service: TicketService): CommandDefinition[
             return;
           }
           await service.removeMember(textChannel, targetMember);
-          await interaction.editReply({ content: `Removed <@${targetMember.id}> from the ticket.` });
+          await interaction.editReply({
+            content: `Removed <@${targetMember.id}> from the ticket.`,
+          });
           return;
         }
 

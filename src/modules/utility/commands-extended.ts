@@ -12,8 +12,14 @@ import {
 import type { CommandDefinition } from '../core/types.js';
 
 // In-memory snipes for deleted/edited messages: key = channelId -> { author: string, content: string, time: Date }
-export const deletedMessageSnipe = new Map<string, { author: string; content: string; time: Date }>();
-export const editedMessageSnipe = new Map<string, { author: string; oldContent: string; newContent: string; time: Date }>();
+export const deletedMessageSnipe = new Map<
+  string,
+  { author: string; content: string; time: Date }
+>();
+export const editedMessageSnipe = new Map<
+  string,
+  { author: string; oldContent: string; newContent: string; time: Date }
+>();
 
 export function createExtendedUtilityCommands(): CommandDefinition[] {
   // 1. /afk
@@ -40,7 +46,9 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     data: new SlashCommandBuilder()
       .setName('suggest')
       .setDescription('Submit an improvement suggestion for server members to vote on.')
-      .addStringOption((opt) => opt.setName('suggestion').setDescription('Your suggestion').setRequired(true)),
+      .addStringOption((opt) =>
+        opt.setName('suggestion').setDescription('Your suggestion').setRequired(true),
+      ),
     guildOnly: true,
     execute: async (interaction: ChatInputCommandInteraction) => {
       const text = interaction.options.getString('suggestion', true);
@@ -53,8 +61,16 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
         .setTimestamp();
 
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder().setCustomId('riffly_suggest_up').setLabel('Upvote (0)').setStyle(ButtonStyle.Success).setEmoji('👍'),
-        new ButtonBuilder().setCustomId('riffly_suggest_down').setLabel('Downvote (0)').setStyle(ButtonStyle.Danger).setEmoji('👎'),
+        new ButtonBuilder()
+          .setCustomId('riffly_suggest_up')
+          .setLabel('Upvote (0)')
+          .setStyle(ButtonStyle.Success)
+          .setEmoji('👍'),
+        new ButtonBuilder()
+          .setCustomId('riffly_suggest_down')
+          .setLabel('Downvote (0)')
+          .setStyle(ButtonStyle.Danger)
+          .setEmoji('👎'),
       );
 
       await interaction.reply({ embeds: [embed], components: [row] });
@@ -69,14 +85,18 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
       .setName('report')
       .setDescription('Privately report an abusive user or rule infraction to server staff.')
       .addUserOption((opt) => opt.setName('user').setDescription('Target user').setRequired(true))
-      .addStringOption((opt) => opt.setName('reason').setDescription('Details of the violation').setRequired(true)),
+      .addStringOption((opt) =>
+        opt.setName('reason').setDescription('Details of the violation').setRequired(true),
+      ),
     guildOnly: true,
     execute: async (interaction: ChatInputCommandInteraction) => {
       await interaction.deferReply({ ephemeral: true });
       const target = interaction.options.getUser('user', true);
       const reason = interaction.options.getString('reason', true);
 
-      await interaction.editReply(`🛡️ Report submitted against <@${target.id}> for: **"${reason}"**. Our staff team will review this incident.`);
+      await interaction.editReply(
+        `🛡️ Report submitted against <@${target.id}> for: **"${reason}"**. Our staff team will review this incident.`,
+      );
     },
   };
 
@@ -89,11 +109,19 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
       .setDescription('Broadcast a formatted announcement to a channel.')
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
       .addChannelOption((opt) =>
-        opt.setName('channel').setDescription('Channel to post').addChannelTypes(ChannelType.GuildText).setRequired(true),
+        opt
+          .setName('channel')
+          .setDescription('Channel to post')
+          .addChannelTypes(ChannelType.GuildText)
+          .setRequired(true),
       )
-      .addStringOption((opt) => opt.setName('message').setDescription('Announcement message').setRequired(true))
+      .addStringOption((opt) =>
+        opt.setName('message').setDescription('Announcement message').setRequired(true),
+      )
       .addStringOption((opt) => opt.setName('title').setDescription('Announcement title'))
-      .addBooleanOption((opt) => opt.setName('ping_everyone').setDescription('Include @everyone ping')),
+      .addBooleanOption((opt) =>
+        opt.setName('ping_everyone').setDescription('Include @everyone ping'),
+      ),
     guildOnly: true,
     defaultMemberPermissions: PermissionFlagsBits.ManageGuild,
     execute: async (interaction: ChatInputCommandInteraction) => {
@@ -128,11 +156,19 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
       .setDescription('Post a custom embed with title, description, color, and image.')
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
       .addChannelOption((opt) =>
-        opt.setName('channel').setDescription('Target channel').addChannelTypes(ChannelType.GuildText).setRequired(true),
+        opt
+          .setName('channel')
+          .setDescription('Target channel')
+          .addChannelTypes(ChannelType.GuildText)
+          .setRequired(true),
       )
-      .addStringOption((opt) => opt.setName('description').setDescription('Embed description body').setRequired(true))
+      .addStringOption((opt) =>
+        opt.setName('description').setDescription('Embed description body').setRequired(true),
+      )
       .addStringOption((opt) => opt.setName('title').setDescription('Embed title'))
-      .addStringOption((opt) => opt.setName('color').setDescription('Hex color code (e.g. #3b82f6)'))
+      .addStringOption((opt) =>
+        opt.setName('color').setDescription('Hex color code (e.g. #3b82f6)'),
+      )
       .addStringOption((opt) => opt.setName('image_url').setDescription('Image URL')),
     guildOnly: true,
     defaultMemberPermissions: PermissionFlagsBits.ManageMessages,
@@ -169,9 +205,27 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
         .setTitle(`🖼️ Server Assets: ${guild.name}`)
         .setColor(0x6366f1)
         .addFields(
-          { name: 'Icon', value: guild.iconURL({ size: 1024 }) ? `[Download Icon](${guild.iconURL({ size: 1024 })})` : 'None', inline: true },
-          { name: 'Banner', value: guild.bannerURL({ size: 1024 }) ? `[Download Banner](${guild.bannerURL({ size: 1024 })})` : 'None', inline: true },
-          { name: 'Splash', value: guild.splashURL({ size: 1024 }) ? `[Download Splash](${guild.splashURL({ size: 1024 })})` : 'None', inline: true },
+          {
+            name: 'Icon',
+            value: guild.iconURL({ size: 1024 })
+              ? `[Download Icon](${guild.iconURL({ size: 1024 })})`
+              : 'None',
+            inline: true,
+          },
+          {
+            name: 'Banner',
+            value: guild.bannerURL({ size: 1024 })
+              ? `[Download Banner](${guild.bannerURL({ size: 1024 })})`
+              : 'None',
+            inline: true,
+          },
+          {
+            name: 'Splash',
+            value: guild.splashURL({ size: 1024 })
+              ? `[Download Splash](${guild.splashURL({ size: 1024 })})`
+              : 'None',
+            inline: true,
+          },
         );
       if (guild.bannerURL()) embed.setImage(guild.bannerURL({ size: 1024 }) ?? '');
       await interaction.reply({ embeds: [embed] });
@@ -194,7 +248,10 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
         await interaction.reply({ content: 'This server has no icon set.', ephemeral: true });
         return;
       }
-      const embed = new EmbedBuilder().setTitle(`${guild.name}'s Icon`).setImage(url).setColor(0x6366f1);
+      const embed = new EmbedBuilder()
+        .setTitle(`${guild.name}'s Icon`)
+        .setImage(url)
+        .setColor(0x6366f1);
       await interaction.reply({ embeds: [embed] });
     },
   };
@@ -219,7 +276,11 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
       const embed = new EmbedBuilder()
         .setTitle(`🎭 Server Roles (${guild.roles.cache.size - 1})`)
         .setColor(0x6366f1)
-        .setDescription(roles.map((r) => `• <@&${r.id}> — ${r.members.size} members (Pos: ${r.position})`).join('\n'));
+        .setDescription(
+          roles
+            .map((r) => `• <@&${r.id}> — ${r.members.size} members (Pos: ${r.position})`)
+            .join('\n'),
+        );
 
       await interaction.reply({ embeds: [embed] });
     },
@@ -242,7 +303,9 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
         .setTitle(`😃 Server Emojis (${guild.emojis.cache.size})`)
         .setColor(0x6366f1)
         .setDescription(
-          emojis.length > 0 ? emojis.map((e) => `<:${e.name}:${e.id}>`).join(' ') : 'No custom emojis found.',
+          emojis.length > 0
+            ? emojis.map((e) => `<:${e.name}:${e.id}>`).join(' ')
+            : 'No custom emojis found.',
         );
 
       await interaction.reply({ embeds: [embed] });
@@ -261,13 +324,20 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
       const guild = interaction.guild;
       if (!guild) return;
 
-      const boosters = Array.from(guild.members.cache.values()).filter((m) => Boolean(m.premiumSince));
+      const boosters = Array.from(guild.members.cache.values()).filter((m) =>
+        Boolean(m.premiumSince),
+      );
       const embed = new EmbedBuilder()
         .setTitle(`⭐ Server Boosters (${boosters.length})`)
         .setColor(0xf43f5e)
         .setDescription(
           boosters.length > 0
-            ? boosters.map((b) => `• <@${b.id}> — Since <t:${Math.floor(b.premiumSince!.getTime() / 1000)}:R>`).join('\n')
+            ? boosters
+                .map(
+                  (b) =>
+                    `• <@${b.id}> — Since <t:${Math.floor(b.premiumSince!.getTime() / 1000)}:R>`,
+                )
+                .join('\n')
             : 'No active boosters found.',
         );
 
@@ -286,7 +356,9 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     guildOnly: true,
     execute: async (interaction: ChatInputCommandInteraction) => {
       const target = interaction.options.getUser('user') ?? interaction.user;
-      await interaction.reply(`💬 <@${target.id}> has active message statistics recorded on Riffly.`);
+      await interaction.reply(
+        `💬 <@${target.id}> has active message statistics recorded on Riffly.`,
+      );
     },
   };
 
@@ -301,7 +373,10 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     execute: async (interaction: ChatInputCommandInteraction) => {
       const sniped = deletedMessageSnipe.get(interaction.channelId);
       if (!sniped) {
-        await interaction.reply({ content: '🔍 No recently deleted messages to snipe.', ephemeral: true });
+        await interaction.reply({
+          content: '🔍 No recently deleted messages to snipe.',
+          ephemeral: true,
+        });
         return;
       }
 
@@ -327,7 +402,10 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     execute: async (interaction: ChatInputCommandInteraction) => {
       const sniped = editedMessageSnipe.get(interaction.channelId);
       if (!sniped) {
-        await interaction.reply({ content: '🔍 No recently edited messages to snipe.', ephemeral: true });
+        await interaction.reply({
+          content: '🔍 No recently edited messages to snipe.',
+          ephemeral: true,
+        });
         return;
       }
 
@@ -352,7 +430,9 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     data: new SlashCommandBuilder()
       .setName('crypto')
       .setDescription('Lookup live prices for cryptocurrencies (BTC, ETH, SOL, etc.).')
-      .addStringOption((opt) => opt.setName('coin').setDescription('Symbol or name (e.g. btc, eth, sol)').setRequired(true)),
+      .addStringOption((opt) =>
+        opt.setName('coin').setDescription('Symbol or name (e.g. btc, eth, sol)').setRequired(true),
+      ),
     execute: async (interaction: ChatInputCommandInteraction) => {
       await interaction.deferReply({ ephemeral: false });
       const coin = interaction.options.getString('coin', true).toUpperCase();
@@ -386,7 +466,9 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     data: new SlashCommandBuilder()
       .setName('color')
       .setDescription('Preview a hex color swatch with RGB conversions.')
-      .addStringOption((opt) => opt.setName('hex').setDescription('Hex color (e.g. #3b82f6)').setRequired(true)),
+      .addStringOption((opt) =>
+        opt.setName('hex').setDescription('Hex color (e.g. #3b82f6)').setRequired(true),
+      ),
     execute: async (interaction: ChatInputCommandInteraction) => {
       const hex = interaction.options.getString('hex', true).replace('#', '');
       const embed = new EmbedBuilder()
@@ -431,8 +513,15 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     data: new SlashCommandBuilder()
       .setName('translate')
       .setDescription('Translate text between languages.')
-      .addStringOption((opt) => opt.setName('text').setDescription('Text to translate').setRequired(true))
-      .addStringOption((opt) => opt.setName('to').setDescription('Target language code (e.g. es, fr, de, ja)').setRequired(true)),
+      .addStringOption((opt) =>
+        opt.setName('text').setDescription('Text to translate').setRequired(true),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('to')
+          .setDescription('Target language code (e.g. es, fr, de, ja)')
+          .setRequired(true),
+      ),
     execute: async (interaction: ChatInputCommandInteraction) => {
       const text = interaction.options.getString('text', true);
       const to = interaction.options.getString('to', true);
@@ -456,13 +545,17 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     data: new SlashCommandBuilder()
       .setName('define')
       .setDescription('Lookup the definition, etymology, and example usage of an English word.')
-      .addStringOption((opt) => opt.setName('word').setDescription('Word to lookup').setRequired(true)),
+      .addStringOption((opt) =>
+        opt.setName('word').setDescription('Word to lookup').setRequired(true),
+      ),
     execute: async (interaction: ChatInputCommandInteraction) => {
       const word = interaction.options.getString('word', true);
       const embed = new EmbedBuilder()
         .setTitle(`📖 Definition: ${word}`)
         .setColor(0x6366f1)
-        .setDescription(`**${word}** *(noun)*\n1. A fundamental building block of expression and clarity.\n\n*Example:* "Using ${word} effectively empowers great bots."`);
+        .setDescription(
+          `**${word}** *(noun)*\n1. A fundamental building block of expression and clarity.\n\n*Example:* "Using ${word} effectively empowers great bots."`,
+        );
 
       await interaction.reply({ embeds: [embed] });
     },
@@ -475,13 +568,17 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     data: new SlashCommandBuilder()
       .setName('wiki')
       .setDescription('Search Wikipedia for articles and summaries.')
-      .addStringOption((opt) => opt.setName('query').setDescription('Topic to search').setRequired(true)),
+      .addStringOption((opt) =>
+        opt.setName('query').setDescription('Topic to search').setRequired(true),
+      ),
     execute: async (interaction: ChatInputCommandInteraction) => {
       const q = interaction.options.getString('query', true);
       const embed = new EmbedBuilder()
         .setTitle(`📚 Wikipedia: ${q}`)
         .setColor(0x6366f1)
-        .setDescription(`Read more on Wikipedia: [https://en.wikipedia.org/wiki/${encodeURIComponent(q)}](https://en.wikipedia.org/wiki/${encodeURIComponent(q)})`);
+        .setDescription(
+          `Read more on Wikipedia: [https://en.wikipedia.org/wiki/${encodeURIComponent(q)}](https://en.wikipedia.org/wiki/${encodeURIComponent(q)})`,
+        );
 
       await interaction.reply({ embeds: [embed] });
     },
@@ -494,13 +591,20 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     data: new SlashCommandBuilder()
       .setName('github')
       .setDescription('Fetch repository overview, stars, forks, and issues from GitHub.')
-      .addStringOption((opt) => opt.setName('repo').setDescription('Format: owner/repo (e.g. ElonCoding/Riffly)').setRequired(true)),
+      .addStringOption((opt) =>
+        opt
+          .setName('repo')
+          .setDescription('Format: owner/repo (e.g. ElonCoding/Riffly)')
+          .setRequired(true),
+      ),
     execute: async (interaction: ChatInputCommandInteraction) => {
       const repo = interaction.options.getString('repo', true);
       const embed = new EmbedBuilder()
         .setTitle(`🐙 GitHub: ${repo}`)
         .setColor(0x24292e)
-        .setDescription(`Explore repository: [https://github.com/${repo}](https://github.com/${repo})`)
+        .setDescription(
+          `Explore repository: [https://github.com/${repo}](https://github.com/${repo})`,
+        )
         .addFields(
           { name: 'Stars', value: '⭐ 1,420', inline: true },
           { name: 'Forks', value: '🍴 280', inline: true },
@@ -519,8 +623,12 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
       .setName('steal')
       .setDescription('Steal an emoji from another server and add it here.')
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuildExpressions)
-      .addStringOption((opt) => opt.setName('emoji').setDescription('Custom emoji or image URL').setRequired(true))
-      .addStringOption((opt) => opt.setName('name').setDescription('Name for the new emoji').setRequired(true)),
+      .addStringOption((opt) =>
+        opt.setName('emoji').setDescription('Custom emoji or image URL').setRequired(true),
+      )
+      .addStringOption((opt) =>
+        opt.setName('name').setDescription('Name for the new emoji').setRequired(true),
+      ),
     guildOnly: true,
     defaultMemberPermissions: PermissionFlagsBits.ManageGuildExpressions,
     execute: async (interaction: ChatInputCommandInteraction) => {
@@ -539,9 +647,13 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
 
       try {
         const created = await guild.emojis.create({ attachment: url, name });
-        await interaction.editReply(`✅ Steal successful! Emoji added: <:${created.name}:${created.id}> (\`:${created.name}:\`)`);
+        await interaction.editReply(
+          `✅ Steal successful! Emoji added: <:${created.name}:${created.id}> (\`:${created.name}:\`)`,
+        );
       } catch (err: unknown) {
-        await interaction.editReply(`❌ Failed to steal emoji: ${err instanceof Error ? err.message : String(err)}`);
+        await interaction.editReply(
+          `❌ Failed to steal emoji: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     },
   };
@@ -569,7 +681,9 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
       .setName('emojidelete')
       .setDescription('Delete a custom emoji from this server.')
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuildExpressions)
-      .addStringOption((opt) => opt.setName('emoji').setDescription('Custom emoji to delete').setRequired(true)),
+      .addStringOption((opt) =>
+        opt.setName('emoji').setDescription('Custom emoji to delete').setRequired(true),
+      ),
     guildOnly: true,
     defaultMemberPermissions: PermissionFlagsBits.ManageGuildExpressions,
     execute: async (interaction: ChatInputCommandInteraction) => {
@@ -597,14 +711,18 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     data: new SlashCommandBuilder()
       .setName('help')
       .setDescription('View the complete Riffly command index and category guide.')
-      .addStringOption((opt) => opt.setName('command').setDescription('Specific command to lookup')),
+      .addStringOption((opt) =>
+        opt.setName('command').setDescription('Specific command to lookup'),
+      ),
     execute: async (interaction: ChatInputCommandInteraction) => {
       const specific = interaction.options.getString('command');
       if (specific) {
         const embed = new EmbedBuilder()
           .setTitle(`📖 Help: /${specific}`)
           .setColor(0x6366f1)
-          .setDescription(`Detailed reference for \`/${specific}\`. Use slash command autocomplete to view all subcommands and parameters.`)
+          .setDescription(
+            `Detailed reference for \`/${specific}\`. Use slash command autocomplete to view all subcommands and parameters.`,
+          )
           .setFooter({ text: 'Riffly Command Guide' });
         await interaction.reply({ embeds: [embed] });
         return;
@@ -620,11 +738,13 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
         .addFields(
           {
             name: '🎵 Music Engine',
-            value: '`/play`, `/pause`, `/resume`, `/skip`, `/stop`, `/queue`, `/nowplaying`, `/volume`, `/seek`, `/loop`, `/shuffle`, `/clear`, `/filter`, `/autoplay`, `/join`',
+            value:
+              '`/play`, `/pause`, `/resume`, `/skip`, `/stop`, `/queue`, `/nowplaying`, `/volume`, `/seek`, `/loop`, `/shuffle`, `/clear`, `/filter`, `/autoplay`, `/join`',
           },
           {
             name: '🛡️ Moderation',
-            value: '`/ban`, `/unban`, `/kick`, `/timeout`, `/mute`, `/unmute`, `/softban`, `/warn`, `/cases`, `/purge`, `/slowmode`, `/lock`, `/unlock`, `/lockall`, `/hide`, `/vclock`, `/role`, `/nick`, `/jail`, `/move`',
+            value:
+              '`/ban`, `/unban`, `/kick`, `/timeout`, `/mute`, `/unmute`, `/softban`, `/warn`, `/cases`, `/purge`, `/slowmode`, `/lock`, `/unlock`, `/lockall`, `/hide`, `/vclock`, `/role`, `/nick`, `/jail`, `/move`',
           },
           {
             name: '🔒 Security Engine',
@@ -632,7 +752,8 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
           },
           {
             name: '🎫 Support & Tickets',
-            value: '`/ticket setup`, `/ticket panel`, `/ticket create`, `/ticket close`, `/ticket claim`, `/ticket unclaim`, `/ticket add`, `/ticket remove`, `/ticket rename`, `/ticket list`, `/ticket transcript`',
+            value:
+              '`/ticket setup`, `/ticket panel`, `/ticket create`, `/ticket close`, `/ticket claim`, `/ticket unclaim`, `/ticket add`, `/ticket remove`, `/ticket rename`, `/ticket list`, `/ticket transcript`',
           },
           {
             name: '✅ Verification',
@@ -640,27 +761,33 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
           },
           {
             name: '🏆 Leveling & Leaderboards',
-            value: '`/rank`, `/levels`, `/leaderboard view|setup|list|remove`, `/reset all|xp|messages|voice|timeframe`, `/setup-leveling`, `/xp-set`',
+            value:
+              '`/rank`, `/levels`, `/leaderboard view|setup|list|remove`, `/reset all|xp|messages|voice|timeframe`, `/setup-leveling`, `/xp-set`',
           },
           {
             name: '🔊 VoiceMaster Channels',
-            value: '`/vc name`, `/vc lock`, `/vc unlock`, `/vc hide`, `/vc unhide`, `/vc permit`, `/vc reject`, `/vc kick`, `/vc limit`, `/vc transfer`, `/voicemaster setup`, `/setup-vc`',
+            value:
+              '`/vc name`, `/vc lock`, `/vc unlock`, `/vc hide`, `/vc unhide`, `/vc permit`, `/vc reject`, `/vc kick`, `/vc limit`, `/vc transfer`, `/voicemaster setup`, `/setup-vc`',
           },
           {
             name: '👥 Community Suite',
-            value: '`/autorole`, `/reactionrole`, `/vanityrole`, `/clownboard`, `/counter`, `/autoresponder`, `/invites`, `/timer`, `/bumper`, `/social`, `/boosterrole`',
+            value:
+              '`/autorole`, `/reactionrole`, `/vanityrole`, `/clownboard`, `/counter`, `/autoresponder`, `/invites`, `/timer`, `/bumper`, `/social`, `/boosterrole`',
           },
           {
             name: '💰 Virtual Economy',
-            value: '`/balance`, `/daily`, `/work`, `/beg`, `/gamble`, `/pay`, `/deposit`, `/withdraw`, `/rich`',
+            value:
+              '`/balance`, `/daily`, `/work`, `/beg`, `/gamble`, `/pay`, `/deposit`, `/withdraw`, `/rich`',
           },
           {
             name: '🎮 Fun & Entertainment',
-            value: '`/rp`, `/image`, `/tictactoe`, `/trivia`, `/urban`, `/fun 8ball|coinflip|roll|choose`, `/meme`, `/fortnite`',
+            value:
+              '`/rp`, `/image`, `/tictactoe`, `/trivia`, `/urban`, `/fun 8ball|coinflip|roll|choose`, `/meme`, `/fortnite`',
           },
           {
             name: '🧰 Server Utility',
-            value: '`/userinfo`, `/serverinfo`, `/avatar`, `/poll`, `/remindme`, `/afk`, `/suggest`, `/report`, `/announce`, `/embed`, `/serverassets`, `/servericon`, `/roles`, `/emojis`, `/boosters`, `/snipe`, `/editsnipe`, `/crypto`, `/color`, `/weather`, `/translate`, `/define`, `/wiki`, `/github`, `/steal`, `/info`',
+            value:
+              '`/userinfo`, `/serverinfo`, `/avatar`, `/poll`, `/remindme`, `/afk`, `/suggest`, `/report`, `/announce`, `/embed`, `/serverassets`, `/servericon`, `/roles`, `/emojis`, `/boosters`, `/snipe`, `/editsnipe`, `/crypto`, `/color`, `/weather`, `/translate`, `/define`, `/wiki`, `/github`, `/steal`, `/info`',
           },
         )
         .setFooter({ text: 'Riffly • Complete Discord Architecture' })

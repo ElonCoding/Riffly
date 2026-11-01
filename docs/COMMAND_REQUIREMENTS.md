@@ -21,6 +21,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 ```
 
 ### The 12 Bot Permission Flags:
+
 1. `Ban`: `/ban`, `/softban`, `/tempban` (Mod: Disabled, Admin: Enabled)
 2. `Unban`: `/unban` (Mod: Disabled, Admin: Enabled)
 3. `Kick`: `/kick` (Mod: Enabled, Admin: Enabled)
@@ -35,6 +36,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 12. `Manageemojis`: `/steal`, `/emojiadd`, `/emojidelete` (Mod: Disabled, Admin: Enabled)
 
 ### Interactive Customization UI:
+
 - Commands: `/mod add|edit`, `/admin add|edit`
 - Components: Dynamic status embed, multi-select dropdown for the 12 permissions, "Grant All" button, "Save" button, "Cancel" button.
 
@@ -43,6 +45,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 ## 2. Complete Command Inventory by Category
 
 ### Category 1: Moderation
+
 - `/ban <user> [delete_days] [reason]` — Ban member, optional prune (0-7d), DM user, log.
 - `/unban <user_id> [reason]` — Unban user by ID.
 - `/kick <user> [reason]` — Kick member, DM user, log.
@@ -90,6 +93,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 - `/jail setup <role> <channel>` — Configure jail role and isolation channel.
 
 ### Category 2: Ticket System
+
 - `/ticket setup <support_role> <log_channel> <category>` — Configure ticket infrastructure.
 - `/ticket panel <channel> [title] [description]` — Post embed panel with "Open Ticket" button.
 - `/ticket close [reason]` — Close ticket channel, render HTML/text transcript, post to log channel.
@@ -101,11 +105,13 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 - `/ticket list` — List open tickets.
 
 ### Category 3: Verification
+
 - `/verify setup <role> <channel> [description] [button_label]` — Configure role and panel.
 - `/verify panel` — Post verification embed with Verify button.
 - `/verify view` — Inspect verification config.
 
 ### Category 4: Leveling & Leaderboards
+
 - `/rank [user]` — Display rank card (Message Level/XP/count, Voice Level/XP/minutes).
 - `/setup-leveling [enabled] [xp_per_msg] [xp_per_vc_min] [channel] [roles]` — Configure leveling.
 - `/leaderboard setup <channel> <type>` — Create persistent 15s auto-updating leaderboard embed.
@@ -115,6 +121,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 - `/reset all|xp|messages|voice|timeframe|daily|weekly|monthly` — Staff activity reset suite.
 
 ### Category 5: Voice Channels & VoiceMaster
+
 - `/voicemaster setup` — One-click Join-to-Create hub setup.
 - `/voicemaster disable` — Decommission VoiceMaster hub.
 - `/vc limit <number> [channel]` — Set voice room user limit (0-99).
@@ -129,17 +136,20 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 - `/setup-vc` — Admin configuration for Join-to-Create channel types.
 
 ### Category 6: Logging
+
 - `/setup logs` / `/logging setup` — Instant one-click log setup: creates private category and 6 dedicated channels (`message-logs`, `voice-logs`, `member-logs`, `mod-logs`, `server-logs`, `bot-logs`).
 - `/logging set <event_type> <channel>` — Set custom channel for specific log category.
 - `/logging disable <event_type|all>` — Disable logging for category.
 - `/logging view` — View configured log channels.
 
 ### Category 7: Security (Anti-Nuke, Anti-Raid, AutoMod)
+
 - `/antinuke enable|disable|config|whitelist|view` — Threshold monitoring for bans (default 3), kicks (default 5), channel deletes (default 3) triggering action.
 - `/antiraid enable|disable|config|view` — Rapid join detection (default 10 joins in 10s triggers lockdown + action).
 - `/automod toggle|banned-words|thresholds|whitelist|view` — Heuristics for spam, links, caps, mentions, banned words.
 
 ### Category 8: Community Features & Automation
+
 - `/giveaway start|end|reroll|list` — Giveaways with button entries and automated timer conclusion.
 - `/poll <question> <options>` — Up to 10 options with reaction voting.
 - `/invites [user]` — Invite tracking (joins, leaves, fake, total).
@@ -156,6 +166,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 - `/boosterrole create|color|name|icon|delete` — Personal custom role for Nitro Boosters.
 
 ### Category 9: Utility & Info
+
 - `/afk [reason]` — Set AFK status; notifies on mention; clears on next message.
 - `/suggest <suggestion>` — Forward suggestion to channel with up/down reactions.
 - `/report <user> <reason>` — Forward report to mod staff.
@@ -179,6 +190,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 - `/info` — Bot uptime, ping, servers, version.
 
 ### Category 10: Virtual Economy
+
 - `/economy balance [user]` — Wallet and bank balance.
 - `/economy daily` — 500 coin daily reward (24h cooldown).
 - `/economy beg` — Beg for spare coins with random outcomes.
@@ -186,6 +198,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 - `/economy gamble <amount>` — 50/50 casino gamble.
 
 ### Category 11: Fun & Games
+
 - `/rp <action> [user]` — 20+ anime roleplay actions (hug, kiss, slap, pat, tickle, etc.).
 - `/image <effect> [user|image]` — Image filters (grayscale, invert, sepia, blur, etc.).
 - `/tictactoe <opponent>` — Button-based Tic-Tac-Toe game.
@@ -196,6 +209,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 - `/fortnite stats|map|shop` — Fortnite tracker.
 
 ### Category 12: Administration, Setup & Templates
+
 - `/setup-mod modlog|suggestions|reports|view` — Mod channel configuration.
 - `/setup vc|logs|leveling` — One-click setup shortcuts.
 - `/extraowner add|remove|list` — Co-owner management.
@@ -210,6 +224,7 @@ Riffly enforces a 4-tier hierarchical permission system allowing authorized staf
 ## 3. Database Schema Mapping (Supabase PostgreSQL / Prisma)
 
 The required tables are:
+
 1. `guilds`: Server config, leveling settings, greet config.
 2. `user_levels`: XP, levels, message counts, VC minutes.
 3. `user_messages`: Per-channel message counts.
@@ -246,4 +261,3 @@ The required tables are:
 34. `bump_reminders`: Bump reminder config and last-bump tracking.
 35. `social_alerts`: Social media alert subscriptions.
 36. `staff_permissions`: Extra owners, custom admins, and custom mods with 12 permission bitfields.
-

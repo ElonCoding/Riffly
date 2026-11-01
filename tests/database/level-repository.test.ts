@@ -70,9 +70,7 @@ function createMockPrismaClient(): PrismaClient {
         take?: number;
         skip?: number;
       }) => {
-        const matches = Array.from(levelStore.values()).filter(
-          (l) => l.guildId === where.guildId,
-        );
+        const matches = Array.from(levelStore.values()).filter((l) => l.guildId === where.guildId);
         matches.sort((a, b) => Number(b.xp - a.xp));
         const sliced = matches.slice(skip, take ? skip + take : undefined);
         return Promise.resolve(sliced);

@@ -53,11 +53,7 @@ export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Comman
         : createProgressBar(positionMs, track.lengthMs);
 
       const loopDisplay =
-        state.loopMode === 'off'
-          ? 'Off'
-          : state.loopMode === 'track'
-            ? '🔂 Track'
-            : '🔁 Queue';
+        state.loopMode === 'off' ? 'Off' : state.loopMode === 'track' ? '🔂 Track' : '🔁 Queue';
 
       const embed = new EmbedBuilder()
         .setTitle('🎵 Now Playing')

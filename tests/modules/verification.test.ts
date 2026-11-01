@@ -87,8 +87,12 @@ describe('VerificationService', () => {
 
     expect(addRoleFn).toHaveBeenCalledWith(autoRole, expect.any(String));
     expect(sendFn).toHaveBeenCalledTimes(1);
-    const callArgs = (sendFn.mock.calls[0] as [{ embeds?: [{ data?: { description?: string } }] }])[0];
-    expect(callArgs.embeds?.[0]?.data?.description).toBe('Hey <@u1>, welcome to Test Guild! Member #99');
+    const callArgs = (
+      sendFn.mock.calls[0] as [{ embeds?: [{ data?: { description?: string } }] }]
+    )[0];
+    expect(callArgs.embeds?.[0]?.data?.description).toBe(
+      'Hey <@u1>, welcome to Test Guild! Member #99',
+    );
   });
 
   it('builds valid verification module definition', () => {

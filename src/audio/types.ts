@@ -25,13 +25,7 @@ export interface MusicEngineEvents {
 }
 
 export type AudioFilterPreset =
-  | 'bassboost'
-  | 'nightcore'
-  | 'vaporwave'
-  | '8d'
-  | 'tremolo'
-  | 'karaoke'
-  | 'clear';
+  'bassboost' | 'nightcore' | 'vaporwave' | '8d' | 'tremolo' | 'karaoke' | 'clear';
 
 export interface MusicEngine {
   connect(guildId: string, voiceChannelId: string): Promise<void>;
@@ -52,4 +46,3 @@ export interface MusicEngine {
 }
 
 export type IMusicEngine = MusicEngine;
-

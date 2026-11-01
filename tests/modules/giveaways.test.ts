@@ -11,8 +11,14 @@ describe('GiveawayService', () => {
   let repository: IGiveawayRepository;
   let service: GiveawayService;
   let mockStore: Map<string, GiveawayData>;
-  let addEntryMock: (messageId: string, userId: string) => Promise<{ added: boolean; totalEntries: number }>;
-  let removeEntryMock: (messageId: string, userId: string) => Promise<{ removed: boolean; totalEntries: number }>;
+  let addEntryMock: (
+    messageId: string,
+    userId: string,
+  ) => Promise<{ added: boolean; totalEntries: number }>;
+  let removeEntryMock: (
+    messageId: string,
+    userId: string,
+  ) => Promise<{ removed: boolean; totalEntries: number }>;
 
   beforeEach(() => {
     mockStore = new Map();
@@ -85,7 +91,8 @@ describe('GiveawayService', () => {
     expect(giveaway.prize).toBe('Discord Nitro 1 Month');
     expect(giveaway.messageId).toBe('msg-giveaway-1');
     expect(sendFn).toHaveBeenCalled();
-    const sendArg = sendFn.mock.calls[0]?.[0] as { embeds?: unknown[]; components?: unknown[] } | undefined;
+    const sendArg = sendFn.mock.calls[0]?.[0] as
+      { embeds?: unknown[]; components?: unknown[] } | undefined;
     expect(sendArg?.embeds?.length).toBeGreaterThan(0);
     expect(sendArg?.components?.length).toBeGreaterThan(0);
   });

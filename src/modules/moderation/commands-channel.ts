@@ -26,7 +26,11 @@ export function createChannelModerationCommands(service: ModerationService): Com
       )
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
     async execute(interaction: ChatInputCommandInteraction) {
-      if (!interaction.inGuild() || !interaction.channel || !('setRateLimitPerUser' in interaction.channel)) {
+      if (
+        !interaction.inGuild() ||
+        !interaction.channel ||
+        !('setRateLimitPerUser' in interaction.channel)
+      ) {
         await interaction.reply({ content: '❌ Text channel only.', ephemeral: true });
         return;
       }
@@ -34,7 +38,8 @@ export function createChannelModerationCommands(service: ModerationService): Com
       const textChan = interaction.channel as TextChannel;
       await textChan.setRateLimitPerUser(seconds, `Slowmode by ${interaction.user.tag}`);
       await interaction.reply({
-        content: seconds === 0 ? '🚀 Slowmode has been disabled.' : `⏱️ Slowmode set to **${seconds}s**.`,
+        content:
+          seconds === 0 ? '🚀 Slowmode has been disabled.' : `⏱️ Slowmode set to **${seconds}s**.`,
       });
     },
   };
@@ -45,16 +50,28 @@ export function createChannelModerationCommands(service: ModerationService): Com
     data: new SlashCommandBuilder()
       .setName('lock')
       .setDescription('Lock a channel preventing members from chatting or connecting.')
-      .addChannelOption((opt) => opt.setName('channel').setDescription('Target channel (defaults to current)').setRequired(false))
-      .addRoleOption((opt) => opt.setName('role').setDescription('Role to lock (defaults to @everyone)').setRequired(false))
+      .addChannelOption((opt) =>
+        opt
+          .setName('channel')
+          .setDescription('Target channel (defaults to current)')
+          .setRequired(false),
+      )
+      .addRoleOption((opt) =>
+        opt
+          .setName('role')
+          .setDescription('Role to lock (defaults to @everyone)')
+          .setRequired(false),
+      )
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
     async execute(interaction: ChatInputCommandInteraction) {
       if (!interaction.inGuild() || !interaction.guild) {
         await interaction.reply({ content: '❌ Guild only.', ephemeral: true });
         return;
       }
-      const chan = (interaction.options.getChannel('channel') ?? interaction.channel) as TextChannel;
-      const role = (interaction.options.getRole('role') ?? interaction.guild.roles.everyone) as Role;
+      const chan = (interaction.options.getChannel('channel') ??
+        interaction.channel) as TextChannel;
+      const role = (interaction.options.getRole('role') ??
+        interaction.guild.roles.everyone) as Role;
 
       await chan.permissionOverwrites.edit(role.id, {
         [PermissionFlagsBits.SendMessages.toString()]: false,
@@ -70,16 +87,28 @@ export function createChannelModerationCommands(service: ModerationService): Com
     data: new SlashCommandBuilder()
       .setName('unlock')
       .setDescription('Unlock a channel permitting members to send messages.')
-      .addChannelOption((opt) => opt.setName('channel').setDescription('Target channel (defaults to current)').setRequired(false))
-      .addRoleOption((opt) => opt.setName('role').setDescription('Role to unlock (defaults to @everyone)').setRequired(false))
+      .addChannelOption((opt) =>
+        opt
+          .setName('channel')
+          .setDescription('Target channel (defaults to current)')
+          .setRequired(false),
+      )
+      .addRoleOption((opt) =>
+        opt
+          .setName('role')
+          .setDescription('Role to unlock (defaults to @everyone)')
+          .setRequired(false),
+      )
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
     async execute(interaction: ChatInputCommandInteraction) {
       if (!interaction.inGuild() || !interaction.guild) {
         await interaction.reply({ content: '❌ Guild only.', ephemeral: true });
         return;
       }
-      const chan = (interaction.options.getChannel('channel') ?? interaction.channel) as TextChannel;
-      const role = (interaction.options.getRole('role') ?? interaction.guild.roles.everyone) as Role;
+      const chan = (interaction.options.getChannel('channel') ??
+        interaction.channel) as TextChannel;
+      const role = (interaction.options.getRole('role') ??
+        interaction.guild.roles.everyone) as Role;
 
       await chan.permissionOverwrites.edit(role.id, {
         [PermissionFlagsBits.SendMessages.toString()]: true,
@@ -103,7 +132,9 @@ export function createChannelModerationCommands(service: ModerationService): Com
       }
       await interaction.deferReply();
       const count = await service.lockall(interaction.guild, true, interaction.user.tag);
-      await interaction.editReply({ content: `🚨 Server lockdown active! Locked **${count}** text channels.` });
+      await interaction.editReply({
+        content: `🚨 Server lockdown active! Locked **${count}** text channels.`,
+      });
     },
   };
 
@@ -121,7 +152,9 @@ export function createChannelModerationCommands(service: ModerationService): Com
       }
       await interaction.deferReply();
       const count = await service.lockall(interaction.guild, false, interaction.user.tag);
-      await interaction.editReply({ content: `✅ Server lockdown released! Unlocked **${count}** text channels.` });
+      await interaction.editReply({
+        content: `✅ Server lockdown released! Unlocked **${count}** text channels.`,
+      });
     },
   };
 
@@ -131,7 +164,9 @@ export function createChannelModerationCommands(service: ModerationService): Com
     data: new SlashCommandBuilder()
       .setName('hide')
       .setDescription('Hide channel from role or @everyone.')
-      .addChannelOption((opt) => opt.setName('channel').setDescription('Target channel').setRequired(false))
+      .addChannelOption((opt) =>
+        opt.setName('channel').setDescription('Target channel').setRequired(false),
+      )
       .addRoleOption((opt) => opt.setName('role').setDescription('Target role').setRequired(false))
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
     async execute(interaction: ChatInputCommandInteraction) {
@@ -139,8 +174,10 @@ export function createChannelModerationCommands(service: ModerationService): Com
         await interaction.reply({ content: '❌ Guild only.', ephemeral: true });
         return;
       }
-      const chan = (interaction.options.getChannel('channel') ?? interaction.channel) as TextChannel;
-      const role = (interaction.options.getRole('role') ?? interaction.guild.roles.everyone) as Role;
+      const chan = (interaction.options.getChannel('channel') ??
+        interaction.channel) as TextChannel;
+      const role = (interaction.options.getRole('role') ??
+        interaction.guild.roles.everyone) as Role;
       await service.setChannelVisibility(chan, role, false, interaction.user.tag);
       await interaction.reply({ content: `👁️‍🗨️ Hidden <#${chan.id}> for **${role.name}**.` });
     },
@@ -152,7 +189,9 @@ export function createChannelModerationCommands(service: ModerationService): Com
     data: new SlashCommandBuilder()
       .setName('unhide')
       .setDescription('Make channel visible to role or @everyone.')
-      .addChannelOption((opt) => opt.setName('channel').setDescription('Target channel').setRequired(false))
+      .addChannelOption((opt) =>
+        opt.setName('channel').setDescription('Target channel').setRequired(false),
+      )
       .addRoleOption((opt) => opt.setName('role').setDescription('Target role').setRequired(false))
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
     async execute(interaction: ChatInputCommandInteraction) {
@@ -160,8 +199,10 @@ export function createChannelModerationCommands(service: ModerationService): Com
         await interaction.reply({ content: '❌ Guild only.', ephemeral: true });
         return;
       }
-      const chan = (interaction.options.getChannel('channel') ?? interaction.channel) as TextChannel;
-      const role = (interaction.options.getRole('role') ?? interaction.guild.roles.everyone) as Role;
+      const chan = (interaction.options.getChannel('channel') ??
+        interaction.channel) as TextChannel;
+      const role = (interaction.options.getRole('role') ??
+        interaction.guild.roles.everyone) as Role;
       await service.setChannelVisibility(chan, role, true, interaction.user.tag);
       await interaction.reply({ content: `👁️ Unhidden <#${chan.id}> for **${role.name}**.` });
     },
@@ -188,9 +229,12 @@ export function createChannelModerationCommands(service: ModerationService): Com
         return;
       }
       const chan = interaction.options.getChannel<ChannelType.GuildVoice>('channel', true);
-      const role = (interaction.options.getRole('role') ?? interaction.guild.roles.everyone) as Role;
+      const role = (interaction.options.getRole('role') ??
+        interaction.guild.roles.everyone) as Role;
       await service.setVoiceChannelLock(chan, role, true, interaction.user.tag);
-      await interaction.reply({ content: `🔒 Locked voice channel <#${chan.id}> for **${role.name}**.` });
+      await interaction.reply({
+        content: `🔒 Locked voice channel <#${chan.id}> for **${role.name}**.`,
+      });
     },
   };
 
@@ -215,9 +259,12 @@ export function createChannelModerationCommands(service: ModerationService): Com
         return;
       }
       const chan = interaction.options.getChannel<ChannelType.GuildVoice>('channel', true);
-      const role = (interaction.options.getRole('role') ?? interaction.guild.roles.everyone) as Role;
+      const role = (interaction.options.getRole('role') ??
+        interaction.guild.roles.everyone) as Role;
       await service.setVoiceChannelLock(chan, role, false, interaction.user.tag);
-      await interaction.reply({ content: `🔓 Unlocked voice channel <#${chan.id}> for **${role.name}**.` });
+      await interaction.reply({
+        content: `🔓 Unlocked voice channel <#${chan.id}> for **${role.name}**.`,
+      });
     },
   };
 
@@ -242,9 +289,12 @@ export function createChannelModerationCommands(service: ModerationService): Com
         return;
       }
       const chan = interaction.options.getChannel<ChannelType.GuildVoice>('channel', true);
-      const role = (interaction.options.getRole('role') ?? interaction.guild.roles.everyone) as Role;
+      const role = (interaction.options.getRole('role') ??
+        interaction.guild.roles.everyone) as Role;
       await service.setChannelVisibility(chan, role, false, interaction.user.tag);
-      await interaction.reply({ content: `👁️‍🗨️ Hidden voice channel <#${chan.id}> for **${role.name}**.` });
+      await interaction.reply({
+        content: `👁️‍🗨️ Hidden voice channel <#${chan.id}> for **${role.name}**.`,
+      });
     },
   };
 
@@ -269,9 +319,12 @@ export function createChannelModerationCommands(service: ModerationService): Com
         return;
       }
       const chan = interaction.options.getChannel<ChannelType.GuildVoice>('channel', true);
-      const role = (interaction.options.getRole('role') ?? interaction.guild.roles.everyone) as Role;
+      const role = (interaction.options.getRole('role') ??
+        interaction.guild.roles.everyone) as Role;
       await service.setChannelVisibility(chan, role, true, interaction.user.tag);
-      await interaction.reply({ content: `👁️ Unhidden voice channel <#${chan.id}> for **${role.name}**.` });
+      await interaction.reply({
+        content: `👁️ Unhidden voice channel <#${chan.id}> for **${role.name}**.`,
+      });
     },
   };
 

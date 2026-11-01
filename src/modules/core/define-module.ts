@@ -38,10 +38,7 @@ export class ModuleValidationError extends Error {
 /**
  * Validates settings schema definitions.
  */
-function validateSettingsSchema(
-  moduleId: string,
-  schema: ModuleSettingsSchema,
-): void {
+function validateSettingsSchema(moduleId: string, schema: ModuleSettingsSchema): void {
   if (typeof schema !== 'object' || schema === null) {
     throw new ModuleValidationError('Settings schema must be a valid object.', moduleId);
   }
@@ -150,7 +147,10 @@ function validateEvents(
     }
 
     if (!evt.event || typeof evt.event !== 'string' || evt.event.trim().length === 0) {
-      throw new ModuleValidationError('Event listener must specify a non-empty event name.', moduleId);
+      throw new ModuleValidationError(
+        'Event listener must specify a non-empty event name.',
+        moduleId,
+      );
     }
 
     if (typeof evt.execute !== 'function') {
@@ -160,7 +160,10 @@ function validateEvents(
       );
     }
 
-    if (evt.priority !== undefined && (typeof evt.priority !== 'number' || !Number.isFinite(evt.priority))) {
+    if (
+      evt.priority !== undefined &&
+      (typeof evt.priority !== 'number' || !Number.isFinite(evt.priority))
+    ) {
       throw new ModuleValidationError(
         `Event listener for "${evt.event}" priority must be a finite number.`,
         moduleId,
@@ -197,12 +200,17 @@ function validateTasks(moduleId: string, tasks: readonly ScheduledTaskDefinition
     seenTaskNames.add(task.name);
 
     if (typeof task.execute !== 'function') {
-      throw new ModuleValidationError(`Task "${task.name}" execute handler must be a function.`, moduleId);
+      throw new ModuleValidationError(
+        `Task "${task.name}" execute handler must be a function.`,
+        moduleId,
+      );
     }
 
     if (
       task.intervalMs !== undefined &&
-      (typeof task.intervalMs !== 'number' || !Number.isInteger(task.intervalMs) || task.intervalMs <= 0)
+      (typeof task.intervalMs !== 'number' ||
+        !Number.isInteger(task.intervalMs) ||
+        task.intervalMs <= 0)
     ) {
       throw new ModuleValidationError(
         `Task "${task.name}" intervalMs must be a positive integer.`,
@@ -210,7 +218,10 @@ function validateTasks(moduleId: string, tasks: readonly ScheduledTaskDefinition
       );
     }
 
-    if (task.cron !== undefined && (typeof task.cron !== 'string' || task.cron.trim().length === 0)) {
+    if (
+      task.cron !== undefined &&
+      (typeof task.cron !== 'string' || task.cron.trim().length === 0)
+    ) {
       throw new ModuleValidationError(
         `Task "${task.name}" cron expression must be a non-empty string.`,
         moduleId,

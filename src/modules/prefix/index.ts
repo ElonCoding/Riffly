@@ -12,7 +12,8 @@ export function createPrefixModule(service?: PrefixService): ModuleDefinition {
   return {
     id: 'prefix',
     name: 'Prefix & Template Engine',
-    description: 'Server prefix configuration, No-Prefix privilege system, and server layout templates.',
+    description:
+      'Server prefix configuration, No-Prefix privilege system, and server layout templates.',
     commands,
   };
 }

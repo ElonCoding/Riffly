@@ -1,8 +1,4 @@
-import {
-  ChannelType,
-  PermissionFlagsBits,
-  SlashCommandBuilder,
-} from 'discord.js';
+import { ChannelType, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import type { TextChannel } from 'discord.js';
 import type { CommandDefinition } from '../core/types.js';
 import type { GiveawayService } from './service.js';
@@ -41,10 +37,7 @@ export function createGiveawayCommands(service: GiveawayService): CommandDefinit
             opt.setName('prize').setDescription('The prize to give away').setRequired(true),
           )
           .addStringOption((opt) =>
-            opt
-              .setName('duration')
-              .setDescription('Duration (e.g. 10m, 1h, 1d)')
-              .setRequired(true),
+            opt.setName('duration').setDescription('Duration (e.g. 10m, 1h, 1d)').setRequired(true),
           )
           .addIntegerOption((opt) =>
             opt
@@ -98,7 +91,11 @@ export function createGiveawayCommands(service: GiveawayService): CommandDefinit
         const channelOption = interaction.options.getChannel('channel');
         const targetChannel = (channelOption ?? interaction.channel) as TextChannel | null;
 
-        if (!targetChannel || !('send' in targetChannel) || typeof targetChannel.send !== 'function') {
+        if (
+          !targetChannel ||
+          !('send' in targetChannel) ||
+          typeof targetChannel.send !== 'function'
+        ) {
           await interaction.editReply({ content: '❌ Invalid target channel.' });
           return;
         }

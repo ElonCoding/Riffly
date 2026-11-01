@@ -203,4 +203,3 @@ describe('/seek command', () => {
     expect(callArg.embeds?.[0]?.data.description).toContain('1:30');
   });
 });
-

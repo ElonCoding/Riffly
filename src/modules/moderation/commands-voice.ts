@@ -23,7 +23,9 @@ export function createVoiceModerationCommands(service: ModerationService): Comma
         sub
           .setName('member')
           .setDescription('Move a specific member to a voice channel.')
-          .addUserOption((opt) => opt.setName('user').setDescription('Target member').setRequired(true))
+          .addUserOption((opt) =>
+            opt.setName('user').setDescription('Target member').setRequired(true),
+          )
           .addChannelOption((opt) =>
             opt
               .setName('destination')
@@ -64,7 +66,10 @@ export function createVoiceModerationCommands(service: ModerationService): Comma
         const user = interaction.options.getUser('user', true);
         const member = await interaction.guild.members.fetch(user.id).catch(() => null);
         if (!member?.voice.channelId) {
-          await interaction.reply({ content: '❌ Member is not connected to voice.', ephemeral: true });
+          await interaction.reply({
+            content: '❌ Member is not connected to voice.',
+            ephemeral: true,
+          });
           return;
         }
 
@@ -77,7 +82,9 @@ export function createVoiceModerationCommands(service: ModerationService): Comma
         const source = interaction.options.getChannel<ChannelType.GuildVoice>('source');
         await interaction.deferReply();
         const count = await service.moveAll(interaction.guild, dest, source ?? undefined);
-        await interaction.editReply({ content: `🚚 Moved **${count}** member(s) to <#${dest.id}>.` });
+        await interaction.editReply({
+          content: `🚚 Moved **${count}** member(s) to <#${dest.id}>.`,
+        });
       }
     },
   };
@@ -105,7 +112,9 @@ export function createVoiceModerationCommands(service: ModerationService): Comma
       const dest = interaction.options.getChannel<ChannelType.GuildVoice>('destination', true);
       await interaction.deferReply();
       const count = await service.moveAll(interaction.guild, dest);
-      await interaction.editReply({ content: `🚚 Moved **${count}** voice member(s) to <#${dest.id}>.` });
+      await interaction.editReply({
+        content: `🚚 Moved **${count}** voice member(s) to <#${dest.id}>.`,
+      });
     },
   };
 

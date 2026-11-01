@@ -192,11 +192,7 @@ describe('GuildRepository', () => {
         djRole: '123456789',
       };
 
-      const result = await repository.updateModuleSettings(
-        'guild-400',
-        'music',
-        settingsPayload,
-      );
+      const result = await repository.updateModuleSettings('guild-400', 'music', settingsPayload);
 
       expect(result.guildId).toBe('guild-400');
       expect(result.moduleId).toBe('music');

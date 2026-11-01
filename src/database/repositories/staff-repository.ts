@@ -69,4 +69,3 @@ export class PrismaStaffRepository implements IStaffRepository {
     }
   }
 }
-

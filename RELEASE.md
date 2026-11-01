@@ -5,6 +5,7 @@
 **Version 2.0.0** transforms Riffly into an enterprise-grade modular Discord platform featuring a battle-tested music engine, DAG-ordered module architecture, persistent task scheduler, comprehensive server management, and real-time management dashboard.
 
 ### Audio & Music Engine
+
 - **5-State Deterministic Audio FSM**: (`disconnected` → `idle` → `buffering` → `playing` → `paused`) eliminating race conditions.
 - **Async Gateway Handshake**: Synchronizes voice channel connection before Lavalink player dispatch (`C-01`).
 - **Truthful Pause/Resume State**: Emits accurate feedback matching Lavalink engine state (`DEF-02`).
@@ -17,12 +18,14 @@
 - **Interactive Component Controls**: Real-time Discord button controls (`riffly_pause`, `riffly_resume`, `riffly_skip`, `riffly_stop`, `riffly_loop`, `riffly_shuffle`).
 
 ### Modular Architecture & Database
+
 - **Topological DAG Registry**: Declarative module loader with dependency resolution and lifecycle hooks (`ModuleRegistry`).
 - **Priority Event Dispatcher**: Guild-scoped priority event buses for Gateway events (`EventDispatcher`).
 - **Persistent Task Scheduler**: Database-backed job queue with exponential backoff and retry handling (`TaskScheduler`).
 - **Prisma PostgreSQL Persistence**: Structured models for Guilds, Moderation, Tickets, Levels, Giveaways, Economy, and Tasks.
 
 ### Platform Modules
+
 - **Moderation & Server Logging**: Cases, `/ban`, `/kick`, `/timeout`, `/warn`, `/cases`, `/purge`, and full audit event dispatchers.
 - **Tickets & Verification**: Ticket creation, claiming, transcript exports, and button verification panels.
 - **Voice Rooms & Leveling**: Dynamic Join-to-Create voice channels and non-linear XP leveling with rank cards.
@@ -33,11 +36,13 @@
 - **Server Preservation**: Structural backups of guild channels, roles, and permissions (`/backup`).
 
 ### Web UI Dashboard & REST API
+
 - Built-in HTTP server with sub-millisecond response times.
 - Interactive Web Portal at `/dashboard` with live playback controls.
 - OpenAPI 3.0 Specification at `/api/openapi.json` and interactive Swagger UI at `/api/docs`.
 
 ### Test Suite
+
 - **415 automated unit & integration tests** across 58 test suites (Vitest).
 
 ---
