@@ -12,6 +12,7 @@ import type { LoopMode } from './queue.js';
 import { AsyncMutex } from './mutex.js';
 import type { AudioFilterPreset, MusicEngine, PlayerState, Track } from '../audio/types.js';
 import { RifflyError } from '../errors.js';
+import { AutoplayManager } from './autoplay.js';
 
 export interface GuildPlayerState {
   readonly engineState: PlayerState;
@@ -24,6 +25,7 @@ export interface GuildPlayerState {
 
 export interface GuildPlayerManagerOptions {
   readonly waitTimeoutMs?: number;
+  readonly autoplayManager?: AutoplayManager;
 }
 
 export class GuildPlayerManager {
@@ -34,12 +36,14 @@ export class GuildPlayerManager {
   private readonly errorHistory = new Map<string, number[]>();
   private readonly engine: MusicEngine;
   private readonly waitTimeoutMs: number;
+  private readonly autoplayManager: AutoplayManager;
   /** Track IDs currently being advanced (deduplication guard). */
   private readonly advancing = new Set<string>();
 
   constructor(engine: MusicEngine, options?: GuildPlayerManagerOptions) {
     this.engine = engine;
     this.waitTimeoutMs = options?.waitTimeoutMs ?? GuildPlayerManager.DEFAULT_WAIT_TIMEOUT_MS;
+    this.autoplayManager = options?.autoplayManager ?? new AutoplayManager();
 
     engine.on('trackStart', (guildId, track) => {
       const queue = this.getOrCreate(guildId);
@@ -191,9 +195,41 @@ export class GuildPlayerManager {
         }
       }
 
+      // If queue exhausted and autoplay enabled, resolve recommendation
+      if (this.autoplayManager.isEnabled(guildId) && queue.current) {
+        const recommendation = await this.autoplayManager.getRecommendation(queue.current);
+        if (recommendation) {
+          queue.enqueue([recommendation]);
+          const autoTrack = queue.advance('enqueue');
+          if (autoTrack) {
+            try {
+              await this.engine.play(guildId, autoTrack);
+              return;
+            } catch (err) {
+              console.error(
+                `[GuildPlayer:${guildId}] Failed playing autoplay recommendation:`,
+                err instanceof Error ? err.message : err,
+              );
+            }
+          }
+        }
+      }
+
       // When queue becomes empty/idle, arm inactivity disconnect timer
       this.armWaitTimeout(guildId);
     });
+  }
+
+  isAutoplay(guildId: string): boolean {
+    return this.autoplayManager.isEnabled(guildId);
+  }
+
+  setAutoplay(guildId: string, enabled: boolean): void {
+    this.autoplayManager.setEnabled(guildId, enabled);
+  }
+
+  toggleAutoplay(guildId: string): boolean {
+    return this.autoplayManager.toggle(guildId);
   }
 
   getState(guildId: string): GuildPlayerState {

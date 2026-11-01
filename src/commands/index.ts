@@ -18,6 +18,7 @@ import { makeSeekCommand, seekCommandData } from './seek.js';
 import { makeRemoveCommand, removeCommandData } from './remove.js';
 import { makeClearCommand, clearCommandData } from './clear.js';
 import { makeFilterCommand, filterCommandData } from './filter.js';
+import { makeAutoplayCommand, autoplayCommandData } from './autoplay.js';
 
 export * from './types.js';
 export * from './helpers.js';
@@ -39,6 +40,7 @@ export * from './seek.js';
 export * from './remove.js';
 export * from './clear.js';
 export * from './filter.js';
+export * from './autoplay.js';
 
 /** Static commands (no dependencies). */
 export const staticCommands: readonly Command[] = [pingCommand];
@@ -68,6 +70,7 @@ export function buildCommands(
     makeRemoveCommand(playerManager),
     makeClearCommand(playerManager),
     makeFilterCommand(playerManager),
+    makeAutoplayCommand(playerManager),
   ];
 }
 
@@ -100,4 +103,5 @@ export const allCommandData: readonly Command['data'][] = [
   removeCommandData,
   clearCommandData,
   filterCommandData,
+  autoplayCommandData,
 ];
