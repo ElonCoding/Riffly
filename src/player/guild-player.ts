@@ -10,7 +10,7 @@
 import { GuildQueue } from './queue.js';
 import type { LoopMode } from './queue.js';
 import { AsyncMutex } from './mutex.js';
-import type { MusicEngine, PlayerState, Track } from '../audio/types.js';
+import type { AudioFilterPreset, MusicEngine, PlayerState, Track } from '../audio/types.js';
 import { RifflyError } from '../errors.js';
 
 export interface GuildPlayerState {
@@ -327,6 +327,16 @@ export class GuildPlayerManager {
     const queue = this.getOrCreate(guildId);
     queue.setVolume(volume);
     await this.engine.setVolume(guildId, volume);
+  }
+
+  async setFilter(guildId: string, preset: AudioFilterPreset): Promise<void> {
+    const state = this.engine.getState(guildId);
+    if (state === 'disconnected') {
+      throw RifflyError.notInVoiceChannel();
+    }
+    if ('setFilter' in this.engine && typeof this.engine.setFilter === 'function') {
+      await this.engine.setFilter(guildId, preset);
+    }
   }
 
   getVolume(guildId: string): number {

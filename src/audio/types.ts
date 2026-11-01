@@ -24,6 +24,15 @@ export interface MusicEngineEvents {
   readonly nodeDisconnect: (nodeId: string, reason?: string) => void;
 }
 
+export type AudioFilterPreset =
+  | 'bassboost'
+  | 'nightcore'
+  | 'vaporwave'
+  | '8d'
+  | 'tremolo'
+  | 'karaoke'
+  | 'clear';
+
 export interface MusicEngine {
   connect(guildId: string, voiceChannelId: string): Promise<void>;
   join(guildId: string, voiceChannelId: string): Promise<void>;
@@ -35,6 +44,7 @@ export interface MusicEngine {
   stop(guildId: string): Promise<void>;
   seek(guildId: string, positionMs: number): Promise<void>;
   setVolume(guildId: string, volume: number): Promise<void>;
+  setFilter?(guildId: string, preset: AudioFilterPreset): Promise<void>;
   getPosition(guildId: string): number;
   getState(guildId: string): PlayerState;
   on<E extends keyof MusicEngineEvents>(event: E, listener: MusicEngineEvents[E]): this;

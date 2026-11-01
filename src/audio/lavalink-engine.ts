@@ -3,7 +3,14 @@ import { LavalinkManager } from 'lavalink-client';
 import type { Client } from 'discord.js';
 import type { AppConfig } from '../config.js';
 import { RifflyError } from '../errors.js';
-import type { MusicEngine, MusicEngineEvents, PlayerState, Track } from './types.js';
+import type {
+  AudioFilterPreset,
+  MusicEngine,
+  MusicEngineEvents,
+  PlayerState,
+  Track,
+} from './types.js';
+import { applyFilterPreset, type PlayerWithFilters } from './filters.js';
 
 export interface LavalinkMusicEngineOptions {
   readonly client: Client;
@@ -332,6 +339,14 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
       throw new Error(`Cannot set volume: player not found for guild ${guildId}`);
     }
     await player.setVolume(volume);
+  }
+
+  async setFilter(guildId: string, preset: AudioFilterPreset): Promise<void> {
+    const player = this.manager.getPlayer(guildId);
+    if (!player) {
+      throw new Error(`Cannot set filter: player not found for guild ${guildId}`);
+    }
+    await applyFilterPreset(player as unknown as PlayerWithFilters, preset);
   }
 
   getPosition(guildId: string): number {
