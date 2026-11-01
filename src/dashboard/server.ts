@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { DashboardServerOptions } from './types.js';
 import { getDashboardHtml } from './portal.js';
+import { getApiDocsHtml, openApiSpec } from './openapi.js';
 
 function serializeWithBigInt(data: unknown): string {
   return JSON.stringify(data, (_key, value) => {
@@ -91,6 +92,22 @@ export class RifflyDashboardServer {
           'Content-Length': Buffer.byteLength(html),
         });
         res.end(html);
+        return;
+      }
+
+      // API Documentation
+      if (method === 'GET' && path === '/api/docs') {
+        const html = getApiDocsHtml();
+        res.writeHead(200, {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Content-Length': Buffer.byteLength(html),
+        });
+        res.end(html);
+        return;
+      }
+
+      if (method === 'GET' && path === '/api/openapi.json') {
+        this.sendJson(res, 200, openApiSpec);
         return;
       }
 

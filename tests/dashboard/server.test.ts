@@ -79,6 +79,22 @@ describe('RifflyDashboardServer', () => {
     expect(html).toContain('Riffly Dashboard & Control API');
   });
 
+  it('serves GET /api/openapi.json with valid OpenAPI 3.0 document', async () => {
+    const res = await fetch(`http://127.0.0.1:${port}/api/openapi.json`);
+    expect(res.status).toBe(200);
+    const spec = (await res.json()) as { openapi?: string; info?: { title?: string } };
+    expect(spec.openapi).toBe('3.0.3');
+    expect(spec.info?.title).toBe('Riffly Control API');
+  });
+
+  it('serves GET /api/docs with Swagger documentation UI', async () => {
+    const res = await fetch(`http://127.0.0.1:${port}/api/docs`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/html');
+    const html = await res.text();
+    expect(html).toContain('SwaggerUIBundle');
+  });
+
   it('serves GET /api/status with operational statistics', async () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/status`);
     expect(res.status).toBe(200);
