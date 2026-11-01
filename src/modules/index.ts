@@ -4,5 +4,8 @@ export * from './commands/index.js';
 export * from './music/index.js';
 export * from './moderation/index.js';
 export * from './logging/index.js';
+export * from './tickets/index.js';
+export * from './verification/index.js';
+
 
 

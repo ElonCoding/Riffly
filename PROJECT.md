@@ -57,8 +57,8 @@ Riffly is a high-performance Discord application built with TypeScript and Disco
 | C | Music Feature Completion & Testing | Playlist resolution, full command suite, interactive buttons, unit/integration tests | Milestone B | DONE |
 | D | Core Bot Architecture & Persistence | Modular contract (`defineModule`), event dispatcher, Prisma schema, scheduler | Milestone C | DONE |
 | E | Moderation & Server Logging | Moderation cases, sanctions, case numbering, message/member/mod loggers | Milestone D | DONE |
-| F | Tickets & Verification | Ticket panels, streaming transcripts, verification flows, auto-roles | Milestone E | IN PROGRESS |
-| G | Voice Rooms & Leveling | Join-to-create temporary voice channels, voice/chat XP, rank cards, leaderboards | Milestone F | PLANNED |
+| F | Tickets & Verification | Ticket panels, streaming transcripts, verification flows, auto-roles | Milestone E | DONE |
+| G | Voice Rooms & Leveling | Join-to-create temporary voice channels, voice/chat XP, rank cards, leaderboards | Milestone F | IN PROGRESS |
 | H | AutoMod, Security & Community | PatternGuard anti-spam/link/caps/raid, giveaways, polls, starboard, utilities | Milestone G | PLANNED |
 | I | Web Dashboard & Advanced Systems | OAuth2 web dashboard, REST control API, virtual economy, AI assistant | Milestone H | PLANNED |
 

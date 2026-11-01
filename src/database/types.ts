@@ -104,6 +104,16 @@ export interface ModerationCaseData {
 }
 
 /**
+ * Payload to create a new support ticket.
+ */
+export interface CreateTicketInput {
+  guildId: string;
+  channelId: string;
+  creatorId: string;
+  category?: string | null;
+}
+
+/**
  * Domain representation of a support ticket.
  */
 export interface TicketData {
@@ -159,6 +169,25 @@ export interface IModerationRepository {
     data: { reason?: string | null; active?: boolean },
   ): Promise<ModerationCaseData | null>;
   countCases(guildId: string): Promise<number>;
+}
+
+/**
+ * Contract for support ticket repository operations.
+ */
+export interface ITicketRepository {
+  createTicket(data: CreateTicketInput): Promise<TicketData>;
+  getTicketByChannel(guildId: string, channelId: string): Promise<TicketData | null>;
+  getTicketById(ticketId: string): Promise<TicketData | null>;
+  claimTicket(ticketId: string, moderatorId: string): Promise<TicketData | null>;
+  unclaimTicket(ticketId: string): Promise<TicketData | null>;
+  closeTicket(ticketId: string): Promise<TicketData | null>;
+  reopenTicket(ticketId: string): Promise<TicketData | null>;
+  listGuildTickets(
+    guildId: string,
+    status?: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<TicketData[]>;
 }
 
 /**
