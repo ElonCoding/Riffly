@@ -104,7 +104,7 @@ export class LavalinkProvider implements SearchableProvider, TrackUrlProvider, P
 
   constructor(options: LavalinkProviderOptions) {
     this.manager = options.manager;
-    this.searchSource = options.searchSource ?? 'scsearch';
+    this.searchSource = options.searchSource ?? 'ytsearch';
   }
 
   private getNode() {
@@ -116,26 +116,30 @@ export class LavalinkProvider implements SearchableProvider, TrackUrlProvider, P
     const node = this.getNode();
     if (!node) throw RifflyError.lavalinkUnavailable();
 
-    let result: SearchResult;
-    try {
-      // node.search accepts { query, source } or a plain string
-      result = (await node.search({ query, source: this.searchSource }, null)) as SearchResult;
-    } catch (cause) {
-      throw new RifflyError(
-        'ProviderUnavailable',
-        '🔧 Search failed. Try again in a moment.',
-        cause,
-      );
+    const sourcesToTry: SearchPlatform[] = [
+      this.searchSource,
+      this.searchSource === 'ytsearch' ? 'ytmsearch' : 'ytsearch',
+      'scsearch',
+    ];
+
+    for (const source of sourcesToTry) {
+      try {
+        const result = (await node.search({ query, source }, null)) as SearchResult;
+        if (result && result.loadType !== 'error' && result.loadType !== 'empty') {
+          const tracks = extractTracks(result)
+            .slice(0, limit)
+            .map(normalizeRaw)
+            .filter((t): t is Track => t !== undefined);
+          if (tracks.length > 0) {
+            return tracks;
+          }
+        }
+      } catch {
+        // Try fallback source
+      }
     }
 
-    if (!result || result.loadType === 'error' || result.loadType === 'empty') {
-      return [];
-    }
-
-    return extractTracks(result)
-      .slice(0, limit)
-      .map(normalizeRaw)
-      .filter((t): t is Track => t !== undefined);
+    return [];
   }
 
   async resolveTrackUrl(url: URL): Promise<Track> {

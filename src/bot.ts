@@ -65,12 +65,21 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
     }
 
     const registry = new ProviderRegistry();
-    const lavalinkProvider = new LavalinkProvider({ manager: activeEngine.manager });
-    // SoundCloud is the primary search/URL source via Lavalink built-in sc source
+    const lavalinkProvider = new LavalinkProvider({
+      manager: activeEngine.manager,
+      searchSource: 'ytsearch',
+    });
+    // YouTube, SoundCloud, and Bandcamp hostnames
     registry.register(lavalinkProvider, [
+      'youtube.com',
+      'www.youtube.com',
+      'm.youtube.com',
+      'youtu.be',
+      'music.youtube.com',
       'soundcloud.com',
       'www.soundcloud.com',
       'on.soundcloud.com',
+      'bandcamp.com',
     ]);
 
     const resolver = new TrackResolver({ registry });
@@ -92,6 +101,12 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
 
   client.once(Events.ClientReady, (readyClient) => {
     console.log(`[Bot] Logged in as ${readyClient.user.tag}! Gateway connection established.`);
+    // If running in global mode, clear any residual guild-specific commands to prevent duplicates
+    if (!config.discordGuildId) {
+      for (const guild of readyClient.guilds.cache.values()) {
+        guild.commands.set([]).catch(() => null);
+      }
+    }
   });
 
   client.on(Events.InteractionCreate, (interaction) => {
