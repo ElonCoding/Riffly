@@ -28,6 +28,7 @@ export interface CreateBotOptions {
 export type BotOptions = CreateBotOptions;
 
 export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBot {
+  const usePrivilegedIntents = process.env.DISCORD_PRIVILEGED_INTENTS !== 'false';
   const client =
     options.client ??
     new Client({
@@ -35,9 +36,10 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMessageReactions,
-        GatewayIntentBits.GuildMembers,
+        ...(usePrivilegedIntents
+          ? [GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers]
+          : []),
       ],
     });
 
@@ -179,10 +181,20 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
       try {
         await client.login(config.discordToken);
       } catch (error) {
-        console.error(
-          '[Bot] Login failed:',
-          error instanceof Error ? error.message : 'Unknown login error',
-        );
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error('[Bot] Login failed:', errorMsg);
+        if (errorMsg.toLowerCase().includes('disallowed intents')) {
+          console.error(
+            '\n====================================================================\n' +
+              '[ACTION REQUIRED] Privileged Gateway Intents disabled in Discord Portal!\n' +
+              `1. Open https://discord.com/developers/applications/${config.discordClientId}/bot\n` +
+              '2. Scroll down to "Privileged Gateway Intents"\n' +
+              '3. Turn ON "SERVER MEMBERS INTENT" and "MESSAGE CONTENT INTENT"\n' +
+              '4. Click "Save Changes" and restart Riffly.\n\n' +
+              'Alternatively, set DISCORD_PRIVILEGED_INTENTS=false in .env to boot now.\n' +
+              '====================================================================\n',
+          );
+        }
         throw error;
       }
     },
