@@ -46,8 +46,7 @@ export interface ModuleRegistryOptions {
  * per-guild toggle states, lifecycle dispatch, and settings inheritance.
  */
 export class ModuleRegistry {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private readonly modules = new Map<string, ModuleDefinition<any>>();
+  private readonly modules = new Map<string, ModuleDefinition>();
   private readonly guildEnabledStates = new Map<string, Map<string, boolean>>();
   private readonly guildSettingsOverrides = new Map<string, Map<string, Record<string, unknown>>>();
   private readonly client: Client | undefined;
@@ -71,15 +70,14 @@ export class ModuleRegistry {
       throw new ModuleRegistryError(`Module with ID "${module.id}" is already registered.`, module.id);
     }
 
-    this.modules.set(module.id, module);
+    this.modules.set(module.id, module as ModuleDefinition);
     return this;
   }
 
   /**
    * Registers multiple modules in sequence.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public registerMany(modules: readonly ModuleDefinition<any>[]): this {
+  public registerMany(modules: readonly ModuleDefinition[]): this {
     for (const mod of modules) {
       this.register(mod);
     }

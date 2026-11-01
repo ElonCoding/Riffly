@@ -7,7 +7,7 @@ import type { ModuleRegistry } from '../core/registry.js';
 export interface EventHandler<E = unknown> {
   readonly id: string;
   readonly moduleId?: string | undefined;
-  readonly priority?: number | undefined;
+  readonly priority: number;
   readonly once?: boolean | undefined;
   readonly filter?: ((args: E, guildId?: string) => boolean | Promise<boolean>) | undefined;
   readonly execute: (args: E, context?: unknown) => Promise<void> | void;

@@ -79,7 +79,10 @@ export class EventDispatcher {
    */
   public registerHandler<E = unknown>(
     event: string,
-    handler: Omit<EventHandler<E>, 'id'> & { readonly id?: string | undefined },
+    handler: Omit<EventHandler<E>, 'id' | 'priority'> & {
+      readonly id?: string | undefined;
+      readonly priority?: number | undefined;
+    },
   ): () => void {
     const id = handler.id ?? generateHandlerId(handler.moduleId ?? 'handler');
     const fullHandler: EventHandler<E> = {
