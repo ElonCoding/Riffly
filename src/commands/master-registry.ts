@@ -1,7 +1,8 @@
 import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
 import type { TrackResolver } from '../provider/resolver.js';
-import { buildCommands, allCommandData } from './index.js';
+import { buildCommands } from './index.js';
+import { audioCommandData } from './audio-registry.js';
 import type { CommandDefinition } from '../modules/core/types.js';
 
 // Repositories & Services
@@ -65,7 +66,7 @@ export function buildMasterCommands(
   if (playerManager && resolver) {
     commands.push(...buildCommands(playerManager, resolver));
   } else {
-    for (const data of allCommandData) {
+    for (const data of audioCommandData) {
       commands.push({
         data,
         execute: async () => {},
@@ -192,3 +193,152 @@ export function buildMasterCommandMap(
   }
   return map;
 }
+
+/**
+ * 100 curated global slash command names representing full feature parity
+ * across all 18 specification modules within Discord's 100 application command limit.
+ */
+export const GLOBAL_SLASH_COMMAND_NAMES: readonly string[] = [
+  // Music & Audio (18)
+  'play',
+  'pause',
+  'resume',
+  'skip',
+  'stop',
+  'join',
+  'leave',
+  'nowplaying',
+  'queue',
+  'volume',
+  'loop',
+  'shuffle',
+  'seek',
+  'remove',
+  'clear',
+  'filter',
+  'autoplay',
+  'ping',
+  // Help & Info (2)
+  'help',
+  'info',
+  // Staff Hierarchy (3)
+  'extraowner',
+  'admin',
+  'mod',
+  // Moderation (22)
+  'ban',
+  'unban',
+  'kick',
+  'timeout',
+  'mute',
+  'unmute',
+  'softban',
+  'warn',
+  'warnings',
+  'cases',
+  'case',
+  'note',
+  'jail',
+  'purge',
+  'slowmode',
+  'lock',
+  'unlock',
+  'hide',
+  'unhide',
+  'role',
+  'nick',
+  'move',
+  // Logging (1)
+  'logging',
+  // Tickets & Verification (2)
+  'ticket',
+  'verify',
+  // Leveling & Leaderboards (3)
+  'rank',
+  'levels',
+  'leaderboard',
+  // Voice Rooms (2)
+  'voicemaster',
+  'vc',
+  // Security Defenses (3)
+  'antinuke',
+  'antiraid',
+  'automod',
+  // Community Features (7)
+  'autorole',
+  'reactionrole',
+  'vanityrole',
+  'boosterrole',
+  'clownboard',
+  'counter',
+  'autoresponder',
+  // Giveaways (1)
+  'giveaway',
+  // Virtual Economy (8)
+  'balance',
+  'daily',
+  'work',
+  'pay',
+  'beg',
+  'gamble',
+  'deposit',
+  'withdraw',
+  // AI Assistant (1)
+  'ask',
+  // Server Backups (1)
+  'backup',
+  // Utility & Server Management (17)
+  'userinfo',
+  'serverinfo',
+  'avatar',
+  'poll',
+  'remindme',
+  'afk',
+  'suggest',
+  'report',
+  'announce',
+  'embed',
+  'snipe',
+  'crypto',
+  'color',
+  'weather',
+  'translate',
+  'define',
+  'wiki',
+  // Fun & Games (8)
+  'github',
+  'tictactoe',
+  'trivia',
+  'meme',
+  'urban',
+  'fun',
+  'rp',
+  'image',
+  // Prefix & Config (1)
+  'prefix',
+];
+
+/**
+ * Returns the 100 global slash commands configured for Discord REST registration.
+ */
+export function getGlobalSlashCommands(
+  playerManager?: GuildPlayerManager,
+  resolver?: TrackResolver,
+): readonly Command[] {
+  const masterMap = buildMasterCommandMap(playerManager, resolver);
+  const result: Command[] = [];
+  for (const name of GLOBAL_SLASH_COMMAND_NAMES) {
+    const cmd = masterMap.get(name);
+    if (cmd) {
+      result.push(cmd);
+    }
+  }
+  return result;
+}
+
+/**
+ * All real SlashCommandBuilder definitions for registration via Discord REST API (capped at 100).
+ */
+export const allCommandData: readonly Command['data'][] = getGlobalSlashCommands().map(
+  (c) => c.data,
+);

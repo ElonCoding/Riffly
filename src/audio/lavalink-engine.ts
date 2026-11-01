@@ -240,7 +240,7 @@ export class LavalinkMusicEngine extends EventEmitter implements MusicEngine {
       player
         .connect()
         .then(() => {
-          if (player.connected && !settled) {
+          if (!settled) {
             settled = true;
             cleanup();
             resolve();

@@ -2,23 +2,23 @@ import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
 import type { TrackResolver } from '../provider/resolver.js';
 import { pingCommand } from './ping.js';
-import { makeJoinCommand, joinCommandData } from './join.js';
-import { makePlayCommand, playCommandData } from './play.js';
-import { makePauseCommand, pauseCommandData } from './pause.js';
-import { makeResumeCommand, resumeCommandData } from './resume.js';
-import { makeSkipCommand, skipCommandData } from './skip.js';
-import { makeStopCommand, stopCommandData } from './stop.js';
-import { makeLeaveCommand, leaveCommandData } from './leave.js';
-import { makeNowPlayingCommand, nowPlayingCommandData } from './nowplaying.js';
-import { makeQueueCommand, queueCommandData } from './queue.js';
-import { makeVolumeCommand, volumeCommandData } from './volume.js';
-import { makeLoopCommand, loopCommandData } from './loop.js';
-import { makeShuffleCommand, shuffleCommandData } from './shuffle.js';
-import { makeSeekCommand, seekCommandData } from './seek.js';
-import { makeRemoveCommand, removeCommandData } from './remove.js';
-import { makeClearCommand, clearCommandData } from './clear.js';
-import { makeFilterCommand, filterCommandData } from './filter.js';
-import { makeAutoplayCommand, autoplayCommandData } from './autoplay.js';
+import { makeJoinCommand } from './join.js';
+import { makePlayCommand } from './play.js';
+import { makePauseCommand } from './pause.js';
+import { makeResumeCommand } from './resume.js';
+import { makeSkipCommand } from './skip.js';
+import { makeStopCommand } from './stop.js';
+import { makeLeaveCommand } from './leave.js';
+import { makeNowPlayingCommand } from './nowplaying.js';
+import { makeQueueCommand } from './queue.js';
+import { makeVolumeCommand } from './volume.js';
+import { makeLoopCommand } from './loop.js';
+import { makeShuffleCommand } from './shuffle.js';
+import { makeSeekCommand } from './seek.js';
+import { makeRemoveCommand } from './remove.js';
+import { makeClearCommand } from './clear.js';
+import { makeFilterCommand } from './filter.js';
+import { makeAutoplayCommand } from './autoplay.js';
 
 export * from './types.js';
 export * from './helpers.js';
@@ -83,26 +83,4 @@ export function buildCommandMap(
   return new Map(cmds.map((c) => [c.data.name, c]));
 }
 
-/**
- * All real SlashCommandBuilder definitions for registration via Discord REST API.
- */
-export const allCommandData: readonly Command['data'][] = [
-  pingCommand.data,
-  joinCommandData,
-  playCommandData,
-  pauseCommandData,
-  resumeCommandData,
-  skipCommandData,
-  stopCommandData,
-  leaveCommandData,
-  nowPlayingCommandData,
-  queueCommandData,
-  volumeCommandData,
-  loopCommandData,
-  shuffleCommandData,
-  seekCommandData,
-  removeCommandData,
-  clearCommandData,
-  filterCommandData,
-  autoplayCommandData,
-];
+export * from './audio-registry.js';
