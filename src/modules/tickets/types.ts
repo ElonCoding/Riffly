@@ -11,3 +11,4 @@ export interface TicketModuleSettings {
   readonly transcriptChannelId: string;
   readonly maxOpenTicketsPerUser: number;
 }
+

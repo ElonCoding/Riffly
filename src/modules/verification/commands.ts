@@ -55,3 +55,4 @@ export function createVerificationCommands(service: VerificationService): Comman
 
   return [verifyCommand];
 }
+

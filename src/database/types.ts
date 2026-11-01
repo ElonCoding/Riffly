@@ -191,6 +191,21 @@ export interface ITicketRepository {
 }
 
 /**
+ * Contract for user experience and leveling operations.
+ */
+export interface ILevelRepository {
+  getUserLevel(guildId: string, userId: string): Promise<UserLevelData>;
+  addXp(
+    guildId: string,
+    userId: string,
+    amount: number,
+    computeLevel: (xp: number) => number,
+  ): Promise<{ data: UserLevelData; leveledUp: boolean; oldLevel: number; newLevel: number }>;
+  getLeaderboard(guildId: string, limit?: number, offset?: number): Promise<UserLevelData[]>;
+  setUserLevel(guildId: string, userId: string, level: number, xp: bigint): Promise<UserLevelData>;
+}
+
+/**
  * Contract for scheduled task repository operations.
  */
 export interface ITaskRepository {

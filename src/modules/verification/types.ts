@@ -6,3 +6,4 @@ export interface VerificationSettings {
   readonly welcomeMessage: string;
   readonly goodbyeMessage: string;
 }
+

@@ -212,3 +212,4 @@ describe('TicketService', () => {
     expect(modDef.commands?.[0]?.name).toBe('ticket');
   });
 });
+

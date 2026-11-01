@@ -6,6 +6,9 @@ export * from './moderation/index.js';
 export * from './logging/index.js';
 export * from './tickets/index.js';
 export * from './verification/index.js';
+export * from './leveling/index.js';
+export * from './voice-rooms/index.js';
+
 
 
 
