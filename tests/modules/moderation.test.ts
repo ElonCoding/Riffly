@@ -45,6 +45,8 @@ describe('ModerationService', () => {
       getGuildCases: vi.fn(),
       updateCase: vi.fn(),
       countCases: vi.fn(),
+      clearActiveCases: vi.fn().mockResolvedValue(1),
+      deleteCase: vi.fn().mockResolvedValue(true),
     };
     service = new ModerationService(mockRepo);
   });
@@ -245,10 +247,126 @@ describe('ModerationService', () => {
   it('builds valid moderation module definition', () => {
     const modDef = createModerationModule({ repository: mockRepo });
     expect(modDef.id).toBe('moderation');
-    expect(modDef.commands).toHaveLength(6);
+    expect(modDef.commands?.length).toBeGreaterThanOrEqual(25);
     const cmdNames = modDef.commands?.map((c) => c.name);
     expect(cmdNames).toEqual(
-      expect.arrayContaining(['ban', 'kick', 'timeout', 'warn', 'cases', 'purge']),
+      expect.arrayContaining([
+        'ban',
+        'unban',
+        'kick',
+        'timeout',
+        'mute',
+        'unmute',
+        'softban',
+        'warn',
+        'cases',
+        'purge',
+        'slowmode',
+        'lock',
+        'unlock',
+        'lockall',
+        'unlockall',
+        'hide',
+        'unhide',
+        'vclock',
+        'vcunlock',
+        'vchide',
+        'vcunhide',
+        'role',
+        'nick',
+        'warnings',
+        'clearwarns',
+        'note',
+        'case',
+        'editcase',
+        'jail',
+        'move',
+        'moveall',
+      ]),
     );
+  });
+
+  it('unbans user and records case', async () => {
+    const unbanMock = vi.fn().mockResolvedValue(true);
+    const mockGuild = {
+      id: 'g1',
+      members: {
+        unban: unbanMock,
+      },
+    } as unknown as Guild;
+    const mod = { id: 'mod1', user: { tag: 'Mod#0001' } } as unknown as GuildMember;
+
+    const res = await service.unban(mockGuild, mod, 'target_123', 'False positive');
+    expect(res.success).toBe(true);
+    expect(res.action).toBe('unban');
+    expect(unbanMock).toHaveBeenCalledWith('target_123', 'False positive');
+  });
+
+  it('unmutes user and records case', async () => {
+    const timeoutFn = vi.fn().mockResolvedValue(true);
+    const mockGuild = { id: 'g1', members: { me: null } } as unknown as Guild;
+    const target = {
+      id: 'target1',
+      guild: mockGuild,
+      roles: { highest: { position: 1 } },
+      timeout: timeoutFn,
+    } as unknown as GuildMember;
+    const mod = {
+      id: 'mod1',
+      guild: mockGuild,
+      roles: { highest: { position: 5 } },
+    } as unknown as GuildMember;
+
+    const res = await service.unmute(mockGuild, target, mod, 'Good behavior');
+    expect(res.success).toBe(true);
+    expect(timeoutFn).toHaveBeenCalledWith(null, 'Good behavior');
+  });
+
+  it('manages roles and checks hierarchy', async () => {
+    const addRoleFn = vi.fn().mockResolvedValue(true);
+    const mockGuild = { id: 'g1', members: { me: null } } as unknown as Guild;
+    const target = {
+      id: 'target1',
+      guild: mockGuild,
+      roles: { add: addRoleFn },
+    } as unknown as GuildMember;
+    const mod = {
+      id: 'mod1',
+      guild: mockGuild,
+      roles: { highest: { position: 10 } },
+      user: { tag: 'Mod#0001' },
+    } as unknown as GuildMember;
+    const role = { id: 'role1', position: 5 } as unknown as import('discord.js').Role;
+
+    await service.manageRole(target, role, true, mod);
+    expect(addRoleFn).toHaveBeenCalledWith(role, expect.stringContaining('Role assigned'));
+
+    const higherRole = { id: 'role2', position: 15 } as unknown as import('discord.js').Role;
+    await expect(service.manageRole(target, higherRole, true, mod)).rejects.toThrow(
+      ModerationHierarchyError,
+    );
+  });
+
+  it('jails and releases member', async () => {
+    const setRolesFn = vi.fn().mockResolvedValue(true);
+    const mockGuild = { id: 'g1' } as unknown as Guild;
+    const member = {
+      id: 'target1',
+      roles: {
+        cache: new Map([
+          ['g1', {}],
+          ['role-regular', {}],
+        ]),
+        set: setRolesFn,
+      },
+    } as unknown as GuildMember;
+    const jailRole = { id: 'jail-role' } as unknown as import('discord.js').Role;
+
+    const prevRoles = await service.jailMember(mockGuild, member, jailRole, 'Bad behavior');
+    expect(prevRoles).toEqual(['role-regular']);
+    expect(setRolesFn).toHaveBeenCalledWith(['jail-role'], 'Bad behavior');
+
+    await service.releaseJail(member, prevRoles);
+    expect(setRolesFn).toHaveBeenCalledWith(['role-regular'], 'Released from jail by staff');
   });
 });

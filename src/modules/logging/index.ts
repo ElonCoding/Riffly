@@ -17,8 +17,10 @@ import {
   formatMessageUpdateEmbed,
   formatVoiceStateEmbed,
 } from './formatters.js';
+import { createLoggingCommands } from './commands.js';
 
 export * from './formatters.js';
+export * from './commands.js';
 
 export const loggingSettingsSchema = {
   logChannelId: {
@@ -82,6 +84,7 @@ export function createLoggingModule(): ModuleDefinition<typeof loggingSettingsSc
     description: 'Automated audit trail logging for message, member, and voice events.',
     version: '1.0.0',
     settings: loggingSettingsSchema,
+    commands: createLoggingCommands(),
     events: [
       {
         event: 'messageDelete',

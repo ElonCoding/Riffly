@@ -109,5 +109,37 @@ describe('Server Logging Module', () => {
     expect(eventNames).toContain('guildMemberAdd');
     expect(eventNames).toContain('guildMemberRemove');
     expect(eventNames).toContain('voiceStateUpdate');
+    expect(logModule.commands?.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('executes one-click log setup creating category and 6 dedicated channels', async () => {
+    const { executeOneClickLogSetup, MemoryLoggingStore } = await import('../../src/modules/logging/commands.js');
+    const store = new MemoryLoggingStore();
+    const createdChannels: Array<{ name: string; type: number }> = [];
+
+    const mockGuild = {
+      id: 'g1',
+      roles: { everyone: { id: 'everyone_role' } },
+      members: { me: { id: 'bot_me' } },
+      channels: {
+        create: (data: { name: string; type: number }) => {
+          createdChannels.push(data);
+          return Promise.resolve({ id: `chan_${createdChannels.length}`, name: data.name });
+        },
+      },
+    } as unknown as import('discord.js').Guild;
+
+    const res = await executeOneClickLogSetup(mockGuild, store);
+    expect(res.categoryName).toBe('RIFFLY LOGS');
+    expect(res.channelsCreated).toHaveLength(6);
+    expect(createdChannels).toHaveLength(7); // 1 category + 6 channels
+
+    const configured = await store.getLogChannels('g1');
+    expect(configured.message).toBeDefined();
+    expect(configured.voice).toBeDefined();
+    expect(configured.member).toBeDefined();
+    expect(configured.mod).toBeDefined();
+    expect(configured.server).toBeDefined();
+    expect(configured.bot).toBeDefined();
   });
 });

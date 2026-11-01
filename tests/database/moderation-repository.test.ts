@@ -93,6 +93,24 @@ function createMockPrismaClient(): PrismaClient {
         ).length;
         return Promise.resolve(count);
       },
+      updateMany: ({ where, data }: { where: { guildId: string; targetId: string; active: boolean; action?: string }; data: Partial<ModerationCase> }) => {
+        let count = 0;
+        for (const [key, val] of caseStore.entries()) {
+          if (val.guildId === where.guildId && val.targetId === where.targetId && val.active === where.active) {
+            if (!where.action || val.action === where.action) {
+              caseStore.set(key, { ...val, ...data });
+              count++;
+            }
+          }
+        }
+        return Promise.resolve({ count });
+      },
+      delete: ({ where }: { where: { guildId_caseNumber: { guildId: string; caseNumber: number } } }) => {
+        const key = `${where.guildId_caseNumber.guildId}:${where.guildId_caseNumber.caseNumber}`;
+        const existed = caseStore.delete(key);
+        if (!existed) throw new Error('Not found');
+        return Promise.resolve({ id: key });
+      },
     },
     $transaction: async <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => {
       return fn(client);
@@ -218,6 +236,24 @@ describe('ModerationRepository', () => {
     expect(page2).toHaveLength(2);
     expect(page2[0]?.caseNumber).toBe(3);
     expect(page2[1]?.caseNumber).toBe(2);
+  });
+
+  it('clears active cases and deletes a case', async () => {
+    await repository.createCase({
+      guildId: 'g1',
+      targetId: 'user_target',
+      moderatorId: 'mod1',
+      action: 'warn',
+    });
+
+    const cleared = await repository.clearActiveCases('g1', 'user_target', 'warn');
+    expect(cleared).toBe(1);
+
+    const deleted = await repository.deleteCase('g1', 1);
+    expect(deleted).toBe(true);
+
+    const deletedNonExistent = await repository.deleteCase('g1', 99);
+    expect(deletedNonExistent).toBe(false);
   });
 });
 

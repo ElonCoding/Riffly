@@ -260,6 +260,8 @@ export interface IModerationRepository {
     data: { reason?: string | null; active?: boolean },
   ): Promise<ModerationCaseData | null>;
   countCases(guildId: string): Promise<number>;
+  clearActiveCases(guildId: string, targetId: string, action?: string): Promise<number>;
+  deleteCase(guildId: string, caseNumber: number): Promise<boolean>;
 }
 
 /**

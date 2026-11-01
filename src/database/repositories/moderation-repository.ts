@@ -202,5 +202,46 @@ export class ModerationRepository implements IModerationRepository {
       where: { guildId },
     });
   }
+
+  /**
+   * Deactivates active warnings or sanctions for a member.
+   */
+  public async clearActiveCases(
+    guildId: string,
+    targetId: string,
+    action?: string,
+  ): Promise<number> {
+    const res = await this.client.moderationCase.updateMany({
+      where: {
+        guildId,
+        targetId,
+        active: true,
+        ...(action ? { action } : {}),
+      },
+      data: {
+        active: false,
+      },
+    });
+    return res.count;
+  }
+
+  /**
+   * Deletes a specific case record.
+   */
+  public async deleteCase(guildId: string, caseNumber: number): Promise<boolean> {
+    try {
+      await this.client.moderationCase.delete({
+        where: {
+          guildId_caseNumber: {
+            guildId,
+            caseNumber,
+          },
+        },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 

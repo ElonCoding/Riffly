@@ -7,6 +7,10 @@ import {
 import type { TextChannel } from 'discord.js';
 import type { CommandDefinition } from '../core/types.js';
 import type { ModerationService } from './service.js';
+import { createChannelModerationCommands } from './commands-channel.js';
+import { createRoleModerationCommands } from './commands-role.js';
+import { createCaseModerationCommands } from './commands-cases.js';
+import { createVoiceModerationCommands } from './commands-voice.js';
 
 export function createModerationCommands(service: ModerationService): CommandDefinition[] {
   const banCommand: CommandDefinition = {
@@ -66,6 +70,36 @@ export function createModerationCommands(service: ModerationService): CommandDef
     },
   };
 
+  const unbanCommand: CommandDefinition = {
+    name: 'unban',
+    description: 'Unban a user by ID.',
+    data: new SlashCommandBuilder()
+      .setName('unban')
+      .setDescription('Unban a user by their Discord user ID.')
+      .addStringOption((opt) => opt.setName('user_id').setDescription('User ID to unban').setRequired(true))
+      .addStringOption((opt) => opt.setName('reason').setDescription('Reason').setRequired(false))
+      .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+    guildOnly: true,
+    execute: async (interaction) => {
+      if (!interaction.inGuild() || !interaction.guild || !(interaction.member instanceof GuildMember)) {
+        await interaction.reply({ content: '❌ Guild only.', ephemeral: true });
+        return;
+      }
+      const targetId = interaction.options.getString('user_id', true);
+      const reason = interaction.options.getString('reason') ?? undefined;
+
+      try {
+        const res = await service.unban(interaction.guild, interaction.member, targetId, reason);
+        await interaction.reply({ content: `✅ ${res.message}` });
+      } catch (err: unknown) {
+        await interaction.reply({
+          content: `❌ Failed to unban: ${err instanceof Error ? err.message : String(err)}`,
+          ephemeral: true,
+        });
+      }
+    },
+  };
+
   const kickCommand: CommandDefinition = {
     name: 'kick',
     description: 'Kick a member from the server and record a case.',
@@ -90,13 +124,12 @@ export function createModerationCommands(service: ModerationService): CommandDef
         return;
       }
 
-      const targetUser = interaction.options.getUser('target', true);
-      const targetMember = await guild.members.fetch(targetUser.id).catch(() => null);
+      const target = interaction.options.getUser('target', true);
+      const targetMember = await guild.members.fetch(target.id).catch(() => null);
       if (!targetMember) {
-        await interaction.editReply({ content: 'Target member is not in the server.' });
+        await interaction.editReply({ content: '❌ Member not found in server.' });
         return;
       }
-
       const reason = interaction.options.getString('reason') ?? undefined;
 
       try {
@@ -106,7 +139,7 @@ export function createModerationCommands(service: ModerationService): CommandDef
           .setColor(0xf59e0b)
           .setDescription(result.message)
           .addFields(
-            { name: 'Target', value: `<@${targetUser.id}>`, inline: true },
+            { name: 'Target', value: `<@${target.id}> (${target.id})`, inline: true },
             { name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
             { name: 'Reason', value: reason ?? 'No reason provided.', inline: false },
           )
@@ -114,7 +147,7 @@ export function createModerationCommands(service: ModerationService): CommandDef
         await interaction.editReply({ embeds: [embed] });
       } catch (err: unknown) {
         await interaction.editReply({
-          content: `Failed to kick member: ${err instanceof Error ? err.message : String(err)}`,
+          content: `Failed to kick user: ${err instanceof Error ? err.message : String(err)}`,
         });
       }
     },
@@ -122,18 +155,18 @@ export function createModerationCommands(service: ModerationService): CommandDef
 
   const timeoutCommand: CommandDefinition = {
     name: 'timeout',
-    description: 'Timeout a member for a specified duration.',
+    description: 'Timeout a member for a specified duration in seconds.',
     data: new SlashCommandBuilder()
       .setName('timeout')
-      .setDescription('Timeout a member for a specified duration.')
+      .setDescription('Timeout a member.')
       .addUserOption((opt) =>
         opt.setName('target').setDescription('The member to timeout').setRequired(true),
       )
       .addIntegerOption((opt) =>
         opt
           .setName('seconds')
-          .setDescription('Timeout duration in seconds (max 2419200 / 28 days)')
-          .setMinValue(5)
+          .setDescription('Duration of timeout in seconds (max 2419200)')
+          .setMinValue(10)
           .setMaxValue(2419200)
           .setRequired(true),
       )
@@ -152,13 +185,12 @@ export function createModerationCommands(service: ModerationService): CommandDef
         return;
       }
 
-      const targetUser = interaction.options.getUser('target', true);
-      const targetMember = await guild.members.fetch(targetUser.id).catch(() => null);
+      const target = interaction.options.getUser('target', true);
+      const targetMember = await guild.members.fetch(target.id).catch(() => null);
       if (!targetMember) {
-        await interaction.editReply({ content: 'Target member is not in the server.' });
+        await interaction.editReply({ content: '❌ Member not found in server.' });
         return;
       }
-
       const seconds = interaction.options.getInteger('seconds', true);
       const reason = interaction.options.getString('reason') ?? undefined;
 
@@ -172,34 +204,148 @@ export function createModerationCommands(service: ModerationService): CommandDef
         );
         const embed = new EmbedBuilder()
           .setTitle('⏳ Member Timed Out')
-          .setColor(0x3b82f6)
+          .setColor(0x8b5cf6)
           .setDescription(result.message)
           .addFields(
-            { name: 'Target', value: `<@${targetUser.id}>`, inline: true },
-            { name: 'Duration', value: `${seconds}s`, inline: true },
+            { name: 'Target', value: `<@${target.id}> (${target.id})`, inline: true },
+            { name: 'Duration', value: `${seconds} seconds`, inline: true },
             { name: 'Reason', value: reason ?? 'No reason provided.', inline: false },
           )
           .setTimestamp();
         await interaction.editReply({ embeds: [embed] });
       } catch (err: unknown) {
         await interaction.editReply({
-          content: `Failed to timeout member: ${err instanceof Error ? err.message : String(err)}`,
+          content: `Failed to timeout user: ${err instanceof Error ? err.message : String(err)}`,
         });
+      }
+    },
+  };
+
+  const muteCommand: CommandDefinition = {
+    name: 'mute',
+    description: 'Timeout a member with standard duration presets.',
+    data: new SlashCommandBuilder()
+      .setName('mute')
+      .setDescription('Timeout a member with duration presets.')
+      .addUserOption((opt) => opt.setName('target').setDescription('Target user').setRequired(true))
+      .addStringOption((opt) =>
+        opt
+          .setName('duration')
+          .setDescription('Duration preset')
+          .setRequired(true)
+          .addChoices(
+            { name: '1 minute', value: '60000' },
+            { name: '5 minutes', value: '300000' },
+            { name: '10 minutes', value: '600000' },
+            { name: '30 minutes', value: '1800000' },
+            { name: '1 hour', value: '3600000' },
+            { name: '6 hours', value: '21600000' },
+            { name: '12 hours', value: '43200000' },
+            { name: '1 day', value: '86400000' },
+            { name: '3 days', value: '259200000' },
+            { name: '7 days', value: '604800000' },
+          ),
+      )
+      .addStringOption((opt) => opt.setName('reason').setDescription('Reason').setRequired(false))
+      .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+    guildOnly: true,
+    execute: async (interaction) => {
+      if (!interaction.inGuild() || !interaction.guild || !(interaction.member instanceof GuildMember)) {
+        await interaction.reply({ content: '❌ Server only.', ephemeral: true });
+        return;
+      }
+      const targetUser = interaction.options.getUser('target', true);
+      const targetMember = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+      if (!targetMember) {
+        await interaction.reply({ content: '❌ Member not found in server.', ephemeral: true });
+        return;
+      }
+      const durationMs = parseInt(interaction.options.getString('duration', true), 10);
+      const reason = interaction.options.getString('reason') ?? undefined;
+
+      try {
+        const res = await service.timeout(interaction.guild, interaction.member, targetMember, durationMs, reason);
+        await interaction.reply({ content: `🔇 ${res.message}` });
+      } catch (err: unknown) {
+        await interaction.reply({ content: `❌ ${err instanceof Error ? err.message : String(err)}`, ephemeral: true });
+      }
+    },
+  };
+
+  const unmuteCommand: CommandDefinition = {
+    name: 'unmute',
+    description: 'Remove timeout from a member.',
+    data: new SlashCommandBuilder()
+      .setName('unmute')
+      .setDescription('Remove timeout from a member.')
+      .addUserOption((opt) => opt.setName('target').setDescription('Target member').setRequired(true))
+      .addStringOption((opt) => opt.setName('reason').setDescription('Reason').setRequired(false))
+      .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+    guildOnly: true,
+    execute: async (interaction) => {
+      if (!interaction.inGuild() || !interaction.guild || !(interaction.member instanceof GuildMember)) {
+        await interaction.reply({ content: '❌ Server only.', ephemeral: true });
+        return;
+      }
+      const targetUser = interaction.options.getUser('target', true);
+      const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+      if (!member) {
+        await interaction.reply({ content: '❌ Member not found.', ephemeral: true });
+        return;
+      }
+
+      try {
+        const res = await service.unmute(interaction.guild, member, interaction.member);
+        await interaction.reply({ content: `🔊 ${res.message}` });
+      } catch (err: unknown) {
+        await interaction.reply({ content: `❌ ${err instanceof Error ? err.message : String(err)}`, ephemeral: true });
+      }
+    },
+  };
+
+  const softbanCommand: CommandDefinition = {
+    name: 'softban',
+    description: 'Ban and immediately unban a member to delete message history.',
+    data: new SlashCommandBuilder()
+      .setName('softban')
+      .setDescription('Ban and instantly unban a member to prune messages.')
+      .addUserOption((opt) => opt.setName('target').setDescription('Target user').setRequired(true))
+      .addStringOption((opt) => opt.setName('reason').setDescription('Reason').setRequired(false))
+      .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+    guildOnly: true,
+    execute: async (interaction) => {
+      if (!interaction.inGuild() || !interaction.guild || !(interaction.member instanceof GuildMember)) {
+        await interaction.reply({ content: '❌ Server only.', ephemeral: true });
+        return;
+      }
+      const targetUser = interaction.options.getUser('target', true);
+      const targetMember = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
+      if (!targetMember) {
+        await interaction.reply({ content: '❌ Member not found in server.', ephemeral: true });
+        return;
+      }
+      const reason = interaction.options.getString('reason') ?? undefined;
+
+      try {
+        const res = await service.softban(interaction.guild, interaction.member, targetMember, reason);
+        await interaction.reply({ content: `🧹 ${res.message}` });
+      } catch (err: unknown) {
+        await interaction.reply({ content: `❌ ${err instanceof Error ? err.message : String(err)}`, ephemeral: true });
       }
     },
   };
 
   const warnCommand: CommandDefinition = {
     name: 'warn',
-    description: 'Issue a formal warning to a member.',
+    description: 'Issue a formal infraction warning to a member.',
     data: new SlashCommandBuilder()
       .setName('warn')
-      .setDescription('Issue a formal warning to a member.')
+      .setDescription('Warn a member and record the case.')
       .addUserOption((opt) =>
         opt.setName('target').setDescription('The member to warn').setRequired(true),
       )
       .addStringOption((opt) =>
-        opt.setName('reason').setDescription('Reason for warning').setRequired(true),
+        opt.setName('reason').setDescription('Reason for the warning').setRequired(true),
       )
       .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
     guildOnly: true,
@@ -223,7 +369,7 @@ export function createModerationCommands(service: ModerationService): CommandDef
           .setColor(0xeab308)
           .setDescription(result.message)
           .addFields(
-            { name: 'Target', value: `<@${target.id}>`, inline: true },
+            { name: 'Target', value: `<@${target.id}> (${target.id})`, inline: true },
             { name: 'Moderator', value: `<@${interaction.user.id}>`, inline: true },
             { name: 'Reason', value: reason, inline: false },
           )
@@ -239,18 +385,18 @@ export function createModerationCommands(service: ModerationService): CommandDef
 
   const casesCommand: CommandDefinition = {
     name: 'cases',
-    description: 'View moderation history for a user.',
+    description: 'View moderation history and cases for a user.',
     data: new SlashCommandBuilder()
       .setName('cases')
-      .setDescription('View moderation history for a user.')
+      .setDescription('View moderation history and cases for a user.')
       .addUserOption((opt) =>
-        opt.setName('target').setDescription('The user to inspect').setRequired(true),
+        opt.setName('target').setDescription('The user to look up').setRequired(true),
       )
       .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
     guildOnly: true,
     defaultMemberPermissions: PermissionFlagsBits.ModerateMembers,
     execute: async (interaction) => {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ ephemeral: false });
       const guild = interaction.guild;
       if (!guild) {
         await interaction.editReply({ content: 'Command can only be run in a server.' });
@@ -262,22 +408,23 @@ export function createModerationCommands(service: ModerationService): CommandDef
 
       if (history.length === 0) {
         await interaction.editReply({
-          content: `No moderation cases found for <@${target.id}>. Clean record!`,
+          content: `No moderation cases found for <@${target.id}>.`,
         });
         return;
       }
 
       const embed = new EmbedBuilder()
-        .setTitle(`📋 Moderation Cases for ${target.tag}`)
-        .setColor(0x6366f1)
+        .setTitle(`Moderation Cases for ${target.username}`)
+        .setColor(0x3b82f6)
         .setDescription(
           history
             .slice(0, 10)
             .map(
               (c) =>
-                `**#${c.caseNumber}** [${c.action.toUpperCase()}] by <@${c.moderatorId}> — ${c.reason ?? 'No reason'} (<t:${Math.floor(c.createdAt.getTime() / 1000)}:R>)`,
+                `**#${c.caseNumber}** | \`${c.action.toUpperCase()}\` by <@${c.moderatorId}>\n` +
+                `Reason: ${c.reason ?? 'None'} — <t:${Math.floor(new Date(c.createdAt).getTime() / 1000)}:R>`,
             )
-            .join('\n'),
+            .join('\n\n'),
         )
         .setFooter({ text: `Total cases: ${history.length}` })
         .setTimestamp();
@@ -327,5 +474,20 @@ export function createModerationCommands(service: ModerationService): CommandDef
     },
   };
 
-  return [banCommand, kickCommand, timeoutCommand, warnCommand, casesCommand, purgeCommand];
+  return [
+    banCommand,
+    unbanCommand,
+    kickCommand,
+    timeoutCommand,
+    muteCommand,
+    unmuteCommand,
+    softbanCommand,
+    warnCommand,
+    casesCommand,
+    purgeCommand,
+    ...createChannelModerationCommands(service),
+    ...createRoleModerationCommands(service),
+    ...createCaseModerationCommands(service),
+    ...createVoiceModerationCommands(service),
+  ];
 }

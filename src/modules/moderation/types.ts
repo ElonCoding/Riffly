@@ -3,12 +3,15 @@ export type ModerationAction =
   | 'unban'
   | 'kick'
   | 'timeout'
+  | 'unmute'
   | 'warn'
   | 'softban'
   | 'purge'
   | 'lock'
   | 'unlock'
-  | 'slowmode';
+  | 'slowmode'
+  | 'jail'
+  | 'note';
 
 export interface ModerationSanctionInput {
   readonly guildId: string;

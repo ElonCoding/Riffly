@@ -1,10 +1,12 @@
 import type {
   Guild,
   GuildMember,
+  Role,
   TextChannel,
   User,
+  VoiceBasedChannel,
 } from 'discord.js';
-import { PermissionFlagsBits } from 'discord.js';
+import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import type { IModerationRepository, ModerationCaseData } from '../../database/types.js';
 import type { ModerationResult } from './types.js';
 
@@ -294,5 +296,250 @@ export class ModerationService {
    */
   public async getHistory(guildId: string, targetId: string): Promise<ModerationCaseData[]> {
     return this.repository.getCasesForTarget(guildId, targetId);
+  }
+
+  /**
+   * Removes timeout (unmute) from a member.
+   */
+  public async unmute(
+    guild: Guild,
+    target: GuildMember,
+    moderator: GuildMember,
+    reason?: string,
+  ): Promise<ModerationResult> {
+    this.checkHierarchy(moderator, target, guild.members.me ?? undefined);
+    await target.timeout(null, reason ?? 'Unmuted by staff');
+
+    const modCase = await this.repository.createCase({
+      guildId: guild.id,
+      targetId: target.id,
+      moderatorId: moderator.id,
+      action: 'unmute',
+      reason: reason ?? null,
+    });
+
+    return {
+      success: true,
+      action: 'timeout',
+      caseNumber: modCase.caseNumber,
+      message: `Removed timeout from <@${target.id}> (Case #${modCase.caseNumber}).`,
+    };
+  }
+
+  /**
+   * Locks or unlocks all text channels for emergency server lockdown.
+   */
+  public async lockall(guild: Guild, lock: boolean, moderatorTag: string): Promise<number> {
+    let affected = 0;
+    const channels = Array.from(guild.channels.cache.values()).filter(
+      (c): c is TextChannel => c.type === ChannelType.GuildText,
+    );
+
+    for (const channel of channels) {
+      try {
+        await channel.permissionOverwrites.edit(guild.roles.everyone, {
+          [PermissionFlagsBits.SendMessages.toString()]: !lock,
+        }, {
+          reason: `Server lockdown ${lock ? 'engaged' : 'released'} by ${moderatorTag}`,
+        });
+        affected++;
+      } catch {
+        // Continue across remaining channels
+      }
+    }
+    return affected;
+  }
+
+  /**
+   * Hides or unhides a channel for a specific role or @everyone.
+   */
+  public async setChannelVisibility(
+    channel: TextChannel | VoiceBasedChannel,
+    role: Role,
+    visible: boolean,
+    moderatorTag: string,
+  ): Promise<void> {
+    await channel.permissionOverwrites.edit(role, {
+      [PermissionFlagsBits.ViewChannel.toString()]: visible,
+    }, {
+      reason: `Channel visibility updated by ${moderatorTag}`,
+    });
+  }
+
+  /**
+   * Locks or unlocks a voice channel for a specific role or @everyone.
+   */
+  public async setVoiceChannelLock(
+    channel: VoiceBasedChannel,
+    role: Role,
+    lock: boolean,
+    moderatorTag: string,
+  ): Promise<void> {
+    await channel.permissionOverwrites.edit(role, {
+      [PermissionFlagsBits.Connect.toString()]: !lock,
+    }, {
+      reason: `Voice channel ${lock ? 'locked' : 'unlocked'} by ${moderatorTag}`,
+    });
+  }
+
+  /**
+   * Sets or resets member nickname.
+   */
+  public async setNickname(
+    member: GuildMember,
+    nickname: string | null,
+    moderatorTag: string,
+  ): Promise<void> {
+    await member.setNickname(nickname, `Nickname managed by ${moderatorTag}`);
+  }
+
+  /**
+   * Adds or removes a single role validating hierarchy.
+   */
+  public async manageRole(
+    member: GuildMember,
+    role: Role,
+    isAdd: boolean,
+    moderator: GuildMember,
+  ): Promise<void> {
+    if (moderator.guild.ownerId !== moderator.id) {
+      if (moderator.roles.highest.position <= role.position) {
+        throw new ModerationHierarchyError('Cannot manage a role equal or higher than your highest role.');
+      }
+    }
+    const botMe = member.guild.members.me;
+    if (botMe && botMe.roles.highest.position <= role.position) {
+      throw new ModerationHierarchyError('Cannot manage a role equal or higher than bot highest role.');
+    }
+
+    if (isAdd) {
+      await member.roles.add(role, `Role assigned by ${moderator.user.tag}`);
+    } else {
+      await member.roles.remove(role, `Role removed by ${moderator.user.tag}`);
+    }
+  }
+
+  /**
+   * Mass assigns or removes a role across bots, humans, or all server members.
+   */
+  public async massRole(
+    guild: Guild,
+    role: Role,
+    targetType: 'all' | 'humans' | 'bots',
+    isAdd: boolean,
+    moderator: GuildMember,
+  ): Promise<number> {
+    if (moderator.guild.ownerId !== moderator.id && moderator.roles.highest.position <= role.position) {
+      throw new ModerationHierarchyError('Role position exceeds your permissions.');
+    }
+
+    const members = Array.from(guild.members.cache.values()).filter((m) => {
+      if (targetType === 'bots') return m.user.bot;
+      if (targetType === 'humans') return !m.user.bot;
+      return true;
+    });
+
+    let count = 0;
+    for (const m of members) {
+      try {
+        if (isAdd && !m.roles.cache.has(role.id)) {
+          await m.roles.add(role);
+          count++;
+        } else if (!isAdd && m.roles.cache.has(role.id)) {
+          await m.roles.remove(role);
+          count++;
+        }
+      } catch {
+        // Ignore single failures in bulk runs
+      }
+    }
+    return count;
+  }
+
+  /**
+   * Adds private staff note on a member.
+   */
+  public async addNote(
+    guildId: string,
+    targetId: string,
+    moderatorId: string,
+    note: string,
+  ): Promise<ModerationCaseData> {
+    return this.repository.createCase({
+      guildId,
+      targetId,
+      moderatorId,
+      action: 'note',
+      reason: note,
+    });
+  }
+
+  /**
+   * Removes staff note or deactivates it.
+   */
+  public async removeNote(guildId: string, caseNumber: number): Promise<boolean> {
+    return this.repository.deleteCase(guildId, caseNumber);
+  }
+
+  /**
+   * Clears active warnings for a member.
+   */
+  public async clearWarnings(guildId: string, targetId: string): Promise<number> {
+    return this.repository.clearActiveCases(guildId, targetId, 'warn');
+  }
+
+  /**
+   * Moves a member to another voice channel.
+   */
+  public async moveMember(member: GuildMember, channel: VoiceBasedChannel): Promise<void> {
+    await member.voice.setChannel(channel);
+  }
+
+  /**
+   * Mass moves members from a voice channel to a destination voice channel.
+   */
+  public async moveAll(
+    guild: Guild,
+    destination: VoiceBasedChannel,
+    source?: VoiceBasedChannel,
+  ): Promise<number> {
+    let count = 0;
+    const membersToMove = source
+      ? Array.from(source.members.values())
+      : Array.from(guild.members.cache.values()).filter((m) => m.voice.channelId);
+
+    for (const member of membersToMove) {
+      try {
+        await member.voice.setChannel(destination);
+        count++;
+      } catch {
+        // continue
+      }
+    }
+    return count;
+  }
+
+  /**
+   * Jails a member: strips all roles and confines to jail channel.
+   */
+  public async jailMember(
+    guild: Guild,
+    member: GuildMember,
+    jailRole: Role,
+    reason?: string,
+  ): Promise<string[]> {
+    const previousRoles = Array.from(member.roles.cache.keys()).filter((r) => r !== guild.id);
+    await member.roles.set([jailRole.id], reason ?? 'Member jailed by staff');
+    return previousRoles;
+  }
+
+  /**
+   * Releases member from jail, restoring original roles.
+   */
+  public async releaseJail(
+    member: GuildMember,
+    previousRoleIds: string[],
+  ): Promise<void> {
+    await member.roles.set(previousRoleIds, 'Released from jail by staff');
   }
 }
