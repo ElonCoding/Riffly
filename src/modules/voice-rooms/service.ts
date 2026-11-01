@@ -222,4 +222,59 @@ export class VoiceRoomService {
       [PermissionFlagsBits.MoveMembers.toString()]: true,
     });
   }
+
+  /**
+   * Hides the room from everyone.
+   */
+  public async hide(channel: VoiceChannel, member: GuildMember): Promise<void> {
+    this.assertOwnership(channel.id, member.id);
+    await channel.permissionOverwrites.edit(channel.guild.roles.everyone, {
+      [PermissionFlagsBits.ViewChannel.toString()]: false,
+    });
+  }
+
+  /**
+   * Unhides the room for everyone.
+   */
+  public async unhide(channel: VoiceChannel, member: GuildMember): Promise<void> {
+    this.assertOwnership(channel.id, member.id);
+    await channel.permissionOverwrites.edit(channel.guild.roles.everyone, {
+      [PermissionFlagsBits.ViewChannel.toString()]: null,
+    });
+  }
+
+  /**
+   * Disconnects a target member from the channel without banning.
+   */
+  public async kick(channel: VoiceChannel, member: GuildMember, target: GuildMember): Promise<void> {
+    this.assertOwnership(channel.id, member.id);
+    if (target.voice.channelId === channel.id) {
+      await target.voice.disconnect('Kicked by room owner');
+    }
+  }
+
+  /**
+   * One-click VoiceMaster setup: creates category and hub channel.
+   */
+  public async setupVoiceMaster(
+    guild: Guild,
+    channelType: 'normal' | 'duo' | 'trio' | 'quad' = 'normal',
+  ): Promise<{ categoryId: string; hubChannelId: string }> {
+    const defaultLimits = { normal: 0, duo: 2, trio: 3, quad: 4 };
+    const limit = defaultLimits[channelType];
+
+    const category = await guild.channels.create({
+      name: 'RIFFLY VOICEMASTER',
+      type: ChannelType.GuildCategory,
+    });
+
+    const hub = await guild.channels.create({
+      name: `➕ Join to Create (${channelType.toUpperCase()})`,
+      type: ChannelType.GuildVoice,
+      parent: category.id,
+      userLimit: limit,
+    });
+
+    return { categoryId: category.id, hubChannelId: hub.id };
+  }
 }

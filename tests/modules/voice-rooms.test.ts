@@ -145,13 +145,23 @@ describe('VoiceRoomService', () => {
     // Reject (disconnects if in channel)
     await service.reject(tempChannel, owner, target);
     expect(disconnectFn).toHaveBeenCalledWith(expect.any(String));
+
+    // Hide and Unhide
+    await service.hide(tempChannel, owner);
+    expect(editPermsFn).toHaveBeenCalled();
+    await service.unhide(tempChannel, owner);
+    expect(editPermsFn).toHaveBeenCalled();
+
+    // Kick
+    await service.kick(tempChannel, owner, target);
+    expect(disconnectFn).toHaveBeenCalledWith('Kicked by room owner');
   });
 
   it('builds valid voice-rooms module definition', () => {
     const modDef = createVoiceRoomsModule();
     expect(modDef.id).toBe('voice-rooms');
-    expect(modDef.commands).toHaveLength(1);
-    expect(modDef.commands?.[0]?.name).toBe('voice');
+    expect(modDef.commands).toHaveLength(3);
+    expect(modDef.commands?.map(c => c.name)).toEqual(['vc', 'voicemaster', 'setup-vc']);
     expect(modDef.events).toHaveLength(1);
   });
 });

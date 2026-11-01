@@ -167,3 +167,4 @@ export function getApiDocsHtml(): string {
 </body>
 </html>`;
 }
+

@@ -246,3 +246,4 @@ The required tables are:
 34. `bump_reminders`: Bump reminder config and last-bump tracking.
 35. `social_alerts`: Social media alert subscriptions.
 36. `staff_permissions`: Extra owners, custom admins, and custom mods with 12 permission bitfields.
+

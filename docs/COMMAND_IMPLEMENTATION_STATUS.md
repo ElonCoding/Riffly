@@ -85,3 +85,4 @@ Comprehensive audit comparing the target specification against current Riffly im
 | **Admin & Setup** | `/prefix set\|view` | ❌ No | ❌ No | ❌ No | Custom guild prefix |
 | **Admin & Setup** | `/prefix noprefix-grant\|revoke` | ❌ No | ❌ No | ❌ No | User no-prefix management |
 | **Templates** | `/template save\|load\|view\|list` | ❌ No | ❌ No | ❌ No | Server layout clone & restore engine |
+
