@@ -2,10 +2,12 @@ import type { Client, TextChannel } from 'discord.js';
 import { defineModule } from '../core/define-module.js';
 import type { ModuleDefinition } from '../core/types.js';
 import { createUtilityCommands } from './commands.js';
+import { createExtendedUtilityCommands } from './commands-extended.js';
 import type { UtilityModuleOptions } from './types.js';
 
 export * from './types.js';
 export * from './commands.js';
+export * from './commands-extended.js';
 
 export function createUtilityModule(
   options: UtilityModuleOptions = {},
@@ -50,6 +52,9 @@ export function createUtilityModule(
     description:
       'Member information, server statistics, avatars, polls, and reminder scheduling.',
     version: '1.0.0',
-    commands: createUtilityCommands(options.scheduler),
+    commands: [
+      ...createUtilityCommands(options.scheduler),
+      ...createExtendedUtilityCommands(),
+    ],
   });
 }

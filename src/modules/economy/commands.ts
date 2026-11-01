@@ -250,6 +250,71 @@ export function createEconomyCommands(
     },
   };
 
-  return [balanceCmd, dailyCmd, workCmd, payCmd, depositCmd, withdrawCmd, leaderboardCmd];
+  const begCmd: CommandDefinition = {
+    name: 'beg',
+    description: 'Beg for spare coins on the streets (chance of reward).',
+    data: new SlashCommandBuilder()
+      .setName('beg')
+      .setDescription('Beg for spare coins on the streets (chance of reward).'),
+    guildOnly: true,
+    execute: async (interaction) => {
+      await interaction.deferReply({ ephemeral: false });
+      if (!interaction.guildId) return;
+
+      const roll = Math.random();
+      if (roll < 0.3) {
+        await interaction.editReply('🥺 A passerby ignored your desperate cries. You got nothing.');
+        return;
+      }
+
+      const reward = BigInt(Math.floor(Math.random() * 40) + 10);
+      await repository.addWallet(interaction.guildId, interaction.user.id, reward);
+      await interaction.editReply(`🪙 A kind stranger dropped ${currency} **${reward}** into your cup!`);
+    },
+  };
+
+  const gambleCmd: CommandDefinition = {
+    name: 'gamble',
+    description: 'Bet coins on a 50/50 dice roll.',
+    data: new SlashCommandBuilder()
+      .setName('gamble')
+      .setDescription('Bet coins on a 50/50 dice roll.')
+      .addIntegerOption((opt) =>
+        opt.setName('amount').setDescription('Amount to bet').setMinValue(1).setRequired(true),
+      ),
+    guildOnly: true,
+    execute: async (interaction) => {
+      await interaction.deferReply({ ephemeral: false });
+      if (!interaction.guildId) return;
+
+      const bet = BigInt(interaction.options.getInteger('amount', true));
+      const userEco = await repository.getEconomy(interaction.guildId, interaction.user.id);
+      if (userEco.wallet < bet) {
+        await interaction.editReply(`❌ You only have ${currency} **${userEco.wallet.toLocaleString()}** in your wallet.`);
+        return;
+      }
+
+      const roll = Math.floor(Math.random() * 100) + 1;
+      if (roll >= 52) {
+        await repository.addWallet(interaction.guildId, interaction.user.id, bet);
+        await interaction.editReply(`🎲 You rolled **${roll}** (Win!) and doubled your bet! Won ${currency} **${bet.toLocaleString()}**.`);
+      } else {
+        await repository.addWallet(interaction.guildId, interaction.user.id, -bet);
+        await interaction.editReply(`🎲 You rolled **${roll}** (Loss). You lost ${currency} **${bet.toLocaleString()}**.`);
+      }
+    },
+  };
+
+  const richCmd: CommandDefinition = {
+    name: 'rich',
+    description: 'Displays the wealthiest members in the server.',
+    data: new SlashCommandBuilder()
+      .setName('rich')
+      .setDescription('Displays the wealthiest members in the server.'),
+    guildOnly: true,
+    execute: leaderboardCmd.execute,
+  };
+
+  return [balanceCmd, dailyCmd, workCmd, payCmd, depositCmd, withdrawCmd, leaderboardCmd, begCmd, gambleCmd, richCmd];
 }
 

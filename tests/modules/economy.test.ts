@@ -31,7 +31,7 @@ describe('EconomyModule', () => {
     commands = createEconomyCommands(repository, '🪙');
   });
 
-  it('provides all 7 economy commands', () => {
+  it('provides all 10 economy commands', () => {
     expect(commands.map((c) => c.name)).toEqual([
       'balance',
       'daily',
@@ -40,6 +40,9 @@ describe('EconomyModule', () => {
       'deposit',
       'withdraw',
       'economy-leaderboard',
+      'beg',
+      'gamble',
+      'rich',
     ]);
   });
 
