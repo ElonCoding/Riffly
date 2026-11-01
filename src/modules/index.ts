@@ -18,6 +18,7 @@ export * from './backup/index.js';
 export * from './security/index.js';
 export * from './community/index.js';
 export * from './fun/index.js';
+export * from './prefix/index.js';
 
 
 
