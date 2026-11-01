@@ -47,3 +47,4 @@ describe('MusicModule', () => {
     expect(settings.disconnectTimeoutSeconds).toBe(180);
   });
 });
+

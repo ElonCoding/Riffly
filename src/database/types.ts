@@ -76,6 +76,18 @@ export interface CreateTaskInput {
 }
 
 /**
+ * Payload to create a new moderation case.
+ */
+export interface CreateModerationCaseInput {
+  guildId: string;
+  targetId: string;
+  moderatorId: string;
+  action: string;
+  reason?: string | null;
+  durationMs?: bigint | null;
+}
+
+/**
  * Domain representation of a moderation case.
  */
 export interface ModerationCaseData {
@@ -131,6 +143,22 @@ export interface IGuildRepository {
     moduleId: string,
     settings: Record<string, unknown>,
   ): Promise<GuildModuleData>;
+}
+
+/**
+ * Contract for moderation case repository operations.
+ */
+export interface IModerationRepository {
+  createCase(data: CreateModerationCaseInput): Promise<ModerationCaseData>;
+  getCase(guildId: string, caseNumber: number): Promise<ModerationCaseData | null>;
+  getCasesForTarget(guildId: string, targetId: string, limit?: number): Promise<ModerationCaseData[]>;
+  getGuildCases(guildId: string, limit?: number, offset?: number): Promise<ModerationCaseData[]>;
+  updateCase(
+    guildId: string,
+    caseNumber: number,
+    data: { reason?: string | null; active?: boolean },
+  ): Promise<ModerationCaseData | null>;
+  countCases(guildId: string): Promise<number>;
 }
 
 /**
