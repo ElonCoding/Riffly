@@ -12,11 +12,10 @@ plugins:
     allowDirectPlaylistIds: true
     clients:
       - MUSIC
-      - ANDROID_TESTSUITE
-      - TVHTML5_SIMPLY
+      - TV
       - WEB
     oauth:
-      enabled: false
+      enabled: true
 
 lavalink:
   plugins:
