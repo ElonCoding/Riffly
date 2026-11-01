@@ -41,6 +41,7 @@ export * from './remove.js';
 export * from './clear.js';
 export * from './filter.js';
 export * from './autoplay.js';
+export * from './master-registry.js';
 
 /** Static commands (no dependencies). */
 export const staticCommands: readonly Command[] = [pingCommand];

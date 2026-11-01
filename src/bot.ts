@@ -1,13 +1,16 @@
 import { Client, Events, GatewayIntentBits } from 'discord.js';
 import type { AppConfig } from './config.js';
 import type { Command } from './commands/types.js';
-import { buildCommandMap } from './commands/index.js';
+import { buildMasterCommandMap } from './commands/master-registry.js';
 import { handleInteraction, setDefaultPlayerManager } from './interaction.js';
 import { LavalinkMusicEngine } from './audio/lavalink-engine.js';
 import { GuildPlayerManager } from './player/guild-player.js';
 import { ProviderRegistry } from './provider/registry.js';
 import { LavalinkProvider } from './provider/lavalink-provider.js';
 import { TrackResolver } from './provider/resolver.js';
+import { PrefixService } from './modules/prefix/service.js';
+import { CommunityService } from './modules/community/service.js';
+import { PrismaCommunityRepository } from './database/repositories/community-repository.js';
 
 export interface RifflyBot {
   readonly client: Client;
@@ -28,7 +31,14 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
   const client =
     options.client ??
     new Client({
-      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.GuildMembers,
+      ],
     });
 
   let engine: LavalinkMusicEngine | undefined;
@@ -63,7 +73,7 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
 
     const resolver = new TrackResolver({ registry });
 
-    commands = buildCommandMap(playerManager, resolver);
+    commands = buildMasterCommandMap(playerManager, resolver);
   }
 
   if (engine) {
@@ -84,6 +94,70 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
 
   client.on(Events.InteractionCreate, (interaction) => {
     void handleInteraction(interaction, commands, playerManager);
+  });
+
+  const prefixService = new PrefixService();
+  const commService = new CommunityService(new PrismaCommunityRepository());
+
+  client.on(Events.MessageCreate, (message) => {
+    void (async () => {
+      if (message.author.bot || !message.guild) return;
+
+      // 1. Counting channel validation
+      try {
+        await commService.handleCountingMessage(message);
+      } catch {
+        // Ignore counting check errors
+      }
+
+      // 2. AutoResponder matching
+      try {
+        const autoReply = await commService.evaluateAutoResponder(message.guild.id, message.content);
+        if (autoReply) {
+          await message.channel.send(autoReply);
+        }
+      } catch {
+        // Ignore autoresponder errors
+      }
+
+      // 3. Prefix & No-Prefix resolution & moderation message cleanup
+      try {
+        const knownCommands = new Set(commands.keys());
+        const res = await prefixService.resolveCommand(message, knownCommands, client.user?.id);
+        if (res.isCommand) {
+          const modCommands = new Set([
+            'ban',
+            'unban',
+            'kick',
+            'mute',
+            'unmute',
+            'timeout',
+            'warn',
+            'purge',
+            'jail',
+            'unjail',
+          ]);
+          if (modCommands.has(res.commandName) && message.deletable) {
+            void message.delete().catch(() => null);
+          }
+        }
+      } catch {
+        // Ignore command resolution errors
+      }
+    })();
+  });
+
+  client.on(Events.MessageReactionAdd, (reaction, user) => {
+    void (async () => {
+      if (user.bot || !reaction.message.guild) return;
+      try {
+        const fullReaction = reaction.partial ? await reaction.fetch() : reaction;
+        const fullUser = user.partial ? await user.fetch() : user;
+        await commService.handleReaction(fullReaction, fullUser, true);
+      } catch {
+        // Ignore reaction role errors
+      }
+    })();
   });
 
   client.on(Events.Error, (error) => {
