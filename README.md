@@ -14,7 +14,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-green.svg?style=flat-square" alt="License" /></a>
   <img src="https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg?style=flat-square" alt="Node Target" />
   <img src="https://img.shields.io/badge/discord.js-v14.27.0-5865F2.svg?style=flat-square" alt="Discord.js" />
-  <img src="https://img.shields.io/badge/tests-415%20passed-success.svg?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/tests-449%20passed-success.svg?style=flat-square" alt="Tests" />
   <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/Contributor%20Covenant-v2.1-4baaaa.svg?style=flat-square" alt="Contributor Covenant" /></a>
 </p>
 
@@ -39,25 +39,24 @@ Built strictly with zero unmaintained dependencies, Riffly guarantees 100% type 
 - **Interactive Component Controls**: Real-time Discord button controls for instant play, pause, resume, skip, stop, loop, and shuffle.
 
 ### 2. Extensible Modular Framework
-- **Topological DAG Registry**: Declarative module definitions with dependency injection and lifecycle lifecycle hooks (`onInit`, `onDestroy`).
+- **Topological DAG Registry**: Declarative module definitions with dependency injection and lifecycle hooks (`onInit`, `onDestroy`).
 - **Priority Event Dispatcher**: Guild-scoped priority event buses for intercepting and handling Discord Gateway payloads.
 - **Persistent Task Scheduler**: Distributed job runner with exponential backoff, retry limits, and database queue persistence.
+- **Unified Prefix & No-Prefix Resolver**: Custom guild prefixes (`!prefix set`), mention triggers, and VIP zero-prefix execution.
 
 ### 3. Integrated Platform Modules
-- 🛡️ **Moderation & Audit Logging**: Case tracking, timeout, kick, ban, purge, and event audit trails.
-- 🎟️ **Tickets & Role Verification**: Ephemeral ticket threads, stream transcripts, and button-activated role assignment.
-- 🔊 **Dynamic Voice Rooms**: Join-To-Create temporary voice channels with owner controls and auto-cleanup.
-- 📈 **Experience & Leveling**: Non-linear mathematical XP curves, cooldown protection, and visual rank cards.
-- 🤖 **PatternGuard AutoMod**: Heuristic anti-invite, anti-link, mention spam protection, and bucket rate-limiters.
-- ⭐ **Starboard & Timed Giveaways**: Reaction-based starboard pinning and persistent giveaway lotteries.
-- 💰 **Virtual Economy**: Account management, daily rewards, work cycles, peer transactions, and banking.
+- 🛡️ **Moderation & 4-Tier Hierarchy**: Server Owner, Extra Owner, Admin, and Mod tiers with granular 12-permission bitmasks, sanctions, cases, purge, lock, and jail isolation.
+- 🔒 **Security Defenses**: Heuristic Anti-Nuke (rogue moderator ban), Anti-Raid (mass-join lockdown), and PatternGuard AutoMod.
+- 🎟️ **Tickets & Verification**: Self-managed ticket panels with transcripts, and single-click role verification panels.
+- 🔊 **VoiceMaster Dynamic Voice**: Join-to-Create hubs (Normal, Duo, Trio, Quad presets) with real-time room owner permissions.
+- 📈 **Experience & Leveling**: Non-linear math curves, voice & message tracking, visual rank cards, and 15s auto-updating live leaderboards.
+- 📋 **Automated Dedicated Logging**: One-click 6-channel category generator (`messages`, `voice`, `members`, `mod`, `server`, `bot`).
+- ⭐ **Starboard & Timed Giveaways**: Reaction milestones, clownboard hall-of-shame, and button-entered prize lotteries.
+- 🤝 **Community Suite**: AutoRoles, Reaction Roles, Vanity Roles, Counting streak channel, AutoResponders, Bump Reminders, and Booster Roles.
+- 💰 **Virtual Economy**: Wallets, banks, daily rewards, work shifts, begging, casino gambling, and wealth rankings.
+- 🎮 **Fun & Entertainment Minigames**: 20+ roleplay interactions, image filters, Tic-Tac-Toe, Trivia, Urban Dictionary, and Fortnite stats.
+- 💾 **Server Preservation & Templates**: Layout and role snapshot creation and restoration (`/template`, `/backup`).
 - 💡 **Contextual AI Assistant**: `/ask` knowledge agent answering server and bot queries.
-- 💾 **Server Preservation**: Structural backups of guild channels, permissions, and roles (`/backup`).
-
-### 4. Live Web Dashboard & REST API
-- Built-in lightweight HTTP service with CORS, bearer authentication, and sub-millisecond response times.
-- Real-time player playback controls, system health metrics, leaderboards, and guild configuration APIs.
-- **OpenAPI 3.0 & Swagger UI**: Interactive API documentation available out of the box at `/api/docs`.
 
 ---
 
@@ -85,40 +84,92 @@ Built strictly with zero unmaintained dependencies, Riffly guarantees 100% type 
 | `/join` | _None_ | Summon Riffly to user voice channel. |
 | `/leave` | _None_ | Disconnect Riffly from voice channel. |
 
-### Moderation & Security
+### Staff Hierarchy & Security
 
 | Command | Arguments | Description |
 | :--- | :--- | :--- |
-| `/ban` | `<user> [reason]` | Ban member and record permanent moderation case. |
-| `/kick` | `<user> [reason]` | Kick member from the guild. |
-| `/timeout` | `<user> <duration> [reason]` | Mute member for specified duration. |
-| `/warn` | `<user> <reason>` | Issue formal server warning. |
-| `/cases` | `<user>` | Inspect moderation infractions and history. |
-| `/purge` | `<amount>` | Bulk delete up to 100 recent messages. |
+| `/extraowner` | `add\|remove\|list` | Assign Co-Owners with full bot authority. |
+| `/admin` | `add\|edit\|remove\|list` | Configure Tier 3 Administrators with interactive 12-perm bitmask. |
+| `/mod` | `add\|edit\|remove\|list` | Configure Tier 4 Moderators with custom permission bits. |
+| `/antinuke` | `enable\|disable\|config\|whitelist` | Sliding-window monitor banning rogue moderators performing mass actions. |
+| `/antiraid` | `enable\|disable\|config\|lockdown` | Join rate limiter and emergency server lockdown. |
+| `/automod` | `toggle\|banned-words\|whitelist\|view` | Anti-invite, anti-link, anti-caps, mention spam, and rate limiters. |
 
-### Server Tools & Engagement
+### Moderation & Cases
 
 | Command | Arguments | Description |
 | :--- | :--- | :--- |
-| `/ticket` | `<create\|close\|claim\|add\|remove>` | Manage interactive private support tickets. |
-| `/verification panel` | `<channel> <role>` | Deploy click-to-verify role panel. |
-| `/rank` | `[user]` | View level progress, rank, and XP bar. |
-| `/leaderboard` | `[page]` | Display top server members ranked by activity. |
-| `/voice` | `<name\|limit\|lock\|unlock>` | Manage temporary Join-To-Create voice rooms. |
-| `/giveaway` | `<start\|end\|reroll>` | Host button-entered prize giveaways. |
-| `/balance` | `[user]` | Inspect wallet and bank holdings. |
-| `/daily` | _None_ | Claim daily currency reward. |
-| `/work` | _None_ | Complete periodic shift for currency. |
-| `/pay` | `<user> <amount>` | Transfer currency to another server member. |
-| `/deposit` | `<amount>` | Move funds from wallet to secure bank. |
-| `/withdraw`| `<amount>` | Withdraw funds from bank to active wallet. |
-| `/ask` | `<question>` | Consult the Riffly AI Assistant. |
-| `/backup` | `<create\|list>` | Capture or list server layout and role snapshots. |
-| `/serverinfo` | _None_ | Display guild creation date, members, and channels. |
-| `/userinfo` | `[user]` | Display account metrics, badges, and joined timestamp. |
-| `/avatar` | `[user]` | Retrieve high-resolution member avatar. |
-| `/poll` | `<question> <options>` | Create interactive multi-choice community poll. |
-| `/remindme` | `<time> <reminder>` | Schedule persistent direct message reminder. |
+| `/ban` | `<target> [reason] [delete_days]` | Ban member and record case. |
+| `/unban` | `<user_id> [reason]` | Revoke ban by ID. |
+| `/kick` | `<target> [reason]` | Kick member with DM notice. |
+| `/timeout` | `<target> <duration> [reason]` | Apply timeout sanction. |
+| `/mute` / `/unmute` | `<target> [duration] [reason]` | Mute or restore chatting privileges. |
+| `/softban` | `<target> [reason]` | Ban and unban immediately to purge messages. |
+| `/warn` | `<target> <reason>` | Issue recorded infraction warning. |
+| `/cases` | `[target]` | View member infraction history. |
+| `/purge` | `<amount>` | Bulk delete up to 100 messages. |
+| `/slowmode` | `<seconds>` | Set text channel cooldown rate. |
+| `/lock` / `/unlock` | `[channel] [role]` | Lock or unlock text/voice channel. |
+| `/hide` / `/unhide` | `[channel] [role]` | Toggle channel visibility. |
+| `/jail` | `<target> [reason]` | Strip roles and isolate member in jail channel. |
+| `/unjail` | `<target>` | Restore original member roles and release from jail. |
+| `/vcmute` / `/vcunmute` | `<target>` | Voice mute or unmute connected member. |
+| `/vcdeafen` / `/vcundeafen`| `<target>` | Voice deafen or undeafen connected member. |
+
+### Dynamic VoiceMaster
+
+| Command | Arguments | Description |
+| :--- | :--- | :--- |
+| `/voicemaster setup` | `[type]` | Deploy Join-to-Create category & hub (Normal/Duo/Trio/Quad). |
+| `/voicemaster info` | _None_ | Inspect active VoiceMaster room configuration. |
+| `/vc name` | `<name>` | Rename your temporary voice room. |
+| `/vc limit` | `<number>` | Adjust user limit (0-99). |
+| `/vc lock` / `/vc unlock` | _None_ | Prevent or permit connections from @everyone. |
+| `/vc hide` / `/vc unhide` | _None_ | Toggle room visibility in server channel list. |
+| `/vc permit` / `/vc reject` | `<user>` | Whitelist or kick and ban member from your room. |
+| `/vc transfer` | `<user>` | Transfer temporary room ownership to another participant. |
+
+### Community & Engagement
+
+| Command | Arguments | Description |
+| :--- | :--- | :--- |
+| `/ticket setup\|panel` | `[options]` | Configure categories, roles, and dispatch support ticket panel. |
+| `/ticket claim\|unclaim\|close`| _None_ | Staff ticket operations, claiming, and closure. |
+| `/verify setup\|panel` | `<role> <channel>` | Deploy interactive button verification panel. |
+| `/rank` | `[user]` | View voice XP, message counts, level, and rank. |
+| `/leaderboard view` | `[timeframe] [metric]`| Browse daily, weekly, or monthly XP and voice leaderboards. |
+| `/leaderboard setup` | `<channel>` | Deploy live-updating leaderboard embed (15s interval). |
+| `/autorole add\|remove\|list` | `<role> [target]` | Automatic role assignment on member join (humans/bots). |
+| `/reactionrole create` | `<channel> <msg_id> <emoji> <role>`| Interactive emoji reaction role binding. |
+| `/vanityrole add` | `<keyword> <role>` | Award custom role for server link/vanity in user status. |
+| `/clownboard setup` | `<channel> [threshold]`| Configure reaction hall-of-shame highlight feed. |
+| `/counter setup` | `<channel>` | Dedicated counting channel streak game with bot validation. |
+| `/autoresponder add` | `<trigger> <reply> [type]`| Set keyword auto-replies (exact, contains, regex). |
+| `/timer create` | `<channel> <duration> <name>`| Live channel countdown timer. |
+| `/bumper setup` | `<channel>` | 2-hour server bump reminders. |
+| `/social add` | `<platform> <account> <channel>`| Social alerts for YouTube, Twitch, and Reddit. |
+| `/boosterrole create` | `<name> <color>` | Exclusive customizable role for server boosters. |
+
+### Utilities, Economy & Fun
+
+| Command | Arguments | Description |
+| :--- | :--- | :--- |
+| `/afk` | `[reason]` | Set status and auto-reply to mentions. |
+| `/suggest` / `/report` | `<content>` | Submit community suggestions or staff reports. |
+| `/announce` / `/embed` | `[options]` | Dispatch rich announcements and embedded layouts. |
+| `/serverinfo` / `/userinfo` | `[target]` | Deep inspection of server or member metrics. |
+| `/snipe` / `/editsnipe` | _None_ | Retrieve recently deleted or edited messages in channel. |
+| `/crypto` / `/weather` | `<query>` | Live cryptocurrency prices and weather forecast. |
+| `/translate` / `/wiki` | `<query>` | Translation engine and Wikipedia article summaries. |
+| `/balance` / `/pay` | `[user] [amount]` | Economy wallet, bank holdings, and coin transfers. |
+| `/work` / `/daily` / `/beg` | _None_ | Earn virtual currency shifts, daily rewards, and begging. |
+| `/gamble` | `<amount>` | Roll dice against the casino for double stakes. |
+| `/rp` | `<action> [user]` | Anime roleplay interactions (hug, kiss, slap, pat, etc.). |
+| `/image` | `<effect> [user]` | Visual canvas effects (grayscale, invert, sepia, blur). |
+| `/tictactoe` / `/trivia` | `[opponent]` | Interactive button minigames. |
+| `/prefix set` | `<prefix>` | Configure custom guild prefix for message commands. |
+| `/prefix noprefix grant` | `<user> [duration]`| VIP zero-prefix command execution privilege. |
+| `/template save\|list` | `<name>` | Capture server channels, categories, and role layout. |
 
 ---
 
