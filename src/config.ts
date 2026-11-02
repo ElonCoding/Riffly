@@ -19,7 +19,7 @@ export interface AppConfig {
   readonly discordClientId: string;
   readonly discordGuildId?: string;
   readonly lavalink: LavalinkConfig;
-  readonly audioEngineType: AudioEngineType;
+  readonly audioEngineType?: AudioEngineType;
 }
 
 /** Discord snowflakes are numeric strings; 17-20 digits covers current IDs. */

@@ -2,12 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { LoggingService } from '../../src/modules/logging/service.js';
 import { createLoggingCommands } from '../../src/modules/logging/commands.js';
 import {
-  formatMessageDeleteEmbed,
-  formatMessageUpdateEmbed,
   formatMemberJoinEmbed,
   formatMemberLeaveEmbed,
-  formatMemberUpdateEmbed,
-  formatVoiceStateEmbed,
   formatGuildBanAddEmbed,
   formatGuildBanRemoveEmbed,
   formatChannelCreateEmbed,

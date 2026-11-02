@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { NativeVoiceMusicEngine } from '../../src/audio/native-voice-engine.js';
 import { NativeProvider } from '../../src/provider/native-provider.js';
 
