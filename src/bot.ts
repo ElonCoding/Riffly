@@ -14,6 +14,20 @@ import { TrackResolver } from './provider/resolver.js';
 import { PrefixService } from './modules/prefix/service.js';
 import { CommunityService } from './modules/community/service.js';
 import { PrismaCommunityRepository } from './database/repositories/community-repository.js';
+import {
+  getDefaultLoggingService,
+  formatMessageDeleteEmbed,
+  formatMessageUpdateEmbed,
+  formatMemberJoinEmbed,
+  formatMemberLeaveEmbed,
+  formatMemberUpdateEmbed,
+  formatVoiceStateEmbed,
+  formatGuildBanAddEmbed,
+  formatGuildBanRemoveEmbed,
+  formatChannelCreateEmbed,
+  formatChannelDeleteEmbed,
+  formatCommandLogEmbed,
+} from './modules/logging/index.js';
 
 export interface RifflyBot {
   readonly client: Client;
@@ -40,6 +54,7 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.GuildModeration,
         ...(usePrivilegedIntents
           ? [GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers]
           : []),
@@ -140,8 +155,96 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
     }
   });
 
+  const loggingService = getDefaultLoggingService();
+
   client.on(Events.InteractionCreate, (interaction) => {
     void handleInteraction(interaction, commands, playerManager);
+    if (interaction.isChatInputCommand() && interaction.guild) {
+      const embed = formatCommandLogEmbed(interaction);
+      void loggingService.log(interaction.guild, 'bot', embed);
+    }
+  });
+
+  // Comprehensive Realtime Server Audit Logging
+  client.on(Events.MessageDelete, (message) => {
+    void (async () => {
+      if (!message.guild || message.author?.bot) return;
+      const embed = formatMessageDeleteEmbed(message);
+      if (embed) await loggingService.log(message.guild, 'message', embed);
+    })();
+  });
+
+  client.on(Events.MessageUpdate, (oldMessage, newMessage) => {
+    void (async () => {
+      if (!newMessage.guild || newMessage.author?.bot) return;
+      const embed = formatMessageUpdateEmbed(oldMessage, newMessage);
+      if (embed) await loggingService.log(newMessage.guild, 'message', embed);
+    })();
+  });
+
+  client.on(Events.GuildMemberAdd, (member) => {
+    void (async () => {
+      if (!member.guild) return;
+      const embed = formatMemberJoinEmbed(member);
+      if (embed) await loggingService.log(member.guild, 'member', embed);
+    })();
+  });
+
+  client.on(Events.GuildMemberRemove, (member) => {
+    void (async () => {
+      if (!member.guild) return;
+      const embed = formatMemberLeaveEmbed(member);
+      if (embed) await loggingService.log(member.guild, 'member', embed);
+    })();
+  });
+
+  client.on(Events.GuildMemberUpdate, (oldMember, newMember) => {
+    void (async () => {
+      if (!newMember.guild) return;
+      const embed = formatMemberUpdateEmbed(oldMember, newMember);
+      if (embed) await loggingService.log(newMember.guild, 'member', embed);
+    })();
+  });
+
+  client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+    void (async () => {
+      const guild = newState.guild ?? oldState.guild;
+      if (!guild) return;
+      const embed = formatVoiceStateEmbed(oldState, newState);
+      if (embed) await loggingService.log(guild, 'voice', embed);
+    })();
+  });
+
+  client.on(Events.GuildBanAdd, (ban) => {
+    void (async () => {
+      if (!ban.guild) return;
+      const embed = formatGuildBanAddEmbed(ban);
+      if (embed) await loggingService.log(ban.guild, 'mod', embed);
+    })();
+  });
+
+  client.on(Events.GuildBanRemove, (ban) => {
+    void (async () => {
+      if (!ban.guild) return;
+      const embed = formatGuildBanRemoveEmbed(ban);
+      if (embed) await loggingService.log(ban.guild, 'mod', embed);
+    })();
+  });
+
+  client.on(Events.ChannelCreate, (channel) => {
+    void (async () => {
+      if (!channel.guild) return;
+      const embed = formatChannelCreateEmbed(channel);
+      if (embed) await loggingService.log(channel.guild, 'server', embed);
+    })();
+  });
+
+  client.on(Events.ChannelDelete, (channel) => {
+    void (async () => {
+      if (!('guild' in channel) || !channel.guild) return;
+      const embed = formatChannelDeleteEmbed(channel);
+      if (embed) await loggingService.log(channel.guild, 'server', embed);
+    })();
   });
 
   const prefixService = new PrefixService();

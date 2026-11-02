@@ -21,6 +21,7 @@ import { createLoggingCommands } from './commands.js';
 
 export * from './formatters.js';
 export * from './commands.js';
+export * from './service.js';
 
 export const loggingSettingsSchema = {
   logChannelId: {

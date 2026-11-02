@@ -11,6 +11,7 @@ import {
   type Guild,
 } from 'discord.js';
 import type { CommandDefinition } from '../core/types.js';
+import type { ILoggingStore } from './service.js';
 
 export const DEDICATED_LOG_CHANNELS = [
   { key: 'message', name: '💬・message-logs', topic: 'Message edits, deletions, and purges' },
@@ -26,12 +27,6 @@ export const DEDICATED_LOG_CHANNELS = [
 ] as const;
 
 export type LogTypeKey = (typeof DEDICATED_LOG_CHANNELS)[number]['key'];
-
-export interface ILoggingStore {
-  setLogChannel(guildId: string, logType: string, channelId: string): Promise<void>;
-  disableLog(guildId: string, logType: string): Promise<void>;
-  getLogChannels(guildId: string): Promise<Record<string, string>>;
-}
 
 export class MemoryLoggingStore implements ILoggingStore {
   private readonly store = new Map<string, Map<string, string>>();
@@ -134,12 +129,20 @@ export function createLoggingCommands(
         sub
           .setName('set')
           .setDescription('Assign a custom log channel for a specific event type.')
+          .addChannelOption((opt) =>
+            opt
+              .setName('channel')
+              .setDescription('Target text channel')
+              .addChannelTypes(ChannelType.GuildText)
+              .setRequired(true),
+          )
           .addStringOption((opt) =>
             opt
               .setName('event_type')
-              .setDescription('Log category')
-              .setRequired(true)
+              .setDescription('Log category (defaults to all server logs)')
+              .setRequired(false)
               .addChoices(
+                { name: 'All Server Events (Default)', value: 'all' },
                 { name: 'Message Events', value: 'message' },
                 { name: 'Voice Events', value: 'voice' },
                 { name: 'Member Events', value: 'member' },
@@ -147,13 +150,6 @@ export function createLoggingCommands(
                 { name: 'Server Events', value: 'server' },
                 { name: 'Bot Events', value: 'bot' },
               ),
-          )
-          .addChannelOption((opt) =>
-            opt
-              .setName('channel')
-              .setDescription('Target text channel')
-              .addChannelTypes(ChannelType.GuildText)
-              .setRequired(true),
           ),
       )
       .addSubcommand((sub) =>
@@ -204,12 +200,21 @@ export function createLoggingCommands(
       }
 
       if (sub === 'set') {
-        const eventType = interaction.options.getString('event_type', true);
+        const eventType = interaction.options.getString('event_type') ?? 'all';
         const chan = interaction.options.getChannel<ChannelType.GuildText>('channel', true);
         await store.setLogChannel(interaction.guild.id, eventType, chan.id);
-        await interaction.reply({
-          content: `✅ Log event **${eventType}** mapped to <#${chan.id}>.`,
-        });
+        const embed = new EmbedBuilder()
+          .setTitle('📁 Audit Log Channel Configured')
+          .setColor(0x57f287)
+          .setDescription(
+            `Mapped event type **${eventType.toUpperCase()}** to <#${chan.id}>.\n` +
+              (eventType === 'all'
+                ? `All server events (messages, voice, members, moderation, channels, commands) will now be logged here.`
+                : `Specific events for **${eventType}** will now be logged here.`),
+          )
+          .setFooter({ text: 'Riffly • Audit Engine' })
+          .setTimestamp();
+        await interaction.reply({ embeds: [embed] });
         return;
       }
 
@@ -236,6 +241,66 @@ export function createLoggingCommands(
 
         await interaction.reply({ embeds: [embed] });
       }
+    },
+  };
+
+  const loggingsetCmd: CommandDefinition = {
+    name: 'loggingset',
+    description: 'Set target audit log channel for server events.',
+    data: new SlashCommandBuilder()
+      .setName('loggingset')
+      .setDescription('Set target audit log channel for server events.')
+      .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+      .addChannelOption((opt) =>
+        opt
+          .setName('channel')
+          .setDescription('Target text channel where logs will be displayed')
+          .addChannelTypes(ChannelType.GuildText)
+          .setRequired(true),
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName('event_type')
+          .setDescription('Log category (defaults to all server logs)')
+          .setRequired(false)
+          .addChoices(
+            { name: 'All Server Events (Default)', value: 'all' },
+            { name: 'Message Events (Delete/Edit)', value: 'message' },
+            { name: 'Voice Events (Join/Leave/Move)', value: 'voice' },
+            { name: 'Member Events (Join/Leave/Roles)', value: 'member' },
+            { name: 'Moderation Events (Ban/Kick/Warn)', value: 'mod' },
+            { name: 'Server Events (Channels/Roles)', value: 'server' },
+            { name: 'Bot Events (Commands/System)', value: 'bot' },
+          ),
+      ),
+    async execute(interaction: ChatInputCommandInteraction) {
+      if (!interaction.inGuild() || !interaction.guild) {
+        await interaction.reply({ content: '❌ Guild only.', ephemeral: true });
+        return;
+      }
+      const chan = interaction.options.getChannel<ChannelType.GuildText>('channel', true);
+      const eventType = interaction.options.getString('event_type') ?? 'all';
+
+      await store.setLogChannel(interaction.guild.id, eventType, chan.id);
+
+      const embed = new EmbedBuilder()
+        .setTitle('📁 Audit Log Channel Configured')
+        .setColor(0x57f287)
+        .setDescription(
+          `Mapped event type **${eventType.toUpperCase()}** to <#${chan.id}>.\n\n` +
+            (eventType === 'all'
+              ? `✅ **Every server event** (messages, voice, members, moderation, channels, commands) will now be displayed here!`
+              : `✅ Specific events for **${eventType}** will now be displayed here!`),
+        )
+        .addFields(
+          { name: 'Target Channel', value: `<#${chan.id}>`, inline: true },
+          { name: 'Event Category', value: `\`${eventType.toUpperCase()}\``, inline: true },
+          { name: 'Status', value: '🟢 Active & Logging', inline: true },
+        )
+        .setFooter({ text: 'Riffly • Realtime Audit Engine' })
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed] });
     },
   };
 
@@ -266,5 +331,5 @@ export function createLoggingCommands(
     },
   };
 
-  return [loggingCmd, setupLogsCmd];
+  return [loggingCmd, loggingsetCmd, setupLogsCmd];
 }

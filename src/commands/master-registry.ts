@@ -15,7 +15,7 @@ import { GiveawayRepository } from '../database/repositories/giveaway-repository
 import { EconomyRepository } from '../database/repositories/economy-repository.js';
 
 import { ModerationService, createModerationCommands } from '../modules/moderation/index.js';
-import { MemoryLoggingStore, createLoggingCommands } from '../modules/logging/index.js';
+import { getDefaultLoggingService, createLoggingCommands } from '../modules/logging/index.js';
 import { TicketService, createTicketCommands } from '../modules/tickets/index.js';
 import { VerificationService, createVerificationCommands } from '../modules/verification/index.js';
 import { LevelingService, createLevelingCommands } from '../modules/leveling/index.js';
@@ -95,8 +95,8 @@ export function buildMasterCommands(
   }
 
   // 4. Logging system
-  const loggingStore = new MemoryLoggingStore();
-  for (const def of createLoggingCommands(loggingStore)) {
+  const loggingService = getDefaultLoggingService();
+  for (const def of createLoggingCommands(loggingService)) {
     commands.push(toCommand(def));
   }
 
@@ -241,7 +241,6 @@ export const GLOBAL_SLASH_COMMAND_NAMES: readonly string[] = [
   'unmute',
   'softban',
   'warn',
-  'warnings',
   'cases',
   'case',
   'note',
@@ -255,8 +254,9 @@ export const GLOBAL_SLASH_COMMAND_NAMES: readonly string[] = [
   'role',
   'nick',
   'move',
-  // Logging (1)
+  // Logging (2)
   'logging',
+  'loggingset',
   // Tickets & Verification (2)
   'ticket',
   'verify',
