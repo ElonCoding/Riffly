@@ -1,0 +1,14 @@
+{
+  "name": "riffly-dashboard-frontend",
+  "version": "1.0.0",
+  "description": "Responsive Web Dashboard UI for Riffly Discord Bot",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["riffly", "dashboard", "discord-bot-ui"],
+  "license": "Apache-2.0"
+}

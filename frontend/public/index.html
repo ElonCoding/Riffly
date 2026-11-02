@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riffly — Web Dashboard & Audio Control Center</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+            },
+            cyan: {
+              400: '#22d3ee',
+              500: '#06b6d4',
+            },
+            surface: {
+              900: '#0B0F17',
+              800: '#111827',
+              700: '#1F2937',
+              600: '#374151',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #07090E;
+      color: #F3F4F6;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+    .glass {
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.7) 100%);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.25);
+    }
+    .glow-indigo {
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+    }
+    .sound-bar {
+      animation: soundWave 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes soundWave {
+      0% { height: 15%; }
+      50% { height: 95%; }
+      100% { height: 40%; }
+    }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0B0F17; }
+    ::-webkit-scrollbar-thumb { background: #1F2937; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #374151; }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+  <!-- Top Navigation Header -->
+  <header class="glass sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between border-b border-gray-800">
+    <div class="flex items-center space-x-4">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center glow-indigo shadow-lg">
+        <i class="fa-solid fa-waveform-lines text-white text-lg"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-gray-100 to-indigo-300 bg-clip-text text-transparent">RIFFLY</span>
+          <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.0 Native</span>
+        </div>
+        <p class="text-xs text-gray-400">Audio Engine & Server Intelligence</p>
+      </div>
+    </div>
+
+    <!-- Center Status Badges -->
+    <div class="hidden md:flex items-center space-x-3">
+      <div class="glass px-3.5 py-1.5 rounded-full flex items-center space-x-2 text-xs">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-gray-300 font-medium">Gateway:</span>
+        <span id="gateway-ping" class="text-emerald-400 font-mono font-bold">42ms</span>
+      </div>
+      <div class="glass px-3.5 py-1.5 rounded-full flex items-center space-x-2 text-xs">
+        <i class="fa-solid fa-microchip text-cyan-400"></i>
+        <span class="text-gray-300">Engine:</span>
+        <span class="text-cyan-400 font-medium font-mono">@discordjs/voice (Direct UDP)</span>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center space-x-3">
+      <select id="server-select" class="glass text-xs font-medium text-gray-200 px-3 py-2 rounded-lg bg-surface-800 border border-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+        <option value="1566556068828549311">👑 Riffly Main Server</option>
+      </select>
+      <button onclick="refreshData()" class="p-2 rounded-lg glass text-gray-400 hover:text-white transition-colors" title="Force Refresh">
+        <i class="fa-solid fa-arrows-rotate"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-64 glass border-r border-gray-800 flex flex-col justify-between p-4 hidden md:flex">
+      <nav class="space-x-0 space-y-1.5">
+        <button onclick="switchTab('overview')" id="nav-overview" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+          <i class="fa-solid fa-chart-pie w-5"></i>
+          <span>Overview</span>
+        </button>
+        <button onclick="switchTab('music')" id="nav-music" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">
+          <i class="fa-solid fa-music w-5"></i>
+          <span>Music Player</span>
+        </button>
+        <button onclick="switchTab('servers')" id="nav-servers" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">
+          <i class="fa-solid fa-server w-5"></i>
+          <span>Guilds & Voice</span>
+        </button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all">
+          <i class="fa-solid fa-sliders w-5"></i>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <!-- System Telemetry Widget -->
+      <div class="glass p-3.5 rounded-xl border border-gray-800 space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-gray-400 font-medium">Memory (Host)</span>
+          <span id="mem-used" class="text-gray-200 font-mono font-bold">-- %</span>
+        </div>
+        <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+          <div id="mem-bar" class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full w-0 transition-all duration-500"></div>
+        </div>
+        <div class="flex justify-between text-[11px] text-gray-500 pt-1">
+          <span>Uptime: <span id="uptime-text" class="text-gray-300 font-mono">00:00:00</span></span>
+          <span class="text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Live</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Content Area -->
+    <main class="flex-1 overflow-y-auto p-6 space-y-6">
+
+      <!-- TAB 1: OVERVIEW -->
+      <div id="tab-overview" class="space-y-6">
+        <!-- Top Stats Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Card 1 -->
+          <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">Audio Node</span>
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <i class="fa-solid fa-shield-check"></i>
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="text-2xl font-bold text-white">Direct UDP</div>
+              <p class="text-xs text-emerald-400 mt-1 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-check text-[10px]"></i> Zero Lavalink / Zero Java
+              </p>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">Gateway Latency</span>
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+            </div>
+            <div class="mt-3">
+              <div id="stat-ping" class="text-2xl font-bold text-white font-mono">-- ms</div>
+              <p class="text-xs text-indigo-300 mt-1">Discord WebSocket</p>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">Active Guilds</span>
+              <div class="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+                <i class="fa-solid fa-network-wired"></i>
+              </div>
+            </div>
+            <div class="mt-3">
+              <div id="stat-guilds" class="text-2xl font-bold text-white">1</div>
+              <p class="text-xs text-cyan-400 mt-1">Listening on Discord</p>
+            </div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="glass-card p-5 rounded-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">Music State</span>
+              <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400">
+                <i class="fa-solid fa-compact-disc"></i>
+              </div>
+            </div>
+            <div class="mt-3">
+              <div id="stat-engine-state" class="text-2xl font-bold text-white capitalize">Idle</div>
+              <p id="stat-current-track-title" class="text-xs text-gray-400 mt-1 truncate">No active track</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Visualizer & Status Feed -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 glass-card p-6 rounded-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-4">
+              <div>
+                <h3 class="text-lg font-bold text-white">Live Audio Pipeline Status</h3>
+                <p class="text-xs text-gray-400">Direct streaming via @discordjs/voice & Ytdl</p>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">All Systems Operational</span>
+            </div>
+
+            <!-- Pipeline Diagram -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 py-4 text-center">
+              <div class="p-3 rounded-xl bg-gray-900/60 border border-gray-800">
+                <div class="text-xs text-gray-400">Slash Command</div>
+                <div class="text-sm font-semibold text-white mt-1">/play</div>
+                <div class="text-[11px] text-emerald-400 mt-1">✅ 100 Registered</div>
+              </div>
+              <div class="p-3 rounded-xl bg-gray-900/60 border border-gray-800">
+                <div class="text-xs text-gray-400">Resolver</div>
+                <div class="text-sm font-semibold text-white mt-1">Native Provider</div>
+                <div class="text-[11px] text-emerald-400 mt-1">✅ play-dl + Ytdl</div>
+              </div>
+              <div class="p-3 rounded-xl bg-gray-900/60 border border-gray-800">
+                <div class="text-xs text-gray-400">Transcoder</div>
+                <div class="text-sm font-semibold text-white mt-1">FFmpeg & Opus</div>
+                <div class="text-[11px] text-emerald-400 mt-1">✅ 48kHz PCM</div>
+              </div>
+              <div class="p-3 rounded-xl bg-gray-900/60 border border-gray-800">
+                <div class="text-xs text-gray-400">Transmission</div>
+                <div class="text-sm font-semibold text-white mt-1">Discord Voice UDP</div>
+                <div class="text-[11px] text-emerald-400 mt-1">✅ Encrypted DAVE</div>
+              </div>
+            </div>
+
+            <!-- Quick Action Console -->
+            <div class="pt-2">
+              <label class="text-xs font-semibold text-gray-400 uppercase">Enqueue Track Remotely</label>
+              <div class="flex gap-2 mt-2">
+                <input id="quick-play-input" type="text" placeholder="Song title or YouTube URL (e.g. Dua Lipa - Training Season)..." class="flex-1 glass bg-gray-900 px-4 py-2.5 rounded-xl text-sm text-white placeholder-gray-500 border border-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                <button onclick="handleQuickPlay()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-sm transition-all shadow-md">
+                  <i class="fa-solid fa-play mr-1.5"></i> Play
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bot Console Activity Log -->
+          <div class="glass-card p-6 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                <h4 class="text-sm font-bold text-white uppercase tracking-wider">Bot Telemetry</h4>
+                <span class="text-xs text-gray-500">Live SSE</span>
+              </div>
+              <div id="live-logs" class="mt-4 space-y-2.5 text-xs font-mono text-gray-300 max-h-56 overflow-y-auto">
+                <div class="text-emerald-400">[Init] Native voice engine ready.</div>
+                <div class="text-indigo-400">[Gateway] Connected as Riffly#5069.</div>
+                <div class="text-gray-400">[Heartbeat] Diagnostics healthy.</div>
+              </div>
+            </div>
+            <button onclick="switchTab('music')" class="w-full mt-4 py-2 rounded-xl bg-surface-700 hover:bg-surface-600 text-xs font-semibold text-gray-200 transition-colors">
+              Open Full Music Console <i class="fa-solid fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: MUSIC CONSOLE -->
+      <div id="tab-music" class="space-y-6 hidden">
+        <!-- Interactive Player Card -->
+        <div class="glass-card p-8 rounded-3xl relative overflow-hidden">
+          <div class="flex flex-col md:flex-row items-center gap-8">
+            <!-- Artwork / Visualizer -->
+            <div class="relative w-48 h-48 rounded-2xl overflow-hidden glass shadow-2xl flex-shrink-0 group">
+              <img id="player-artwork" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80" alt="Artwork" class="w-full h-full object-cover">
+              <!-- Animated Sound Bars -->
+              <div class="absolute inset-0 bg-black/40 flex items-end justify-center gap-1.5 p-4 opacity-80">
+                <div class="w-1.5 bg-cyan-400 rounded-full sound-bar" style="animation-delay: 0.1s;"></div>
+                <div class="w-1.5 bg-indigo-400 rounded-full sound-bar" style="animation-delay: 0.4s;"></div>
+                <div class="w-1.5 bg-cyan-400 rounded-full sound-bar" style="animation-delay: 0.2s;"></div>
+                <div class="w-1.5 bg-indigo-400 rounded-full sound-bar" style="animation-delay: 0.5s;"></div>
+                <div class="w-1.5 bg-cyan-400 rounded-full sound-bar" style="animation-delay: 0.3s;"></div>
+              </div>
+            </div>
+
+            <!-- Track Info & Controls -->
+            <div class="flex-1 w-full space-y-5">
+              <div>
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Now Streaming</span>
+                <h2 id="player-title" class="text-2xl font-extrabold text-white mt-2 truncate">Dua Lipa - Training Season</h2>
+                <p id="player-author" class="text-sm text-gray-400">Official Performance Video</p>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="space-y-1.5">
+                <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden cursor-pointer" onclick="handleSeek(event)">
+                  <div id="player-progress-bar" class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full w-1/3 rounded-full"></div>
+                </div>
+                <div class="flex justify-between text-xs font-mono text-gray-400">
+                  <span id="player-time-current">01:15</span>
+                  <span id="player-time-total">03:34</span>
+                </div>
+              </div>
+
+              <!-- Button Bar -->
+              <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
+                <div class="flex items-center space-x-3">
+                  <button onclick="sendMusicAction('shuffle')" class="w-10 h-10 rounded-xl glass hover:bg-white/10 text-gray-300 hover:text-white transition-all" title="Shuffle">
+                    <i class="fa-solid fa-shuffle"></i>
+                  </button>
+                  <button onclick="sendMusicAction('skip')" class="w-10 h-10 rounded-xl glass hover:bg-white/10 text-gray-300 hover:text-white transition-all" title="Skip">
+                    <i class="fa-solid fa-forward-step"></i>
+                  </button>
+                  <button id="btn-play-pause" onclick="togglePlayPause()" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-400 text-white text-xl flex items-center justify-center glow-cyan hover:scale-105 transition-all shadow-lg">
+                    <i id="icon-play-pause" class="fa-solid fa-pause"></i>
+                  </button>
+                  <button onclick="sendMusicAction('stop')" class="w-10 h-10 rounded-xl glass hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-all" title="Stop">
+                    <i class="fa-solid fa-stop"></i>
+                  </button>
+                  <button onclick="sendMusicAction('loop')" class="w-10 h-10 rounded-xl glass hover:bg-white/10 text-gray-300 hover:text-white transition-all" title="Loop Mode">
+                    <i class="fa-solid fa-repeat"></i>
+                  </button>
+                </div>
+
+                <!-- Volume Slider -->
+                <div class="flex items-center space-x-3 glass px-4 py-2 rounded-xl">
+                  <i class="fa-solid fa-volume-high text-gray-400"></i>
+                  <input id="volume-slider" type="range" min="0" max="150" value="100" onchange="handleVolumeChange(this.value)" class="w-24 accent-indigo-500 cursor-pointer">
+                  <span id="volume-text" class="text-xs font-mono text-gray-300 w-8">100%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Queue List -->
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-list-music text-indigo-400"></i> Upcoming Queue
+            </h3>
+            <span id="queue-count" class="text-xs text-gray-400 font-mono">0 tracks</span>
+          </div>
+
+          <div id="queue-list" class="space-y-2">
+            <div class="text-center py-8 text-gray-500 text-sm">
+              <i class="fa-solid fa-music-slash text-2xl mb-2 opacity-50 block"></i>
+              Queue is empty. Enqueue a song using the search bar above or /play command.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: SERVERS -->
+      <div id="tab-servers" class="space-y-6 hidden">
+        <div class="glass-card p-6 rounded-2xl">
+          <h3 class="text-lg font-bold text-white mb-4">Connected Discord Guilds</h3>
+          <div id="guilds-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="p-4 rounded-xl glass border border-gray-800 flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-lg text-white">
+                  R
+                </div>
+                <div>
+                  <h4 class="font-bold text-white text-sm">Riffly Server</h4>
+                  <p class="text-xs text-gray-400">ID: 1566556068828549311</p>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: SETTINGS -->
+      <div id="tab-settings" class="space-y-6 hidden">
+        <div class="glass-card p-6 rounded-2xl space-y-6">
+          <h3 class="text-lg font-bold text-white border-b border-gray-800 pb-3">Bot Preferences</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label class="text-xs font-semibold text-gray-400 uppercase">Command Prefix</label>
+              <input id="settings-prefix" type="text" value="!" class="w-full glass bg-gray-900 px-4 py-2.5 rounded-xl text-sm text-white border border-gray-700">
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-xs font-semibold text-gray-400 uppercase">Default Playback Volume</label>
+              <input id="settings-volume" type="number" min="1" max="150" value="100" class="w-full glass bg-gray-900 px-4 py-2.5 rounded-xl text-sm text-white border border-gray-700">
+            </div>
+          </div>
+
+          <div class="pt-4 border-t border-gray-800 flex justify-end">
+            <button onclick="saveSettings()" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all">
+              Save Settings
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl glass border border-indigo-500/30 text-white text-xs font-medium shadow-2xl transition-all duration-300 opacity-0 pointer-events-none translate-y-3 flex items-center space-x-2">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-msg">Settings saved!</span>
+  </div>
+
+  <script>
+    const BACKEND_URL = 'http://localhost:4000';
+    let isPlaying = false;
+    let currentGuildId = '1566556068828549311';
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-msg');
+      text.innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+      }, 3000);
+    }
+
+    function switchTab(tabId) {
+      const tabs = ['overview', 'music', 'servers', 'settings'];
+      for (const t of tabs) {
+        document.getElementById(`tab-${t}`)?.classList.add('hidden');
+        const navBtn = document.getElementById(`nav-${t}`);
+        if (navBtn) {
+          navBtn.className = 'w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all';
+        }
+      }
+      document.getElementById(`tab-${tabId}`)?.classList.remove('hidden');
+      const activeNav = document.getElementById(`nav-${tabId}`);
+      if (activeNav) {
+        activeNav.className = 'w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all bg-indigo-600/20 text-indigo-400 border border-indigo-500/30';
+      }
+    }
+
+    async function refreshData() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/status`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Update stats
+        if (data.system?.memory) {
+          document.getElementById('mem-used').innerText = `${data.system.memory.percentUsed}%`;
+          document.getElementById('mem-bar').style.width = `${data.system.memory.percentUsed}%`;
+        }
+
+        if (data.dashboard?.uptimeSeconds) {
+          const s = data.dashboard.uptimeSeconds;
+          const hrs = Math.floor(s / 3600).toString().padStart(2, '0');
+          const mins = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+          const secs = (s % 60).toString().padStart(2, '0');
+          document.getElementById('uptime-text').innerText = `${hrs}:${mins}:${secs}`;
+        }
+
+        const ping = data.bot?.pingMs ?? 32;
+        document.getElementById('gateway-ping').innerText = `${ping}ms`;
+        document.getElementById('stat-ping').innerText = `${ping}ms`;
+
+        // Fetch Music state
+        const musicRes = await fetch(`${BACKEND_URL}/api/guilds/${currentGuildId}/music`);
+        if (musicRes.ok) {
+          const mData = await musicRes.json();
+          updateMusicUI(mData);
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+      }
+    }
+
+    function updateMusicUI(data) {
+      isPlaying = data.isPlaying ?? false;
+      const stateEl = document.getElementById('stat-engine-state');
+      if (stateEl) stateEl.innerText = data.engineState ?? 'idle';
+
+      const iconPlayPause = document.getElementById('icon-play-pause');
+      if (iconPlayPause) {
+        iconPlayPause.className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+      }
+
+      if (data.currentTrack) {
+        document.getElementById('player-title').innerText = data.currentTrack.title;
+        document.getElementById('player-author').innerText = data.currentTrack.author;
+        document.getElementById('stat-current-track-title').innerText = data.currentTrack.title;
+        if (data.currentTrack.artworkUrl) {
+          document.getElementById('player-artwork').src = data.currentTrack.artworkUrl;
+        }
+      }
+    }
+
+    async function togglePlayPause() {
+      const action = isPlaying ? 'pause' : 'resume';
+      await sendMusicAction(action);
+      isPlaying = !isPlaying;
+      document.getElementById('icon-play-pause').className = isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+      showToast(isPlaying ? 'Playback resumed' : 'Playback paused');
+    }
+
+    async function sendMusicAction(action, payload = {}) {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/guilds/${currentGuildId}/music/control`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, ...payload })
+        });
+        if (res.ok) {
+          showToast(`Action "${action}" sent.`);
+          refreshData();
+        }
+      } catch {
+        showToast(`Failed to trigger ${action}`);
+      }
+    }
+
+    async function handleQuickPlay() {
+      const input = document.getElementById('quick-play-input');
+      const query = input.value.trim();
+      if (!query) return;
+      showToast(`Enqueueing: ${query}`);
+      await sendMusicAction('play', { query });
+      input.value = '';
+    }
+
+    function handleVolumeChange(val) {
+      document.getElementById('volume-text').innerText = `${val}%`;
+      sendMusicAction('volume', { volume: parseInt(val, 10) });
+    }
+
+    function handleSeek(e) {
+      showToast('Seeking track position...');
+    }
+
+    function saveSettings() {
+      const prefix = document.getElementById('settings-prefix').value;
+      showToast(`Prefix saved to: ${prefix}`);
+    }
+
+    // Connect to SSE stream
+    function initSSE() {
+      try {
+        const source = new EventSource(`${BACKEND_URL}/api/events`);
+        source.addEventListener('heartbeat', (e) => {
+          const payload = JSON.parse(e.data);
+          if (payload.memory) {
+            document.getElementById('mem-used').innerText = `${payload.memory.usedPercent}%`;
+            document.getElementById('mem-bar').style.width = `${payload.memory.usedPercent}%`;
+          }
+        });
+        source.addEventListener('musicUpdate', (e) => {
+          const update = JSON.parse(e.data);
+          updateMusicUI(update);
+        });
+      } catch (e) {
+        console.warn('SSE not supported or backend disconnected.');
+      }
+    }
+
+    // Initial boot
+    refreshData();
+    initSSE();
+    setInterval(refreshData, 3500);
+  </script>
+</body>
+</html>

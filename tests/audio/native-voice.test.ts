@@ -36,3 +36,4 @@ describe('NativeVoiceMusicEngine & NativeProvider', () => {
     await expect(engine.connect('unknown-guild', 'channel-1')).rejects.toThrow();
   });
 });
+
