@@ -1,0 +1,502 @@
+[
+  {
+    "name": "play",
+    "description": "Play a song or playlist from a search query or URL.",
+    "category": "Music"
+  },
+  {
+    "name": "pause",
+    "description": "Pause playback.",
+    "category": "Music"
+  },
+  {
+    "name": "resume",
+    "description": "Resume paused playback.",
+    "category": "Music"
+  },
+  {
+    "name": "skip",
+    "description": "Skip the current track.",
+    "category": "Music"
+  },
+  {
+    "name": "stop",
+    "description": "Stop playback and clear the queue.",
+    "category": "Music"
+  },
+  {
+    "name": "join",
+    "description": "Connect the bot to your current voice channel.",
+    "category": "Music"
+  },
+  {
+    "name": "leave",
+    "description": "Disconnect from the voice channel and clear the queue.",
+    "category": "Music"
+  },
+  {
+    "name": "nowplaying",
+    "description": "Show what is currently playing.",
+    "category": "Music"
+  },
+  {
+    "name": "queue",
+    "description": "Show the current queue.",
+    "category": "Music"
+  },
+  {
+    "name": "volume",
+    "description": "View or change playback volume.",
+    "category": "Music"
+  },
+  {
+    "name": "loop",
+    "description": "Set the playback loop mode.",
+    "category": "Music"
+  },
+  {
+    "name": "shuffle",
+    "description": "Shuffle upcoming tracks in the queue.",
+    "category": "Music"
+  },
+  {
+    "name": "seek",
+    "description": "Seek to a timestamp in the current track.",
+    "category": "Music"
+  },
+  {
+    "name": "remove",
+    "description": "Remove a track from the queue by its position.",
+    "category": "Music"
+  },
+  {
+    "name": "clear",
+    "description": "Clear all upcoming tracks from the queue.",
+    "category": "Music"
+  },
+  {
+    "name": "filter",
+    "description": "Apply audio equalization and DSP filter presets.",
+    "category": "Music"
+  },
+  {
+    "name": "autoplay",
+    "description": "Automatically enqueue related music tracks when the queue ends.",
+    "category": "Music"
+  },
+  {
+    "name": "ping",
+    "description": "Replies with Pong and bot latency.",
+    "category": "General"
+  },
+  {
+    "name": "help",
+    "description": "View the complete Riffly command index and category guide.",
+    "category": "General"
+  },
+  {
+    "name": "info",
+    "description": "Display detailed bot platform specifications and system status.",
+    "category": "General"
+  },
+  {
+    "name": "extraowner",
+    "description": "Manage Riffly Extra Owners (Co-Owners with full bot access).",
+    "category": "General"
+  },
+  {
+    "name": "admin",
+    "description": "Manage Server Administrators with custom 12-permission flags.",
+    "category": "General"
+  },
+  {
+    "name": "mod",
+    "description": "Manage Server Moderators with safe baseline 12-permission flags.",
+    "category": "General"
+  },
+  {
+    "name": "ban",
+    "description": "Ban a member from the server and record a case.",
+    "category": "Moderation"
+  },
+  {
+    "name": "unban",
+    "description": "Unban a user by their Discord user ID.",
+    "category": "Moderation"
+  },
+  {
+    "name": "kick",
+    "description": "Kick a member from the server and record a case.",
+    "category": "Moderation"
+  },
+  {
+    "name": "timeout",
+    "description": "Timeout a member.",
+    "category": "Moderation"
+  },
+  {
+    "name": "mute",
+    "description": "Timeout a member with duration presets.",
+    "category": "General"
+  },
+  {
+    "name": "unmute",
+    "description": "Remove timeout from a member.",
+    "category": "Moderation"
+  },
+  {
+    "name": "softban",
+    "description": "Ban and instantly unban a member to prune messages.",
+    "category": "Moderation"
+  },
+  {
+    "name": "warn",
+    "description": "Warn a member and record the case.",
+    "category": "Moderation"
+  },
+  {
+    "name": "warnings",
+    "description": "View infractions for a user.",
+    "category": "Moderation"
+  },
+  {
+    "name": "cases",
+    "description": "View moderation history and cases for a user.",
+    "category": "Moderation"
+  },
+  {
+    "name": "case",
+    "description": "Inspect a moderation case.",
+    "category": "Moderation"
+  },
+  {
+    "name": "note",
+    "description": "Manage private staff notes.",
+    "category": "General"
+  },
+  {
+    "name": "jail",
+    "description": "Manage jailed members.",
+    "category": "General"
+  },
+  {
+    "name": "purge",
+    "description": "Bulk delete up to 100 messages from the current channel.",
+    "category": "Moderation"
+  },
+  {
+    "name": "slowmode",
+    "description": "Set channel message rate limit in seconds (0 to disable).",
+    "category": "Moderation"
+  },
+  {
+    "name": "lock",
+    "description": "Lock a channel preventing members from chatting or connecting.",
+    "category": "Moderation"
+  },
+  {
+    "name": "unlock",
+    "description": "Unlock a channel permitting members to send messages.",
+    "category": "Moderation"
+  },
+  {
+    "name": "hide",
+    "description": "Hide channel from role or @everyone.",
+    "category": "General"
+  },
+  {
+    "name": "unhide",
+    "description": "Make channel visible to role or @everyone.",
+    "category": "General"
+  },
+  {
+    "name": "role",
+    "description": "Manage server roles and assignments.",
+    "category": "General"
+  },
+  {
+    "name": "nick",
+    "description": "Set or reset server nickname for a member.",
+    "category": "General"
+  },
+  {
+    "name": "move",
+    "description": "Move voice members.",
+    "category": "General"
+  },
+  {
+    "name": "logging",
+    "description": "Configure server audit logging channels.",
+    "category": "General"
+  },
+  {
+    "name": "ticket",
+    "description": "Manage support tickets and channel access.",
+    "category": "Tickets"
+  },
+  {
+    "name": "verify",
+    "description": "Configure and post verification panels.",
+    "category": "General"
+  },
+  {
+    "name": "rank",
+    "description": "Check your level or another member's rank and XP progress.",
+    "category": "Leveling"
+  },
+  {
+    "name": "levels",
+    "description": "View server level milestones, XP progression rules, and role rewards.",
+    "category": "Leveling"
+  },
+  {
+    "name": "leaderboard",
+    "description": "View or deploy live server leaderboards.",
+    "category": "Leveling"
+  },
+  {
+    "name": "voicemaster",
+    "description": "VoiceMaster automated channel setup and controls.",
+    "category": "General"
+  },
+  {
+    "name": "vc",
+    "description": "Manage your VoiceMaster voice channel.",
+    "category": "General"
+  },
+  {
+    "name": "antinuke",
+    "description": "Configure and monitor Riffly Anti-Nuke protection.",
+    "category": "Security"
+  },
+  {
+    "name": "antiraid",
+    "description": "Configure and trigger server raid protection and mass lockouts.",
+    "category": "Security"
+  },
+  {
+    "name": "automod",
+    "description": "Configure and monitor automated message moderation and word filters.",
+    "category": "Security"
+  },
+  {
+    "name": "autorole",
+    "description": "Manage automated roles granted to new members upon joining.",
+    "category": "General"
+  },
+  {
+    "name": "reactionrole",
+    "description": "Configure interactive reaction-based self roles.",
+    "category": "General"
+  },
+  {
+    "name": "vanityrole",
+    "description": "Reward users with a role when they feature your server invite in their status.",
+    "category": "General"
+  },
+  {
+    "name": "boosterrole",
+    "description": "Create and customize your exclusive server booster role.",
+    "category": "General"
+  },
+  {
+    "name": "clownboard",
+    "description": "Configure clown reaction highlights on your server.",
+    "category": "General"
+  },
+  {
+    "name": "counter",
+    "description": "Setup and manage an automated counting channel.",
+    "category": "General"
+  },
+  {
+    "name": "autoresponder",
+    "description": "Create automated message responses based on triggers.",
+    "category": "General"
+  },
+  {
+    "name": "giveaway",
+    "description": "Host and manage server giveaways.",
+    "category": "Giveaways"
+  },
+  {
+    "name": "balance",
+    "description": "Check your wallet and bank balance, or check another member balance.",
+    "category": "Economy"
+  },
+  {
+    "name": "daily",
+    "description": "Claim your daily allowance of coins (once every 24 hours).",
+    "category": "Economy"
+  },
+  {
+    "name": "work",
+    "description": "Work a shift to earn coins (once every 1 hour).",
+    "category": "Economy"
+  },
+  {
+    "name": "pay",
+    "description": "Transfer coins from your wallet to another member.",
+    "category": "Economy"
+  },
+  {
+    "name": "beg",
+    "description": "Beg for spare coins on the streets (chance of reward).",
+    "category": "Economy"
+  },
+  {
+    "name": "gamble",
+    "description": "Bet coins on a 50/50 dice roll.",
+    "category": "Economy"
+  },
+  {
+    "name": "deposit",
+    "description": "Deposit coins from your wallet into your bank.",
+    "category": "Economy"
+  },
+  {
+    "name": "withdraw",
+    "description": "Withdraw coins from your bank into your wallet.",
+    "category": "Economy"
+  },
+  {
+    "name": "ask",
+    "description": "Ask the Riffly AI Assistant a question about the server or bot features.",
+    "category": "General"
+  },
+  {
+    "name": "backup",
+    "description": "Manage server backups and configuration snapshots.",
+    "category": "General"
+  },
+  {
+    "name": "userinfo",
+    "description": "Displays detailed information about a server member or yourself.",
+    "category": "Fun & Utility"
+  },
+  {
+    "name": "serverinfo",
+    "description": "Displays information and statistics about this Discord server.",
+    "category": "Fun & Utility"
+  },
+  {
+    "name": "avatar",
+    "description": "Displays a user avatar in full resolution with format download links.",
+    "category": "Fun & Utility"
+  },
+  {
+    "name": "poll",
+    "description": "Creates a multiple-choice community poll.",
+    "category": "Fun & Utility"
+  },
+  {
+    "name": "remindme",
+    "description": "Sets a personal delayed reminder notification.",
+    "category": "General"
+  },
+  {
+    "name": "afk",
+    "description": "Set your AFK status with an optional custom message.",
+    "category": "General"
+  },
+  {
+    "name": "suggest",
+    "description": "Submit an improvement suggestion for server members to vote on.",
+    "category": "General"
+  },
+  {
+    "name": "report",
+    "description": "Privately report an abusive user or rule infraction to server staff.",
+    "category": "General"
+  },
+  {
+    "name": "announce",
+    "description": "Broadcast a formatted announcement to a channel.",
+    "category": "General"
+  },
+  {
+    "name": "embed",
+    "description": "Post a custom embed with title, description, color, and image.",
+    "category": "General"
+  },
+  {
+    "name": "snipe",
+    "description": "Retrieve the most recently deleted message in this channel.",
+    "category": "General"
+  },
+  {
+    "name": "crypto",
+    "description": "Lookup live prices for cryptocurrencies (BTC, ETH, SOL, etc.).",
+    "category": "General"
+  },
+  {
+    "name": "color",
+    "description": "Preview a hex color swatch with RGB conversions.",
+    "category": "General"
+  },
+  {
+    "name": "weather",
+    "description": "Check current weather conditions and forecast for any city.",
+    "category": "General"
+  },
+  {
+    "name": "translate",
+    "description": "Translate text between languages.",
+    "category": "General"
+  },
+  {
+    "name": "define",
+    "description": "Lookup the definition, etymology, and example usage of an English word.",
+    "category": "General"
+  },
+  {
+    "name": "wiki",
+    "description": "Search Wikipedia for articles and summaries.",
+    "category": "General"
+  },
+  {
+    "name": "github",
+    "description": "Fetch public GitHub user profile information or repository statistics.",
+    "category": "General"
+  },
+  {
+    "name": "tictactoe",
+    "description": "Challenge a friend to an interactive game of Tic-Tac-Toe.",
+    "category": "General"
+  },
+  {
+    "name": "trivia",
+    "description": "Answer multiple-choice trivia questions to test your knowledge.",
+    "category": "General"
+  },
+  {
+    "name": "meme",
+    "description": "Fetch a top trending funny meme from Reddit.",
+    "category": "Fun & Utility"
+  },
+  {
+    "name": "urban",
+    "description": "Lookup slang words and pop culture definitions on Urban Dictionary.",
+    "category": "Moderation"
+  },
+  {
+    "name": "fun",
+    "description": "Quick casual games and random outcome generators.",
+    "category": "General"
+  },
+  {
+    "name": "musicdiag",
+    "description": "Run comprehensive diagnostics on Riffly music pipeline and player status.",
+    "category": "Music"
+  },
+  {
+    "name": "image",
+    "description": "Apply creative image manipulation effects to user avatars.",
+    "category": "General"
+  },
+  {
+    "name": "prefix",
+    "description": "Configure server command prefix and manage No-Prefix exemptions.",
+    "category": "General"
+  }
+]

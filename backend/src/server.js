@@ -1,10 +1,27 @@
 import http from 'node:http';
 import os from 'node:os';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration
 const PORT = parseInt(process.env.PORT || '4000', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 const BOT_API_URL = process.env.BOT_API_URL || 'http://localhost:3000';
+
+// Cached commands list
+let cachedCommands = [];
+try {
+  const cmdPath = path.join(__dirname, 'data', 'commands.json');
+  if (fs.existsSync(cmdPath)) {
+    cachedCommands = JSON.parse(fs.readFileSync(cmdPath, 'utf-8'));
+  }
+} catch {
+  cachedCommands = [];
+}
 
 /** @type {Set<http.ServerResponse>} */
 const sseClients = new Set();
@@ -96,7 +113,10 @@ function broadcastSSE(event, data) {
   }
 }
 
-// Periodic heartbeat to SSE clients
+// Active guild tracking for SSE updates
+let lastKnownGuildId = '1566556068828549311';
+
+// Periodic heartbeat & live music sync to SSE clients
 setInterval(async () => {
   if (sseClients.size === 0) return;
 
@@ -114,7 +134,14 @@ setInterval(async () => {
   };
 
   broadcastSSE('heartbeat', sysMetrics);
-}, 3000);
+
+  if (botStatus.ok && lastKnownGuildId) {
+    const musicRes = await fetchBotApi(`/api/guilds/${lastKnownGuildId}/music`);
+    if (musicRes.ok) {
+      broadcastSSE('musicUpdate', musicRes.data);
+    }
+  }
+}, 1500);
 
 const server = http.createServer(async (req, res) => {
   // CORS Preflight
@@ -185,28 +212,35 @@ const server = http.createServer(async (req, res) => {
       },
       bot: botRes.ok
         ? { connected: true, ...botRes.data }
-        : { connected: false, note: 'Bot process running. Internal API offline or port unassigned.' },
+        : { connected: false, note: 'Connecting to Riffly bot instance at http://localhost:3000...' },
     });
     return;
   }
 
-  // 4. Guilds list
+  // 4. Slash Commands Directory
+  if (path === '/api/commands' && method === 'GET') {
+    sendJson(res, 200, { commands: cachedCommands, total: cachedCommands.length });
+    return;
+  }
+
+  // 5. Guilds list
   if (path === '/api/guilds' && method === 'GET') {
     const botRes = await fetchBotApi('/api/guilds');
     if (botRes.ok) {
+      if (Array.isArray(botRes.data?.guilds) && botRes.data.guilds[0]?.id) {
+        lastKnownGuildId = botRes.data.guilds[0].id;
+      }
       sendJson(res, 200, botRes.data);
       return;
     }
 
-    // Fallback info if bot internal HTTP is not bound
     sendJson(res, 200, {
       guilds: [
         {
-          id: '1566556068828549311',
-          name: 'Riffly Server',
+          id: lastKnownGuildId,
+          name: 'Riffly testing',
           icon: null,
           memberCount: 2,
-          isOnline: true,
         },
       ],
       source: 'fallback',
@@ -219,6 +253,7 @@ const server = http.createServer(async (req, res) => {
   if (match) {
     const guildId = match[1];
     const subPath = match[2];
+    lastKnownGuildId = guildId;
 
     // GET /api/guilds/:guildId
     if (subPath === '' && method === 'GET') {
@@ -229,7 +264,7 @@ const server = http.createServer(async (req, res) => {
       }
       sendJson(res, 200, {
         id: guildId,
-        name: 'Riffly Server',
+        name: 'Riffly testing',
         memberCount: 2,
         channelCount: 5,
       });
@@ -271,6 +306,8 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      // If action is not implemented on bot server or bot was unreachable
+      broadcastSSE('musicUpdate', { guildId, action: body?.action });
       sendJson(res, 200, {
         success: true,
         action: body?.action,
@@ -302,6 +339,39 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       sendJson(res, 200, { success: true, settings: body });
+      return;
+    }
+
+    // GET /api/guilds/:guildId/moderation/cases
+    if (subPath === '/moderation/cases' && method === 'GET') {
+      const botRes = await fetchBotApi(`/api/guilds/${guildId}/moderation/cases`);
+      if (botRes.ok) {
+        sendJson(res, 200, botRes.data);
+        return;
+      }
+      sendJson(res, 200, { cases: [] });
+      return;
+    }
+
+    // GET /api/guilds/:guildId/leaderboard
+    if (subPath === '/leaderboard' && method === 'GET') {
+      const botRes = await fetchBotApi(`/api/guilds/${guildId}/leaderboard`);
+      if (botRes.ok) {
+        sendJson(res, 200, botRes.data);
+        return;
+      }
+      sendJson(res, 200, { leaderboard: [] });
+      return;
+    }
+
+    // GET /api/guilds/:guildId/economy
+    if (subPath === '/economy' && method === 'GET') {
+      const botRes = await fetchBotApi(`/api/guilds/${guildId}/economy`);
+      if (botRes.ok) {
+        sendJson(res, 200, botRes.data);
+        return;
+      }
+      sendJson(res, 200, { leaderboard: [] });
       return;
     }
   }

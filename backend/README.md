@@ -18,3 +18,4 @@ Runs isolated from the core Discord bot code without touching `src/` or `tests/`
 cd backend
 npm start
 ```
+

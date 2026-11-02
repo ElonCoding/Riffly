@@ -63,3 +63,4 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`[RifflyDashboardFrontend] UI running on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
 });
+
