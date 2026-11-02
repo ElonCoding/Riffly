@@ -196,6 +196,7 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
       if (targetUrl.includes('youtube.com') || targetUrl.includes('youtu.be')) {
         audioStream = this.ytdl.download(targetUrl, {
           filter: { hasAudio: true, hasVideo: false },
+          quality: 'highestaudio',
           highWaterMark: 1 << 25,
         });
       } else {
@@ -209,6 +210,16 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
 
       audioStream.on('error', (err: unknown) => {
         const error = err instanceof Error ? err : new Error(String(err));
+        if (
+          (error as unknown as { code?: string }).code === 'ERR_STREAM_PREMATURE_CLOSE' ||
+          error.message.includes('Premature close') ||
+          audioStream.destroyed
+        ) {
+          return;
+        }
+        if (this.currentTracks.get(guildId) !== track) {
+          return;
+        }
         console.error(`[NativeAudioEngine] Audio stream error in guild ${guildId}:`, error);
         this.emit('trackError', guildId, track, error);
       });
@@ -220,6 +231,16 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
 
       resource.playStream.on('error', (err: unknown) => {
         const error = err instanceof Error ? err : new Error(String(err));
+        if (
+          (error as unknown as { code?: string }).code === 'ERR_STREAM_PREMATURE_CLOSE' ||
+          error.message.includes('Premature close') ||
+          resource.playStream.destroyed
+        ) {
+          return;
+        }
+        if (this.currentTracks.get(guildId) !== track) {
+          return;
+        }
         console.error(`[NativeAudioEngine] Resource playStream error in guild ${guildId}:`, error);
         this.emit('trackError', guildId, track, error);
       });
@@ -256,12 +277,12 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
   }
 
   async stop(guildId: string): Promise<void> {
+    this.currentTracks.delete(guildId);
+    this.resources.delete(guildId);
     const player = this.players.get(guildId);
     if (player) {
       player.stop(true);
     }
-    this.currentTracks.delete(guildId);
-    this.resources.delete(guildId);
   }
 
   async seek(_guildId: string, _positionMs: number): Promise<void> {
@@ -332,12 +353,19 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
       player.on(AudioPlayerStatus.Idle, () => {
         const track = this.currentTracks.get(guildId);
         if (track) {
+          this.currentTracks.delete(guildId);
           this.emit('trackEnd', guildId, track, 'finished');
         }
       });
 
       player.on('error', (err) => {
         const track = this.currentTracks.get(guildId);
+        if (
+          (err as unknown as { code?: string }).code === 'ERR_STREAM_PREMATURE_CLOSE' ||
+          err.message.includes('Premature close')
+        ) {
+          return;
+        }
         console.error(`[NativeAudioEngine] Player error in guild ${guildId}:`, err);
         this.emit('trackError', guildId, track, err);
       });

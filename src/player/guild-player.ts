@@ -82,6 +82,17 @@ export class GuildPlayerManager extends EventEmitter {
 
     // Safeguard C-05: Listen for trackError and trackStuck on engine
     engine.on('trackError', (guildId, track, error) => {
+      if (
+        (error as unknown as { code?: string }).code === 'ERR_STREAM_PREMATURE_CLOSE' ||
+        error.message?.includes('Premature close') ||
+        error.message?.includes('aborted')
+      ) {
+        console.warn(
+          `[GuildPlayer:${guildId}] Suppressed benign stream close for "${track?.title ?? 'unknown'}": ${error.message}`,
+        );
+        return;
+      }
+
       console.error(
         `[GuildPlayer:${guildId}] Track error for "${track?.title ?? 'unknown'}":`,
         error.message,
@@ -254,6 +265,13 @@ export class GuildPlayerManager extends EventEmitter {
 
       const onError = (gId: string, _track: Track | undefined, error: Error) => {
         if (gId === guildId && !settled) {
+          if (
+            (error as unknown as { code?: string }).code === 'ERR_STREAM_PREMATURE_CLOSE' ||
+            error.message?.includes('Premature close') ||
+            error.message?.includes('aborted')
+          ) {
+            return;
+          }
           settled = true;
           cleanup();
           reject(error);
