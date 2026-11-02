@@ -19,8 +19,61 @@ const RIFFLY_KNOWLEDGE: Record<string, string> = {
     'PatternGuard automatically defends against Discord invite links, external links, mention spam, excessive caps, and rapid message flooding.',
 };
 
+export class GeminiAiProvider implements IAiProvider {
+  private readonly apiKey: string;
+  private readonly fallback: DefaultRifflyAiProvider;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+    this.fallback = new DefaultRifflyAiProvider();
+  }
+
+  public async generateResponse(prompt: string, systemPrompt?: string): Promise<string> {
+    try {
+      const instructions =
+        systemPrompt ??
+        'You are the intelligent assistant for Riffly, a high-performance Discord music, moderation, and community bot. Be helpful, concise, friendly, and accurate. Do not mention other bot brands.';
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${this.apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: instructions + '\n\nUser Question: ' + prompt },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 800,
+            },
+          }),
+        },
+      );
+
+      if (res.ok) {
+        const data = (await res.json()) as {
+          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+        };
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (text) {
+          return text;
+        }
+      }
+    } catch {
+      // Gracefully fall back to local knowledge on any network or API issue
+    }
+
+    return this.fallback.generateResponse(prompt, systemPrompt);
+  }
+}
+
 export class DefaultRifflyAiProvider implements IAiProvider {
-  public generateResponse(prompt: string): Promise<string> {
+  public generateResponse(prompt: string, _systemPrompt?: string): Promise<string> {
     const lower = prompt.toLowerCase();
 
     for (const [key, response] of Object.entries(RIFFLY_KNOWLEDGE)) {
@@ -46,7 +99,13 @@ export class AiService {
   private readonly cooldowns = new Map<string, number>();
 
   constructor(provider?: IAiProvider) {
-    this.provider = provider ?? new DefaultRifflyAiProvider();
+    if (provider) {
+      this.provider = provider;
+    } else if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim() !== '') {
+      this.provider = new GeminiAiProvider(process.env.GEMINI_API_KEY.trim());
+    } else {
+      this.provider = new DefaultRifflyAiProvider();
+    }
   }
 
   public async ask(
