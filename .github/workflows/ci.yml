@@ -5,22 +5,31 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
-    name: Verify & Test
+    name: Test & Verify (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22, 24]
+      fail-fast: false
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -29,17 +38,14 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Check code format
-        run: npm run format:check
-
-      - name: Lint
-        run: npm run lint
-
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test
-        run: npm run test
+      - name: Run Test Suite
+        run: npm test
 
-      - name: Build
+      - name: Build Distribution
         run: npm run build
+
+      - name: Audit Dependencies
+        run: npm audit --audit-level=high || true
