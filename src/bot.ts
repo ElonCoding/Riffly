@@ -4,9 +4,12 @@ import type { Command } from './commands/types.js';
 import { buildMasterCommandMap } from './commands/master-registry.js';
 import { handleInteraction, setDefaultPlayerManager } from './interaction.js';
 import { LavalinkMusicEngine } from './audio/lavalink-engine.js';
+import { NativeVoiceMusicEngine } from './audio/native-voice-engine.js';
+import type { MusicEngine } from './audio/types.js';
 import { GuildPlayerManager } from './player/guild-player.js';
 import { ProviderRegistry } from './provider/registry.js';
 import { LavalinkProvider } from './provider/lavalink-provider.js';
+import { NativeProvider } from './provider/native-provider.js';
 import { TrackResolver } from './provider/resolver.js';
 import { PrefixService } from './modules/prefix/service.js';
 import { CommunityService } from './modules/community/service.js';
@@ -43,11 +46,21 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
       ],
     });
 
-  let engine: LavalinkMusicEngine | undefined;
+  type InitializableEngine = MusicEngine & { init(): Promise<void> };
+  let engine: InitializableEngine | undefined;
   let playerManager = options.playerManager;
 
+  const isNative = config.audioEngineType !== 'lavalink';
+
+  function createDefaultEngine(): InitializableEngine {
+    if (isNative) {
+      return new NativeVoiceMusicEngine({ client });
+    }
+    return new LavalinkMusicEngine({ client, config });
+  }
+
   if (!playerManager) {
-    engine = new LavalinkMusicEngine({ client, config });
+    engine = createDefaultEngine();
     playerManager = new GuildPlayerManager(engine, { client });
   }
 
@@ -59,28 +72,43 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
   if (options.commands) {
     commands = options.commands;
   } else {
-    const activeEngine = engine ?? new LavalinkMusicEngine({ client, config });
+    const activeEngine = engine ?? createDefaultEngine();
     if (!engine) {
       engine = activeEngine;
     }
 
     const registry = new ProviderRegistry();
-    const lavalinkProvider = new LavalinkProvider({
-      manager: activeEngine.manager,
-      searchSource: 'ytsearch',
-    });
-    // YouTube, SoundCloud, and Bandcamp hostnames
-    registry.register(lavalinkProvider, [
-      'youtube.com',
-      'www.youtube.com',
-      'm.youtube.com',
-      'youtu.be',
-      'music.youtube.com',
-      'soundcloud.com',
-      'www.soundcloud.com',
-      'on.soundcloud.com',
-      'bandcamp.com',
-    ]);
+    if (isNative) {
+      const nativeProvider = new NativeProvider();
+      registry.register(nativeProvider, [
+        'youtube.com',
+        'www.youtube.com',
+        'm.youtube.com',
+        'youtu.be',
+        'music.youtube.com',
+        'soundcloud.com',
+        'www.soundcloud.com',
+        'on.soundcloud.com',
+        'bandcamp.com',
+      ]);
+    } else {
+      const lavalinkProvider = new LavalinkProvider({
+        manager: (activeEngine as LavalinkMusicEngine).manager,
+        searchSource: 'ytsearch',
+      });
+      // YouTube, SoundCloud, and Bandcamp hostnames
+      registry.register(lavalinkProvider, [
+        'youtube.com',
+        'www.youtube.com',
+        'm.youtube.com',
+        'youtu.be',
+        'music.youtube.com',
+        'soundcloud.com',
+        'www.soundcloud.com',
+        'on.soundcloud.com',
+        'bandcamp.com',
+      ]);
+    }
 
     const resolver = new TrackResolver({ registry });
 
@@ -88,11 +116,11 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
   }
 
   if (engine) {
-    // Initialize Lavalink manager after bot is ready
+    // Initialize audio manager after bot is ready
     client.once(Events.ClientReady, () => {
       void engine.init().catch((err: unknown) => {
         console.error(
-          '[Bot] Failed to initialize Lavalink manager:',
+          '[Bot] Failed to initialize audio engine:',
           err instanceof Error ? err.message : err,
         );
       });

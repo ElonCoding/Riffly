@@ -149,3 +149,4 @@ LAVALINK_SECURE=true
 2. **If Upstream YouTube IP Block Persists**:
    - Option A: Switch to **Alternative B (NodeLink)** by replacing the Docker container (0 code changes, immediate recovery).
    - Option B: Adopt **Alternative A (Native `@discordjs/voice`)** to eliminate external audio servers entirely.
+

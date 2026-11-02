@@ -75,6 +75,9 @@ export function makeMusicDiagCommand(
         : 'ℹ️ Connect to a voice channel to inspect permissions';
 
       // 2. Voice connection state
+      const isNative = Boolean((activeEngine as { isNative?: boolean })?.isNative);
+      const isNativeConnected = (activeEngine as unknown as { isConnected?: (id: string) => boolean })?.isConnected?.(guildId);
+
       const player = (activeEngine as unknown as { manager?: { getPlayer?: (id: string) => unknown } })
         ?.manager?.getPlayer?.(guildId) as {
           connected?: boolean;
@@ -83,13 +86,15 @@ export function makeMusicDiagCommand(
           queue?: { current?: { info?: { title?: string } } };
         } | undefined;
 
+      const isVoiceConnected = isNative ? isNativeConnected : player?.connected;
+
       let voiceStateText = '❌ Disconnected';
-      if (voiceChannel && player?.connected) {
+      if (voiceChannel && isVoiceConnected) {
         voiceStateText = '✅ Connected (Voice Gateway Synchronized)';
-      } else if (voiceChannel && !player?.connected) {
-        voiceStateText = '⚠️ Bot in voice channel but Lavalink player is not connected';
-      } else if (!voiceChannel && player?.connected) {
-        voiceStateText = '⚠️ Stale player session detected (node connected, bot left)';
+      } else if (voiceChannel && !isVoiceConnected) {
+        voiceStateText = `⚠️ Bot in voice channel but ${isNative ? 'Native' : 'Lavalink'} player is not connected`;
+      } else if (!voiceChannel && isVoiceConnected) {
+        voiceStateText = '⚠️ Stale player session detected (engine connected, bot left)';
       }
 
       // 3. Audio node connection status & 4. Node latency / load
@@ -98,17 +103,23 @@ export function makeMusicDiagCommand(
       const primaryNode = nodeManager?.nodes?.get('primary-node')
         ?? (nodeManager?.nodes?.values() ? Array.from(nodeManager.nodes.values())[0] : undefined);
 
-      const nodeOnline = primaryNode?.connected ?? false;
-      const nodeStatusText = nodeOnline
-        ? `🟢 Online (${primaryNode?.options?.host ?? 'localhost'}:${primaryNode?.options?.port ?? 2333})`
-        : '🔴 Offline / Disconnected';
+      const nodeOnline = isNative ? true : (primaryNode?.connected ?? false);
+      const nodeStatusText = isNative
+        ? '🟢 Online (Native @discordjs/voice Direct In-Process)'
+        : nodeOnline
+          ? `🟢 Online (${primaryNode?.options?.host ?? 'localhost'}:${primaryNode?.options?.port ?? 2333})`
+          : '🔴 Offline / Disconnected';
 
-      const nodeLatencyText = nodeOnline
-        ? `${primaryNode?.stats?.players ?? 0} active player(s)`
-        : 'N/A';
+      const nodeLatencyText = isNative
+        ? 'In-process (0ms Node overhead, Direct UDP)'
+        : nodeOnline
+          ? `${primaryNode?.stats?.players ?? 0} active player(s)`
+          : 'N/A';
 
       // 5. Player existence & 6. Actual player state
-      const playerExistsText = player ? `✅ Active instance (\`${guildId}\`)` : '❌ No player instance';
+      const nativeHasPlayer = (activeEngine as unknown as { hasPlayer?: (id: string) => boolean })?.hasPlayer?.(guildId);
+      const playerExists = isNative ? nativeHasPlayer : Boolean(player);
+      const playerExistsText = playerExists ? `✅ Active instance (\`${guildId}\`)` : '❌ No player instance';
       const actualPlayerState = activeEngine?.getState ? activeEngine.getState(guildId) : 'unknown';
 
       // 7. Current track, 8. Track position and duration, 9. Queue length, 11. Paused
@@ -135,8 +146,13 @@ export function makeMusicDiagCommand(
       const loadingStatusText = isLoading ? '🔄 Buffering / Loading stream' : 'Idle / Ready';
 
       // 12. Backend reporting active track
-      const backendReportingTrack = Boolean(player?.track?.encoded ?? player?.queue?.current);
-      const backendTrackTitle = player?.queue?.current?.info?.title ?? player?.track?.info?.title;
+      const nativeCurrentTrack = (activeEngine as unknown as { getCurrentTrack?: (id: string) => { title?: string } | undefined })?.getCurrentTrack?.(guildId);
+      const backendReportingTrack = isNative
+        ? Boolean(nativeCurrentTrack)
+        : Boolean(player?.track?.encoded ?? player?.queue?.current);
+      const backendTrackTitle = isNative
+        ? nativeCurrentTrack?.title
+        : (player?.queue?.current?.info?.title ?? player?.track?.info?.title);
       const backendTrackText = backendReportingTrack
         ? `✅ Yes (\`${backendTrackTitle?.slice(0, 30) ?? 'Loaded'}\`)`
         : '❌ No active track in backend';
@@ -152,14 +168,14 @@ export function makeMusicDiagCommand(
 
       // Actionable diagnostic summary
       const issues: string[] = [];
-      if (!nodeOnline) {
+      if (!isNative && !nodeOnline) {
         issues.push('• **Audio Node Offline**: Docker container `riffly-lavalink` is not connected. Ensure container is running at `localhost:2333`.');
       }
       if (voiceChannel && missingPerms.length > 0) {
         issues.push(`• **Missing Permissions**: Grant ${missingPerms.join(', ')} to Riffly in ${voiceChannel.name}.`);
       }
-      if (voiceChannel && !player?.connected) {
-        issues.push('• **Voice Gateway Desynced**: Bot voice state is active in Discord, but Lavalink audio session is disconnected. Run `/leave` and `/join`.');
+      if (voiceChannel && !isVoiceConnected) {
+        issues.push('• **Voice Gateway Desynced**: Bot voice state is active in Discord, but audio session is disconnected. Run `/leave` and `/join`.');
       }
       if (lastError?.error?.includes('AllClientsFailedException') || lastError?.error?.includes('requires login')) {
         issues.push('• **YouTube Stream Blocked**: YouTube blocked audio extraction. Try searching for a different source (Bandcamp/SoundCloud) or direct MP3 URL.');

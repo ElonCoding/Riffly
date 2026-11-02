@@ -16,6 +16,7 @@ describe('loadConfig', () => {
       discordToken: VALID_TOKEN,
       discordClientId: VALID_CLIENT_ID,
       discordGuildId: '987654321098765432',
+      audioEngineType: 'native',
       lavalink: {
         host: 'localhost',
         port: 2333,
@@ -41,6 +42,16 @@ describe('loadConfig', () => {
       password: 'custom-password',
       secure: true,
     });
+  });
+
+  it('customizes audioEngineType when provided', () => {
+    const config = loadConfig({
+      DISCORD_TOKEN: VALID_TOKEN,
+      DISCORD_CLIENT_ID: VALID_CLIENT_ID,
+      AUDIO_ENGINE_TYPE: 'lavalink',
+    });
+
+    expect(config.audioEngineType).toBe('lavalink');
   });
 
   it('rejects invalid lavalink port', () => {

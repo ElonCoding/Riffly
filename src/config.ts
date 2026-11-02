@@ -12,11 +12,14 @@ export interface LavalinkConfig {
   readonly secure: boolean;
 }
 
+export type AudioEngineType = 'native' | 'lavalink';
+
 export interface AppConfig {
   readonly discordToken: string;
   readonly discordClientId: string;
   readonly discordGuildId?: string;
   readonly lavalink: LavalinkConfig;
+  readonly audioEngineType: AudioEngineType;
 }
 
 /** Discord snowflakes are numeric strings; 17-20 digits covers current IDs. */
@@ -148,6 +151,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     }
   }
 
+  const rawAudioEngineType = readEnv(env, 'AUDIO_ENGINE_TYPE').toLowerCase();
+  const audioEngineType: AudioEngineType =
+    rawAudioEngineType === 'lavalink' ? 'lavalink' : 'native';
+
   if (problems.length > 0) {
     throw new ConfigError(problems);
   }
@@ -155,6 +162,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   return {
     discordToken,
     discordClientId,
+    audioEngineType,
     ...(discordGuildId.length > 0 ? { discordGuildId } : {}),
     lavalink: {
       host: lavalinkHost,
