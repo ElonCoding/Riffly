@@ -70,6 +70,14 @@ async function main(): Promise<void> {
   process.once('SIGINT', () => void shutdown('SIGINT'));
   process.once('SIGTERM', () => void shutdown('SIGTERM'));
 
+  process.on('unhandledRejection', (reason) => {
+    console.error('[Process] Unhandled Rejection intercepted:', reason instanceof Error ? reason.message : reason);
+  });
+
+  process.on('uncaughtException', (err) => {
+    console.error('[Process] Uncaught Exception intercepted:', err.message);
+  });
+
   try {
     // Synchronize latest slash commands to Discord on startup
     const { registerCommands } = await import('./deploy-commands.js');

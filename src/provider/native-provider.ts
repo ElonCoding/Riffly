@@ -25,6 +25,25 @@ export class NativeProvider implements SearchableProvider, TrackUrlProvider, Pla
 
   async searchTracks(query: string, limit = 5): Promise<readonly Track[]> {
     try {
+      const results = await this.ytdl.search(query, { limit });
+      if (results && results.length > 0) {
+        return results.map((item) => ({
+          encoded: item.url,
+          title: item.title ?? 'Unknown title',
+          author: item.author?.name ?? 'Unknown artist',
+          lengthMs: (item.lengthSeconds ?? 0) * 1000,
+          identifier: item.id ?? item.url,
+          isSeekable: true,
+          isStream: Boolean(item.isLive),
+          uri: item.url,
+          ...(item.thumbnails?.[0]?.url ? { artworkUrl: item.thumbnails[0].url } : {}),
+        }));
+      }
+    } catch (err) {
+      console.warn('[NativeProvider] ytdl search notice:', err instanceof Error ? err.message : err);
+    }
+
+    try {
       const results = await play.search(query, { limit });
       return results.map((item) => ({
         encoded: item.url,
