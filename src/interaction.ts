@@ -5,6 +5,7 @@ import {
   GuildMemberRoleManager,
   type ButtonInteraction,
   type Interaction,
+  type StringSelectMenuInteraction,
   type TextChannel,
 } from 'discord.js';
 import type { Command } from './commands/types.js';
@@ -17,6 +18,13 @@ import { TicketRepository } from './database/repositories/ticket-repository.js';
 import { TicketService } from './modules/tickets/service.js';
 import { GiveawayRepository } from './database/repositories/giveaway-repository.js';
 import { GiveawayService } from './modules/giveaways/service.js';
+import {
+  buildHelpOverviewEmbed,
+  buildHelpMainEmbed,
+  buildHelpExtraEmbed,
+  buildHelpCategoryEmbed,
+  buildHelpActionRows,
+} from './modules/utility/help-menu.js';
 
 let defaultPlayerManager: GuildPlayerManager | undefined;
 
@@ -58,6 +66,12 @@ export async function handleInteraction(
   // Handle Button Interactions
   if (typeof interaction.isButton === 'function' && interaction.isButton()) {
     await handleButtonInteraction(interaction, playerManager);
+    return;
+  }
+
+  // Handle Select Menu Interactions
+  if (typeof interaction.isStringSelectMenu === 'function' && interaction.isStringSelectMenu()) {
+    await handleSelectMenuInteraction(interaction);
     return;
   }
 }
@@ -122,6 +136,30 @@ async function handleButtonInteraction(
         ephemeral: true,
       });
     }
+    return;
+  }
+
+  // 0. Handle Help Menu Buttons fallback
+  if (
+    customId === 'riffly_help_main' ||
+    customId === 'riffly_help_extra' ||
+    customId === 'riffly_help_overview'
+  ) {
+    let embed;
+    let tab = 'overview';
+    if (customId === 'riffly_help_main') {
+      tab = 'main';
+      embed = buildHelpMainEmbed(interaction.user, interaction.client);
+    } else if (customId === 'riffly_help_extra') {
+      tab = 'extra';
+      embed = buildHelpExtraEmbed(interaction.user, interaction.client);
+    } else {
+      embed = buildHelpOverviewEmbed(interaction.user, interaction.client);
+    }
+    await interaction.update({
+      embeds: [embed],
+      components: buildHelpActionRows(tab),
+    });
     return;
   }
 
@@ -382,5 +420,27 @@ async function handleButtonInteraction(
         }
       }
     }
+  }
+}
+
+async function handleSelectMenuInteraction(
+  interaction: StringSelectMenuInteraction,
+): Promise<void> {
+  const customId = interaction.customId;
+  if (customId === 'riffly_help_select') {
+    const selected = interaction.values[0];
+    const tab = selected ?? 'overview';
+    let embed;
+    if (selected === 'overview') {
+      embed = buildHelpOverviewEmbed(interaction.user, interaction.client);
+    } else if (selected) {
+      embed = buildHelpCategoryEmbed(interaction.user, interaction.client, selected);
+    } else {
+      embed = buildHelpOverviewEmbed(interaction.user, interaction.client);
+    }
+    await interaction.update({
+      embeds: [embed],
+      components: buildHelpActionRows(tab),
+    });
   }
 }

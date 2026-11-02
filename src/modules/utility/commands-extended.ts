@@ -11,6 +11,13 @@ import {
 } from 'discord.js';
 import type { CommandDefinition } from '../core/types.js';
 import { fetchGitHubUser, buildGitHubUserEmbed } from './github-service.js';
+import {
+  buildHelpOverviewEmbed,
+  buildHelpMainEmbed,
+  buildHelpExtraEmbed,
+  buildHelpCategoryEmbed,
+  buildHelpActionRows,
+} from './help-menu.js';
 
 // In-memory snipes for deleted/edited messages: key = channelId -> { author: string, content: string, time: Date }
 export const deletedMessageSnipe = new Map<
@@ -764,93 +771,97 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
   // 24. /help
   const helpCmd: CommandDefinition = {
     name: 'help',
-    description: 'View the complete Riffly command index and category guide.',
+    description: 'View the interactive Riffly Security & Operations Matrix directory.',
     data: new SlashCommandBuilder()
       .setName('help')
-      .setDescription('View the complete Riffly command index and category guide.')
+      .setDescription('View the interactive Riffly Security & Operations Matrix directory.')
       .addStringOption((opt) =>
         opt.setName('command').setDescription('Specific command to lookup'),
       ),
     execute: async (interaction: ChatInputCommandInteraction) => {
       const specific = interaction.options.getString('command');
       if (specific) {
+        const cleanName = specific.toLowerCase().replace(/^\//, '');
         const embed = new EmbedBuilder()
-          .setTitle(`📖 Help: /${specific}`)
-          .setColor(0x6366f1)
+          .setTitle(`📖 Help: /${cleanName}`)
+          .setColor(0x5865f2)
           .setDescription(
-            `Detailed reference for \`/${specific}\`. Use slash command autocomplete to view all subcommands and parameters.`,
+            `Detailed reference for \`/${cleanName}\`.\n\n` +
+              `• Use Discord slash command autocomplete in chat to explore all arguments, subcommands, and flags.\n` +
+              `• For complete modular category navigation, run \`/help\` without parameters.`,
           )
-          .setFooter({ text: 'Riffly Command Guide' });
+          .setFooter({ text: 'Powered by Riffly HQ • Command Guide' })
+          .setTimestamp();
         await interaction.reply({ embeds: [embed] });
         return;
       }
 
-      const embed = new EmbedBuilder()
-        .setTitle('🎵 Riffly Command Center')
-        .setColor(0x6366f1)
-        .setDescription(
-          'Welcome to Riffly! The premier high-performance audio, moderation, and community management engine.\n\n' +
-            '**Commands Overview by Category:**',
-        )
-        .addFields(
-          {
-            name: '🎵 Music Engine',
-            value:
-              '`/play`, `/pause`, `/resume`, `/skip`, `/stop`, `/queue`, `/nowplaying`, `/volume`, `/seek`, `/loop`, `/shuffle`, `/clear`, `/filter`, `/autoplay`, `/join`',
-          },
-          {
-            name: '🛡️ Moderation',
-            value:
-              '`/ban`, `/unban`, `/kick`, `/timeout`, `/mute`, `/unmute`, `/softban`, `/warn`, `/cases`, `/purge`, `/slowmode`, `/lock`, `/unlock`, `/lockall`, `/hide`, `/vclock`, `/role`, `/nick`, `/jail`, `/move`',
-          },
-          {
-            name: '🔒 Security Engine',
-            value: '`/antinuke`, `/antiraid`, `/automod`',
-          },
-          {
-            name: '🎫 Support & Tickets',
-            value:
-              '`/ticket setup`, `/ticket panel`, `/ticket create`, `/ticket close`, `/ticket claim`, `/ticket unclaim`, `/ticket add`, `/ticket remove`, `/ticket rename`, `/ticket list`, `/ticket transcript`',
-          },
-          {
-            name: '✅ Verification',
-            value: '`/verify setup`, `/verify panel`, `/verify view`',
-          },
-          {
-            name: '🏆 Leveling & Leaderboards',
-            value:
-              '`/rank`, `/levels`, `/leaderboard view|setup|list|remove`, `/reset all|xp|messages|voice|timeframe`, `/setup-leveling`, `/xp-set`',
-          },
-          {
-            name: '🔊 VoiceMaster Channels',
-            value:
-              '`/vc name`, `/vc lock`, `/vc unlock`, `/vc hide`, `/vc unhide`, `/vc permit`, `/vc reject`, `/vc kick`, `/vc limit`, `/vc transfer`, `/voicemaster setup`, `/setup-vc`',
-          },
-          {
-            name: '👥 Community Suite',
-            value:
-              '`/autorole`, `/reactionrole`, `/vanityrole`, `/clownboard`, `/counter`, `/autoresponder`, `/invites`, `/timer`, `/bumper`, `/social`, `/boosterrole`',
-          },
-          {
-            name: '💰 Virtual Economy',
-            value:
-              '`/balance`, `/daily`, `/work`, `/beg`, `/gamble`, `/pay`, `/deposit`, `/withdraw`, `/rich`',
-          },
-          {
-            name: '🎮 Fun & Entertainment',
-            value:
-              '`/rp`, `/image`, `/tictactoe`, `/trivia`, `/urban`, `/fun 8ball|coinflip|roll|choose`, `/meme`, `/fortnite`',
-          },
-          {
-            name: '🧰 Server Utility',
-            value:
-              '`/userinfo`, `/serverinfo`, `/avatar`, `/poll`, `/remindme`, `/afk`, `/suggest`, `/report`, `/announce`, `/embed`, `/serverassets`, `/servericon`, `/roles`, `/emojis`, `/boosters`, `/snipe`, `/editsnipe`, `/crypto`, `/color`, `/weather`, `/translate`, `/define`, `/wiki`, `/github`, `/steal`, `/info`',
-          },
-        )
-        .setFooter({ text: 'Riffly • Complete Discord Architecture' })
-        .setTimestamp();
+      const client = interaction.client;
+      const initialEmbed = buildHelpOverviewEmbed(interaction.user, client);
+      const initialRows = buildHelpActionRows('overview');
 
-      await interaction.reply({ embeds: [embed] });
+      const response = await interaction.reply({
+        embeds: [initialEmbed],
+        components: initialRows,
+        fetchReply: true,
+      });
+
+      // Interactive collector for 5 minutes
+      if (
+        response &&
+        typeof (response as unknown as { createMessageComponentCollector?: unknown })
+          .createMessageComponentCollector === 'function'
+      ) {
+        const collector = response.createMessageComponentCollector({
+          time: 300_000,
+        });
+
+        collector.on('collect', async (i) => {
+          if (i.user.id !== interaction.user.id) {
+            await i.reply({
+              content: '❌ Use `/help` yourself to open your own interactive operations matrix.',
+              ephemeral: true,
+            });
+            return;
+          }
+
+          let nextTab = 'overview';
+          let updatedEmbed = buildHelpOverviewEmbed(interaction.user, client);
+
+          if (i.isButton()) {
+            if (i.customId === 'riffly_help_main') {
+              nextTab = 'main';
+              updatedEmbed = buildHelpMainEmbed(interaction.user, client);
+            } else if (i.customId === 'riffly_help_extra') {
+              nextTab = 'extra';
+              updatedEmbed = buildHelpExtraEmbed(interaction.user, client);
+            } else if (i.customId === 'riffly_help_overview') {
+              nextTab = 'overview';
+              updatedEmbed = buildHelpOverviewEmbed(interaction.user, client);
+            }
+          } else if (i.isStringSelectMenu()) {
+            const selected = i.values[0];
+            nextTab = selected ?? 'overview';
+            if (selected === 'overview') {
+              updatedEmbed = buildHelpOverviewEmbed(interaction.user, client);
+            } else if (selected) {
+              updatedEmbed = buildHelpCategoryEmbed(interaction.user, client, selected);
+            }
+          }
+
+          await i.update({
+            embeds: [updatedEmbed],
+            components: buildHelpActionRows(nextTab),
+          });
+        });
+
+        collector.on('end', async () => {
+          try {
+            const disabledRows = buildHelpActionRows('overview', true);
+            await interaction.editReply({ components: disabledRows }).catch(() => null);
+          } catch {}
+        });
+      }
     },
   };
 
