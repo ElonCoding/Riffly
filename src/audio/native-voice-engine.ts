@@ -165,11 +165,30 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
     const player = this.getOrCreatePlayer(guildId);
     activeConnection.subscribe(player);
 
-    const targetUrl =
+    let targetUrl =
       track.uri ??
       (track.identifier.startsWith('http')
         ? track.identifier
         : `https://www.youtube.com/watch?v=${track.identifier}`);
+
+    // If targetUrl is an unresolved Spotify/Apple Music query
+    if (
+      targetUrl.startsWith('ytsearch:') ||
+      targetUrl.includes('results?search_query=') ||
+      targetUrl.includes('open.spotify.com') ||
+      targetUrl.includes('music.apple.com')
+    ) {
+      const query =
+        track.identifier.replace(/^ytsearch:/, '') || `${track.author} - ${track.title}`;
+      try {
+        const ytRes = await this.ytdl.search(query, { limit: 1 });
+        if (ytRes && ytRes[0]?.url) {
+          targetUrl = ytRes[0].url;
+        }
+      } catch (err) {
+        console.warn('[NativeAudioEngine] Failed to resolve query for stream:', err);
+      }
+    }
 
     try {
       let audioStream: import('node:stream').Readable;

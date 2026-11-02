@@ -90,6 +90,9 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
         'www.soundcloud.com',
         'on.soundcloud.com',
         'bandcamp.com',
+        'open.spotify.com',
+        'spotify.com',
+        'music.apple.com',
       ]);
     } else {
       const lavalinkProvider = new LavalinkProvider({

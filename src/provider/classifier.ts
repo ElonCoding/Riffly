@@ -84,6 +84,10 @@ export function classifyInput(
 
 /** Heuristic: common playlist path indicators across providers. */
 function isPlaylistPath(pathname: string, params: URLSearchParams): boolean {
+  // Apple Music single track within album (e.g. ?i=1745741776)
+  if (params.has('i')) {
+    return false;
+  }
   const lowerPath = pathname.toLowerCase();
   return (
     lowerPath.includes('/playlist') ||
