@@ -59,3 +59,4 @@ jobs:
             riffly-dist.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

@@ -26,3 +26,4 @@ jobs:
           days-before-pr-close: 7
           exempt-issue-labels: 'pinned,security,enhancement,critical'
           exempt-pr-labels: 'pinned,work in progress,dependencies'
+
