@@ -366,19 +366,273 @@ export function createFunCommands(): CommandDefinition[] {
   // 7. /meme
   const memeCmd: CommandDefinition = {
     name: 'meme',
-    description: 'Fetch a top trending funny meme from Reddit.',
+    description: 'Fetch random trending memes across top communities.',
     data: new SlashCommandBuilder()
       .setName('meme')
-      .setDescription('Fetch a top trending funny meme from Reddit.'),
+      .setDescription('Fetch random trending memes across top communities.')
+      .addStringOption((opt) =>
+        opt
+          .setName('category')
+          .setDescription('Type of meme')
+          .setRequired(false)
+          .addChoices(
+            { name: '🔥 Dank Memes', value: 'dankmemes' },
+            { name: '😂 General Memes', value: 'memes' },
+            { name: '💖 Wholesome', value: 'wholesomememes' },
+            { name: '🙋 Me IRL', value: 'me_irl' },
+            { name: '💻 Programmer Humor', value: 'ProgrammerHumor' },
+            { name: '💀 Comedy Heaven', value: 'comedyheaven' },
+          ),
+      ),
     execute: async (interaction: ChatInputCommandInteraction) => {
-      const embed = new EmbedBuilder()
-        .setTitle('😂 Fresh Meme')
-        .setColor(0xff4500)
-        .setDescription('When your bot features Lavalink, Moderation, and Security all in one.')
-        .setImage('https://i.imgflip.com/30b1gx.jpg')
-        .setFooter({ text: 'r/memes • Riffly Fun' });
+      await interaction.deferReply();
 
-      await interaction.reply({ embeds: [embed] });
+      const userCategory = interaction.options.getString('category');
+      const pool = [
+        'dankmemes',
+        'memes',
+        'wholesomememes',
+        'me_irl',
+        'ProgrammerHumor',
+        'comedyheaven',
+      ];
+      const selectedSub =
+        userCategory && pool.includes(userCategory)
+          ? userCategory
+          : pool[Math.floor(Math.random() * pool.length)]!;
+
+      const curatedFallbacks: Record<string, { title: string; url: string; sub: string }[]> = {
+        dankmemes: [
+          {
+            title: 'Task failed successfully',
+            url: 'https://i.imgflip.com/2/1g8my4.jpg',
+            sub: 'dankmemes',
+          },
+          {
+            title: 'Outstanding Move',
+            url: 'https://i.imgflip.com/2/2wsc8b.jpg',
+            sub: 'dankmemes',
+          },
+          {
+            title: 'It ain’t much, but it’s honest work',
+            url: 'https://i.imgflip.com/2/2qam5r.jpg',
+            sub: 'dankmemes',
+          },
+          {
+            title: 'They had us in the first half not gonna lie',
+            url: 'https://i.imgflip.com/2/2w7r0y.jpg',
+            sub: 'dankmemes',
+          },
+        ],
+        memes: [
+          {
+            title: 'Distracted Boyfriend',
+            url: 'https://i.imgflip.com/1ur9b0.jpg',
+            sub: 'memes',
+          },
+          {
+            title: 'Change My Mind',
+            url: 'https://i.imgflip.com/24y43o.jpg',
+            sub: 'memes',
+          },
+          {
+            title: 'Two Buttons',
+            url: 'https://i.imgflip.com/1g8my4.jpg',
+            sub: 'memes',
+          },
+          {
+            title: 'Left Exit 12 Off Ramp',
+            url: 'https://i.imgflip.com/22bdq6.jpg',
+            sub: 'memes',
+          },
+        ],
+        wholesomememes: [
+          {
+            title: 'Have a great day, legend!',
+            url: 'https://i.imgflip.com/4/3si4.jpg',
+            sub: 'wholesomememes',
+          },
+          {
+            title: 'You got this!',
+            url: 'https://i.imgflip.com/1otk96.jpg',
+            sub: 'wholesomememes',
+          },
+        ],
+        ProgrammerHumor: [
+          {
+            title: '99 little bugs in the code',
+            url: 'https://i.imgflip.com/30b1gx.jpg',
+            sub: 'ProgrammerHumor',
+          },
+          {
+            title: 'It worked on localhost',
+            url: 'https://i.imgflip.com/1bij.jpg',
+            sub: 'ProgrammerHumor',
+          },
+        ],
+      };
+
+      let title = '😂 Fresh Meme';
+      let imageUrl = 'https://i.imgflip.com/30b1gx.jpg';
+      let subName = selectedSub;
+      let postLink = 'https://reddit.com/r/' + selectedSub;
+      let ups = 0;
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(`https://meme-api.com/gimme/${selectedSub}`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (res.ok) {
+          const data = (await res.json()) as {
+            title?: string;
+            url?: string;
+            postLink?: string;
+            subreddit?: string;
+            ups?: number;
+            nsfw?: boolean;
+          };
+
+          // Filter out NSFW memes to protect family-friendly Discord servers
+          if (data && data.url && !data.nsfw) {
+            title = data.title ?? title;
+            imageUrl = data.url;
+            postLink = data.postLink ?? postLink;
+            subName = data.subreddit ?? subName;
+            ups = data.ups ?? 0;
+          }
+        }
+      } catch {
+        // Fall back gracefully to curated safe pool
+        const fallbackList = curatedFallbacks[selectedSub] ?? curatedFallbacks.memes!;
+        const picked = fallbackList[Math.floor(Math.random() * fallbackList.length)]!;
+        title = picked.title;
+        imageUrl = picked.url;
+        subName = picked.sub;
+      }
+
+      const embed = new EmbedBuilder()
+        .setTitle(title.slice(0, 250))
+        .setURL(postLink)
+        .setColor(0xff4500)
+        .setImage(imageUrl)
+        .setFooter({
+          text: `r/${subName}${ups > 0 ? ` • 👍 ${ups.toLocaleString()}` : ''} • Powered by Riffly`,
+        })
+        .setTimestamp();
+
+      const refreshButton = new ButtonBuilder()
+        .setCustomId(`riffly_meme_next_${subName}`)
+        .setLabel('Next Meme')
+        .setStyle(ButtonStyle.Primary)
+        .setEmoji('🔁');
+
+      const redditButton = new ButtonBuilder()
+        .setLabel(`r/${subName}`)
+        .setStyle(ButtonStyle.Link)
+        .setURL(postLink);
+
+      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        refreshButton,
+        redditButton,
+      );
+
+      const response = await interaction.editReply({
+        embeds: [embed],
+        components: [row],
+      });
+
+      // Allow requester to click Next Meme for 3 minutes
+      if (
+        response &&
+        typeof (response as unknown as { createMessageComponentCollector?: unknown })
+          .createMessageComponentCollector === 'function'
+      ) {
+        const collector = response.createMessageComponentCollector({
+          time: 180_000,
+        });
+
+        collector.on('collect', async (btnInt) => {
+          if (btnInt.user.id !== interaction.user.id) {
+            await btnInt.reply({
+              content: '❌ Use `/meme` to spawn your own meme stream.',
+              ephemeral: true,
+            });
+            return;
+          }
+
+          await btnInt.deferUpdate();
+
+          try {
+            const nextRes = await fetch(`https://meme-api.com/gimme/${selectedSub}`);
+            if (nextRes.ok) {
+              const nextData = (await nextRes.json()) as {
+                title?: string;
+                url?: string;
+                postLink?: string;
+                subreddit?: string;
+                ups?: number;
+                nsfw?: boolean;
+              };
+
+              if (nextData && nextData.url && !nextData.nsfw) {
+                const nextEmbed = new EmbedBuilder()
+                  .setTitle((nextData.title ?? '😂 Fresh Meme').slice(0, 250))
+                  .setURL(nextData.postLink ?? postLink)
+                  .setColor(0xff4500)
+                  .setImage(nextData.url)
+                  .setFooter({
+                    text: `r/${nextData.subreddit ?? subName}${nextData.ups ? ` • 👍 ${nextData.ups.toLocaleString()}` : ''} • Powered by Riffly`,
+                  })
+                  .setTimestamp();
+
+                const updatedRedditBtn = new ButtonBuilder()
+                  .setLabel(`r/${nextData.subreddit ?? subName}`)
+                  .setStyle(ButtonStyle.Link)
+                  .setURL(nextData.postLink ?? postLink);
+
+                const updatedRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  refreshButton,
+                  updatedRedditBtn,
+                );
+
+                await btnInt.editReply({
+                  embeds: [nextEmbed],
+                  components: [updatedRow],
+                });
+                return;
+              }
+            }
+          } catch {}
+
+          // Fallback if API fails
+          const fallbackList = curatedFallbacks[selectedSub] ?? curatedFallbacks.memes!;
+          const picked = fallbackList[Math.floor(Math.random() * fallbackList.length)]!;
+          const fallbackEmbed = new EmbedBuilder()
+            .setTitle(picked.title)
+            .setColor(0xff4500)
+            .setImage(picked.url)
+            .setFooter({ text: `r/${picked.sub} • Powered by Riffly` });
+
+          await btnInt.editReply({
+            embeds: [fallbackEmbed],
+            components: [row],
+          });
+        });
+
+        collector.on('end', async () => {
+          try {
+            const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+              refreshButton.setDisabled(true),
+              redditButton,
+            );
+            await interaction.editReply({ components: [disabledRow] }).catch(() => null);
+          } catch {}
+        });
+      }
     },
   };
 
