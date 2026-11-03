@@ -25,9 +25,9 @@ describe('Global Slash Command Registry Inventory', () => {
     }
   });
 
-  it('verifies /musicdiag replacement of legacy /rp command', () => {
+  it('verifies /musicdiag and /rp commands exist in global registry', () => {
     expect(GLOBAL_SLASH_COMMAND_NAMES).toContain('musicdiag');
-    expect(GLOBAL_SLASH_COMMAND_NAMES).not.toContain('rp');
+    expect(GLOBAL_SLASH_COMMAND_NAMES).toContain('rp');
 
     const musicdiagCmd = allCommandData.find((cmd) => cmd.name === 'musicdiag');
     expect(musicdiagCmd).toBeDefined();
@@ -36,7 +36,9 @@ describe('Global Slash Command Registry Inventory', () => {
     expect(json?.description).toContain('diagnostic');
 
     const rpCmd = allCommandData.find((cmd) => cmd.name === 'rp');
-    expect(rpCmd).toBeUndefined();
+    expect(rpCmd).toBeDefined();
+    const rpJson = rpCmd?.toJSON();
+    expect(rpJson?.name).toBe('rp');
   });
 
   it('verifies /github command options include username and repo', () => {

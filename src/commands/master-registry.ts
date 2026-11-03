@@ -294,7 +294,7 @@ export const GLOBAL_SLASH_COMMAND_NAMES: readonly string[] = [
   'ask',
   // Server Backups (1)
   'backup',
-  // Utility & Server Management (17)
+  // Utility & Server Management (16)
   'userinfo',
   'serverinfo',
   'avatar',
@@ -307,12 +307,12 @@ export const GLOBAL_SLASH_COMMAND_NAMES: readonly string[] = [
   'embed',
   'snipe',
   'crypto',
-  'color',
   'weather',
   'translate',
   'define',
   'wiki',
-  // Fun & Games (8)
+  // Fun & Games (9)
+  'rp',
   'github',
   'tictactoe',
   'trivia',
