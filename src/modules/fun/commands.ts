@@ -52,15 +52,59 @@ export function createFunCommands(): CommandDefinition[] {
         wave: 'waved at',
       };
 
+      const fallbackGifs: Record<string, string> = {
+        hug: 'https://media.giphy.com/media/od5H3PmEG5EVq/giphy.gif',
+        kiss: 'https://media.giphy.com/media/G3va31oEEnIkM/giphy.gif',
+        pat: 'https://media.giphy.com/media/L2z7dnOduqEow/giphy.gif',
+        slap: 'https://media.giphy.com/media/Gf3AUz3eBNbTW/giphy.gif',
+        cuddle: 'https://media.giphy.com/media/wnsgren9NtITS/giphy.gif',
+        poke: 'https://media.giphy.com/media/pWd36p57SWeSVstGV5/giphy.gif',
+        feed: 'https://media.giphy.com/media/11rIERgn4Y8TbW/giphy.gif',
+        tickle: 'https://media.giphy.com/media/vtOCYQJS80144/giphy.gif',
+        bite: 'https://media.giphy.com/media/12whPQ31jqYIBq/giphy.gif',
+        wave: 'https://media.giphy.com/media/1ULCj5o45QY5G/giphy.gif',
+      };
+
       const verb = actionVerbs[action] ?? action;
       const desc = target
         ? `💖 <@${interaction.user.id}> ${verb} <@${target.id}>!`
         : `✨ <@${interaction.user.id}> ${verb} the room!`;
 
+      let gifUrl = fallbackGifs[action] ?? 'https://media.giphy.com/media/od5H3PmEG5EVq/giphy.gif';
+      let animeName: string | undefined;
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(`https://nekos.best/api/v2/${action}`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (res.ok) {
+          const data = (await res.json()) as {
+            results?: Array<{ url?: string; anime_name?: string }>;
+          };
+          const first = data.results?.[0];
+          if (first?.url) {
+            gifUrl = first.url;
+            animeName = first.anime_name;
+          }
+        }
+      } catch {
+        // Fall back gracefully to curated CDN GIF
+      }
+
       const embed = new EmbedBuilder()
         .setDescription(desc)
         .setColor(0xec4899)
-        .setImage(`https://nekos.best/api/v2/${action}`);
+        .setImage(gifUrl);
+
+      if (animeName) {
+        embed.setFooter({ text: `Anime: ${animeName} • Powered by Riffly` });
+      } else {
+        embed.setFooter({ text: 'Powered by Riffly Roleplay' });
+      }
 
       await interaction.reply({ embeds: [embed] });
     },
