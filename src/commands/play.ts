@@ -78,13 +78,14 @@ function buildEnqueuedEmbed(
   resolved: ResolveResult,
   started: boolean,
   positionMs = 0,
+  isPlaying = true,
 ): EmbedBuilder {
   const isPlaylist = resolved.tracks.length > 1;
 
   if (isPlaylist) {
     const firstTrack = resolved.tracks[0];
     const visualizer = started
-      ? `\n\n🔊 **Visualizer:** ${createAudioVisualizer(positionMs, firstTrack?.lengthMs ?? 0, true)}\n${createProgressBar(positionMs, firstTrack?.lengthMs ?? 0)}`
+      ? `\n\n🔊 **Visualizer:** ${createAudioVisualizer(positionMs, firstTrack?.lengthMs ?? 0, isPlaying)}\n${createProgressBar(positionMs, firstTrack?.lengthMs ?? 0, 16, false)}`
       : '';
 
     const embed = new EmbedBuilder()
@@ -119,7 +120,7 @@ function buildEnqueuedEmbed(
   const titlePrefix = started ? '▶️ Now Playing' : '📋 Added to Queue';
   const trackTitle = track.uri ? `**[${track.title}](${track.uri})**` : `**${track.title}**`;
   const visualizer = started
-    ? `\n\n🔊 **Visualizer:** ${createAudioVisualizer(positionMs, track.lengthMs, true)}\n${createProgressBar(positionMs, track.lengthMs)}`
+    ? `\n\n🔊 **Visualizer:** ${createAudioVisualizer(positionMs, track.lengthMs, isPlaying)}\n${createProgressBar(positionMs, track.lengthMs, 16, false)}`
     : '';
 
   const embed = new EmbedBuilder()
@@ -234,28 +235,33 @@ export function makePlayCommand(
             let ticks = 0;
             const ticker = setInterval(async () => {
               ticks++;
-              if (ticks > 8) {
+              if (ticks > 100) {
                 clearInterval(ticker);
                 return;
               }
               try {
                 const currentState = playerManager.getState(guildId);
-                if (!currentState.current || currentState.engineState !== 'playing') {
+                if (
+                  !currentState.current ||
+                  currentState.engineState === 'idle' ||
+                  currentState.engineState === 'disconnected'
+                ) {
                   clearInterval(ticker);
                   return;
                 }
+                const isPaused = currentState.engineState === 'paused';
                 const currentPos =
                   typeof playerManager.getPlaybackPosition === 'function'
                     ? playerManager.getPlaybackPosition(guildId)
                     : 0;
-                const updatedEmbed = buildEnqueuedEmbed(resolved, true, currentPos);
+                const updatedEmbed = buildEnqueuedEmbed(resolved, true, currentPos, !isPaused);
                 await interaction.editReply({ embeds: [updatedEmbed], components }).catch(() => {
                   clearInterval(ticker);
                 });
               } catch {
                 clearInterval(ticker);
               }
-            }, 3000);
+            }, 2500);
           } catch (trackErr: unknown) {
             const errMsg =
               trackErr instanceof Error ? trackErr.message : String(trackErr);

@@ -217,34 +217,43 @@ export function createAudioVisualizer(
   totalMs: number,
   isPlaying = true,
 ): string {
-  if (!isPlaying) {
-    return '─── ⏸️ PAUSED ───';
-  }
-  const frames = [
-    ' ▃▅▇█▇▅▃ ',
-    '▃▅▇██▇▅▃ ',
-    '▅▇██▇▅▃ ▂',
-    '▇██▇▅▃ ▂▃',
-    '██▇▅▃ ▂▃▅',
-    '█▇▅▃ ▂▃▅▇',
-  ];
-  const timeBasis = currentMs > 0 ? currentMs : Date.now();
-  const step = Math.floor(timeBasis / 500) % frames.length;
-  const waveform = frames[step] ?? ' ▃▅▇█▇▅▃ ';
   const curStr = formatDuration(Math.max(0, currentMs), true);
   const totStr = totalMs > 0 ? formatDuration(totalMs, true) : '∞';
-  return `\`${waveform}\` \`[${curStr} / ${totStr}]\``;
+
+  if (!isPlaying) {
+    return `\`─── ⏸️ PAUSED ───\`\n\`[${curStr} / ${totStr}]\``;
+  }
+  const frames = [
+    ' ▂▃▅▆▇▆▅▃▂ ',
+    '▂▃▅▆▇██▇▆▅ ',
+    '▃▅▆▇██▇▆▅▃ ',
+    '▅▆▇██▇▆▅▃▂ ',
+    '▆▇██▇▆▅▃▂  ',
+    '▇██▇▆▅▃▂ ▂ ',
+    '██▇▆▅▃▂ ▂▃ ',
+    '█▇▆▅▃▂ ▂▃▅ ',
+  ];
+  const timeBasis = currentMs > 0 ? currentMs : Date.now();
+  const step = Math.floor(timeBasis / 400) % frames.length;
+  const waveform = frames[step] ?? ' ▂▃▅▆▇▆▅▃▂ ';
+  return `\`${waveform}\`\n\`[${curStr} / ${totStr}]\``;
 }
 
 /**
  * Generates an ASCII visual progress bar for track playback.
- * e.g. 🔘▬▬▬▬▬▬▬▬▬▬ 01:23 / 03:45
+ * e.g. 🔘▬▬▬▬▬▬▬▬▬▬ 01:23 / 03:45 or 🔘▬▬▬▬▬▬▬▬▬▬ (clean slider)
  */
-export function createProgressBar(currentMs: number, totalMs: number, barLength = 12): string {
+export function createProgressBar(
+  currentMs: number,
+  totalMs: number,
+  barLength = 12,
+  includeTimestamps = true,
+): string {
   if (totalMs <= 0) {
-    return (
-      '🔘' + '▬'.repeat(Math.max(1, barLength - 1)) + ` ${formatDuration(currentMs, true)} / ∞`
-    );
+    const liveBar = '🔘' + '▬'.repeat(Math.max(1, barLength - 1));
+    return includeTimestamps
+      ? `${liveBar} ${formatDuration(currentMs, true)} / ∞`
+      : liveBar;
   }
 
   const clampedCurrent = Math.max(0, Math.min(currentMs, totalMs));
@@ -253,8 +262,13 @@ export function createProgressBar(currentMs: number, totalMs: number, barLength 
 
   const before = '▬'.repeat(indicatorIndex);
   const after = '▬'.repeat(Math.max(0, barLength - 1 - indicatorIndex));
+  const bar = `${before}🔘${after}`;
 
-  return `${before}🔘${after} ${formatDuration(clampedCurrent, true)} / ${formatDuration(totalMs, true)}`;
+  if (!includeTimestamps) {
+    return bar;
+  }
+
+  return `${bar} ${formatDuration(clampedCurrent, true)} / ${formatDuration(totalMs, true)}`;
 }
 
 /**

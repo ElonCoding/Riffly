@@ -108,7 +108,7 @@ export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Comman
 
       const progressBar = track.isStream
         ? '🔴 Live Stream'
-        : createProgressBar(positionMs, track.lengthMs);
+        : createProgressBar(positionMs, track.lengthMs, 16, false);
 
       const loopDisplay =
         state.loopMode === 'off' ? 'Off' : state.loopMode === 'track' ? '🔂 Track' : '🔁 Queue';
@@ -153,52 +153,53 @@ export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Comman
         state.upcoming.length,
       );
 
-      const response = await interaction.editReply({ embeds: [embed], components: rows });
+      await interaction.editReply({ embeds: [embed], components: rows });
 
-      // Live 10-second ticker to update visualizer & progress bar continuously (Boogie/Gold style)
-      if (
-        response &&
-        !isPaused &&
-        typeof (response as unknown as { edit?: unknown }).edit === 'function'
-      ) {
-        let tickCount = 0;
-        const interval = setInterval(async () => {
-          tickCount++;
-          if (tickCount > 5) {
+      // Live ticker to update visualizer & progress bar continuously
+      let tickCount = 0;
+      const interval = setInterval(async () => {
+        tickCount++;
+        if (tickCount > 100) {
+          clearInterval(interval);
+          return;
+        }
+        try {
+          const currentState = playerManager.getState(guildId);
+          if (
+            !currentState.current ||
+            currentState.engineState === 'idle' ||
+            currentState.engineState === 'disconnected'
+          ) {
             clearInterval(interval);
             return;
           }
-          try {
-            const currentState = playerManager.getState(guildId);
-            if (!currentState.current || currentState.engineState !== 'playing') {
-              clearInterval(interval);
-              return;
-            }
-            const livePos =
-              typeof playerManager.getPlaybackPosition === 'function'
-                ? playerManager.getPlaybackPosition(guildId)
-                : 0;
+          const livePaused = currentState.engineState === 'paused';
+          const livePos =
+            typeof playerManager.getPlaybackPosition === 'function'
+              ? playerManager.getPlaybackPosition(guildId)
+              : 0;
 
-            const liveVisualizer = track.isStream
-              ? '🔴 Live Stream'
-              : createAudioVisualizer(livePos, track.lengthMs, true);
+          const liveVisualizer = track.isStream
+            ? '🔴 Live Stream'
+            : createAudioVisualizer(livePos, track.lengthMs, !livePaused);
 
-            const liveProgress = track.isStream
-              ? '🔴 Live Stream'
-              : createProgressBar(livePos, track.lengthMs);
+          const liveProgress = track.isStream
+            ? '🔴 Live Stream'
+            : createProgressBar(livePos, track.lengthMs, 16, false);
 
-            const updatedEmbed = EmbedBuilder.from(embed).setDescription(
-              `**[${track.title}](${track.uri ?? '#'})**\n\n` +
-                `🔊 **Visualizer:** ${liveVisualizer}\n` +
-                `${liveProgress}`,
-            );
+          const updatedEmbed = EmbedBuilder.from(embed).setDescription(
+            `**[${track.title}](${track.uri ?? '#'})**\n\n` +
+              `🔊 **Visualizer:** ${liveVisualizer}\n` +
+              `${liveProgress}`,
+          );
 
-            await interaction.editReply({ embeds: [updatedEmbed], components: rows });
-          } catch {
+          await interaction.editReply({ embeds: [updatedEmbed], components: rows }).catch(() => {
             clearInterval(interval);
-          }
-        }, 2000);
-      }
+          });
+        } catch {
+          clearInterval(interval);
+        }
+      }, 2500);
     },
   };
 }

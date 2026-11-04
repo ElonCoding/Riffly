@@ -33,7 +33,7 @@ export interface NativeVoiceEngineOptions {
  */
 export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine {
   private readonly client: Client;
-  private readonly ytdl: Ytdl;
+  private ytdl: Ytdl;
   private readonly connections = new Map<string, VoiceConnection>();
   private readonly players = new Map<string, AudioPlayer>();
   private readonly resources = new Map<string, AudioResource>();
@@ -79,13 +79,24 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
       throw RifflyError.notInVoiceChannel();
     }
 
-    let connection = getVoiceConnection(guildId);
+    let connection = this.connections.get(guildId) ?? getVoiceConnection(guildId);
 
+    // If an existing connection is broken, disconnected, or attached to a different channel, cleanly destroy it
     if (
-      !connection ||
-      connection.state.status === VoiceConnectionStatus.Destroyed ||
-      connection.state.status === VoiceConnectionStatus.Disconnected
+      connection &&
+      (connection.state.status !== VoiceConnectionStatus.Ready ||
+        connection.joinConfig.channelId !== voiceChannelId)
     ) {
+      try {
+        connection.destroy();
+      } catch {
+        // ignore
+      }
+      this.connections.delete(guildId);
+      connection = undefined;
+    }
+
+    if (!connection) {
       const newConn = joinVoiceChannel({
         channelId: voiceChannelId,
         guildId,
@@ -105,6 +116,11 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
             entersState(newConn, VoiceConnectionStatus.Connecting, 5_000),
           ]);
         } catch {
+          try {
+            newConn.destroy();
+          } catch {
+            // ignore
+          }
           this.cleanupGuild(guildId);
           this.emit('playerDisconnect', guildId);
         }
@@ -125,6 +141,11 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
       await entersState(readyConn, VoiceConnectionStatus.Ready, 10_000);
       this.emit('playerConnect', guildId);
     } catch {
+      try {
+        readyConn.destroy();
+      } catch {
+        // ignore
+      }
       this.cleanupGuild(guildId);
       throw new Error(`Voice connection timeout for guild ${guildId} after 10000ms`);
     }
@@ -137,7 +158,11 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
   async disconnect(guildId: string): Promise<void> {
     const connection = this.connections.get(guildId) ?? getVoiceConnection(guildId);
     if (connection) {
-      connection.destroy();
+      try {
+        connection.destroy();
+      } catch {
+        // ignore
+      }
     }
     this.cleanupGuild(guildId);
     this.emit('playerDisconnect', guildId);
@@ -194,11 +219,20 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
       let audioStream: import('node:stream').Readable;
 
       if (targetUrl.includes('youtube.com') || targetUrl.includes('youtu.be')) {
-        audioStream = this.ytdl.download(targetUrl, {
-          filter: { hasAudio: true, hasVideo: false },
-          quality: 'highestaudio',
-          highWaterMark: 1 << 25,
-        });
+        try {
+          audioStream = this.ytdl.download(targetUrl, {
+            filter: { hasAudio: true, hasVideo: false },
+            quality: 'highestaudio',
+            highWaterMark: 1 << 25,
+          });
+        } catch {
+          this.ytdl = new Ytdl();
+          audioStream = this.ytdl.download(targetUrl, {
+            filter: { hasAudio: true, hasVideo: false },
+            quality: 'highestaudio',
+            highWaterMark: 1 << 25,
+          });
+        }
       } else {
         // Direct stream / other source URL
         const response = await fetch(targetUrl);
@@ -216,6 +250,9 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
           audioStream.destroyed
         ) {
           return;
+        }
+        if (error.message.includes('Could not prepare player') || error.message.includes('decipher')) {
+          this.ytdl = new Ytdl();
         }
         if (this.currentTracks.get(guildId) !== track) {
           return;
@@ -363,7 +400,7 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
     if (!player) {
       player = createAudioPlayer({
         behaviors: {
-          noSubscriber: NoSubscriberBehavior.Pause,
+          noSubscriber: NoSubscriberBehavior.Play,
         },
       });
 
