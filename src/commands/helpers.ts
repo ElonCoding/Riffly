@@ -209,6 +209,33 @@ export function formatDuration(ms: number, padMinutes = false): string {
 }
 
 /**
+ * Generates dynamic audio visualizer waveform bars (Boogie/Hades style).
+ * e.g. ılıılılllıılı | 01:23 / 03:45
+ */
+export function createAudioVisualizer(
+  currentMs: number,
+  totalMs: number,
+  isPlaying = true,
+): string {
+  if (!isPlaying) {
+    return '─── ⏸️ PAUSED ───';
+  }
+  const frames = [
+    ' ▃▅▇█▇▅▃ ',
+    '▃▅▇██▇▅▃ ',
+    '▅▇██▇▅▃ ▂',
+    '▇██▇▅▃ ▂▃',
+    '██▇▅▃ ▂▃▅',
+    '█▇▅▃ ▂▃▅▇',
+  ];
+  const step = Math.floor(currentMs / 500) % frames.length;
+  const waveform = frames[step] ?? 'ılıılılllı';
+  const curStr = formatDuration(currentMs, true);
+  const totStr = totalMs > 0 ? formatDuration(totalMs, true) : '∞';
+  return `\`${waveform}\` \`[${curStr} / ${totStr}]\``;
+}
+
+/**
  * Generates an ASCII visual progress bar for track playback.
  * e.g. 🔘▬▬▬▬▬▬▬▬▬▬ 01:23 / 03:45
  */

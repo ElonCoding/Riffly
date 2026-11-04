@@ -111,17 +111,20 @@ describe('/nowplaying command', () => {
     expect(fields?.find((f) => f.name === 'Loop')?.value).toBe('🔂 Track');
     expect(fields?.find((f) => f.name === 'Status')?.value).toBe('▶️ Playing');
 
-    // Components check (ActionRow with 5 buttons)
+    // Components check (ActionRows with control buttons)
     expect(callArg.components).toBeDefined();
     const row = callArg.components?.[0];
     expect(row?.components.length).toBe(5);
     const customIds = row?.components.map((c) => (c.data as { custom_id?: string }).custom_id);
     expect(customIds).toEqual([
+      'riffly_shuffle',
       'riffly_pause',
       'riffly_resume',
       'riffly_skip',
       'riffly_stop',
-      'riffly_loop',
     ]);
+    const row2 = callArg.components?.[1];
+    expect(row2?.components.length).toBe(1);
+    expect((row2?.components[0]?.data as { custom_id?: string }).custom_id).toBe('riffly_loop');
   });
 });

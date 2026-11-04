@@ -4,13 +4,25 @@
  * Validates input, resolves a track (or playlist), joins voice, and enqueues.
  */
 
-import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
+  SlashCommandBuilder,
+} from 'discord.js';
 import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
 import type { ResolveResult, TrackResolver } from '../provider/resolver.js';
 import { RifflyError } from '../errors.js';
 import { validatePlayInput } from './input.js';
-import { assertBotVoicePermissions, getBotVoiceChannelId, resolveMemberVoiceChannelId } from './helpers.js';
+import {
+  assertBotVoicePermissions,
+  createAudioVisualizer,
+  createProgressBar,
+  getBotVoiceChannelId,
+  resolveMemberVoiceChannelId,
+} from './helpers.js';
 
 function formatDuration(ms: number): string {
   if (ms <= 0) return '∞';
@@ -20,14 +32,60 @@ function formatDuration(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
+export function buildMusicActionRows(queueCount = 0): ActionRowBuilder<ButtonBuilder>[] {
+  const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId('riffly_shuffle')
+      .setLabel('Shuffle')
+      .setEmoji('🔀')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(queueCount < 2),
+    new ButtonBuilder()
+      .setCustomId('riffly_pause')
+      .setLabel('Pause')
+      .setEmoji('⏸️')
+      .setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder()
+      .setCustomId('riffly_resume')
+      .setLabel('Play')
+      .setEmoji('▶️')
+      .setStyle(ButtonStyle.Success)
+      .setDisabled(true),
+    new ButtonBuilder()
+      .setCustomId('riffly_skip')
+      .setLabel('Skip')
+      .setEmoji('⏭️')
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId('riffly_stop')
+      .setLabel('Stop')
+      .setEmoji('⏹️')
+      .setStyle(ButtonStyle.Danger),
+  );
+
+  const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId('riffly_loop')
+      .setLabel('Loop')
+      .setEmoji('🔁')
+      .setStyle(ButtonStyle.Secondary),
+  );
+
+  return [row1, row2];
+}
+
 function buildEnqueuedEmbed(resolved: ResolveResult, started: boolean): EmbedBuilder {
   const isPlaylist = resolved.tracks.length > 1;
 
   if (isPlaylist) {
     const firstTrack = resolved.tracks[0];
+    const visualizer = started
+      ? `\n\n🔊 **Visualizer:** ${createAudioVisualizer(0, firstTrack?.lengthMs ?? 0, true)}\n${createProgressBar(0, firstTrack?.lengthMs ?? 0)}`
+      : '';
+
     const embed = new EmbedBuilder()
       .setTitle('📋 Playlist Enqueued')
-      .setDescription(resolved.summary)
+      .setDescription(`${resolved.summary}${visualizer}`)
       .addFields(
         { name: 'Total Tracks', value: `${resolved.tracks.length}`, inline: true },
         {
@@ -55,9 +113,14 @@ function buildEnqueuedEmbed(resolved: ResolveResult, started: boolean): EmbedBui
   }
 
   const titlePrefix = started ? '▶️ Now Playing' : '📋 Added to Queue';
+  const trackTitle = track.uri ? `**[${track.title}](${track.uri})**` : `**${track.title}**`;
+  const visualizer = started
+    ? `\n\n🔊 **Visualizer:** ${createAudioVisualizer(0, track.lengthMs, true)}\n${createProgressBar(0, track.lengthMs)}`
+    : '';
+
   const embed = new EmbedBuilder()
     .setTitle(titlePrefix)
-    .setDescription(track.uri ? `**[${track.title}](${track.uri})**` : `**${track.title}**`)
+    .setDescription(`${trackTitle}${visualizer}`)
     .addFields(
       { name: 'Artist', value: track.author, inline: true },
       {
@@ -146,6 +209,8 @@ export function makePlayCommand(
         // Enqueue and possibly start playback
         const { started } = await playerManager.play(guildId, resolved.tracks);
 
+        const components = started ? buildMusicActionRows(resolved.tracks.length - 1) : [];
+
         if (started && typeof playerManager.waitForTrackStart === 'function') {
           const firstTrackTitle = resolved.tracks[0]?.title ?? 'Track';
           await interaction.editReply({
@@ -155,7 +220,7 @@ export function makePlayCommand(
           try {
             await playerManager.waitForTrackStart(guildId, 7000);
             const embed = buildEnqueuedEmbed(resolved, true);
-            await interaction.editReply({ content: null, embeds: [embed] });
+            await interaction.editReply({ content: null, embeds: [embed], components });
           } catch (trackErr: unknown) {
             const errMsg =
               trackErr instanceof Error ? trackErr.message : String(trackErr);
@@ -165,6 +230,7 @@ export function makePlayCommand(
                 content:
                   '⏳ Audio stream is taking longer than expected to buffer. Check `/musicdiag` for status.',
                 embeds: [embed],
+                components,
               });
             } else {
               await interaction.editReply({
@@ -175,7 +241,7 @@ export function makePlayCommand(
           }
         } else {
           const embed = buildEnqueuedEmbed(resolved, started);
-          await interaction.editReply({ embeds: [embed] });
+          await interaction.editReply({ embeds: [embed], components });
         }
       } catch (err) {
         const message =

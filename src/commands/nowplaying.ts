@@ -11,11 +11,64 @@ import {
 } from 'discord.js';
 import type { Command } from './types.js';
 import type { GuildPlayerManager } from '../player/guild-player.js';
-import { createProgressBar, formatDuration } from './helpers.js';
+import { createAudioVisualizer, createProgressBar, formatDuration } from './helpers.js';
 
 export const nowPlayingCommandData = new SlashCommandBuilder()
   .setName('nowplaying')
-  .setDescription('Show what is currently playing.');
+  .setDescription('Show what is currently playing with live audio visualizer and controls.');
+
+export function buildMusicControlRows(
+  isPaused: boolean,
+  loopMode: 'off' | 'track' | 'queue',
+  queueCount: number,
+): ActionRowBuilder<ButtonBuilder>[] {
+  const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId('riffly_shuffle')
+      .setLabel('Shuffle')
+      .setEmoji('🔀')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(queueCount < 2),
+    new ButtonBuilder()
+      .setCustomId('riffly_pause')
+      .setLabel('Pause')
+      .setEmoji('⏸️')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(isPaused),
+    new ButtonBuilder()
+      .setCustomId('riffly_resume')
+      .setLabel('Play')
+      .setEmoji('▶️')
+      .setStyle(ButtonStyle.Success)
+      .setDisabled(!isPaused),
+    new ButtonBuilder()
+      .setCustomId('riffly_skip')
+      .setLabel('Skip')
+      .setEmoji('⏭️')
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId('riffly_stop')
+      .setLabel('Stop')
+      .setEmoji('⏹️')
+      .setStyle(ButtonStyle.Danger),
+  );
+
+  const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId('riffly_loop')
+      .setLabel(
+        loopMode === 'track'
+          ? 'Loop Track'
+          : loopMode === 'queue'
+            ? 'Loop Queue'
+            : 'Loop Off',
+      )
+      .setEmoji(loopMode === 'track' ? '🔂' : '🔁')
+      .setStyle(loopMode === 'off' ? ButtonStyle.Secondary : ButtonStyle.Primary),
+  );
+
+  return [row1, row2];
+}
 
 export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Command {
   return {
@@ -48,6 +101,11 @@ export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Comman
       const volume =
         typeof playerManager.getVolume === 'function' ? playerManager.getVolume(guildId) : 100;
 
+      const isPaused = state.engineState === 'paused';
+      const visualizer = track.isStream
+        ? '🔴 Live Stream'
+        : createAudioVisualizer(positionMs, track.lengthMs, !isPaused);
+
       const progressBar = track.isStream
         ? '🔴 Live Stream'
         : createProgressBar(positionMs, track.lengthMs);
@@ -57,7 +115,11 @@ export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Comman
 
       const embed = new EmbedBuilder()
         .setTitle('🎵 Now Playing')
-        .setDescription(`**[${track.title}](${track.uri ?? '#'})**\n\n${progressBar}`)
+        .setDescription(
+          `**[${track.title}](${track.uri ?? '#'})**\n\n` +
+            `🔊 **Visualizer:** ${visualizer}\n` +
+            `${progressBar}`,
+        )
         .addFields(
           { name: 'Artist', value: track.author, inline: true },
           {
@@ -72,7 +134,7 @@ export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Comman
           },
           {
             name: 'Status',
-            value: state.engineState === 'paused' ? '⏸️ Paused' : '▶️ Playing',
+            value: isPaused ? '⏸️ Paused' : '▶️ Playing',
             inline: true,
           },
           { name: 'Volume', value: `🔊 ${volume}%`, inline: true },
@@ -85,44 +147,13 @@ export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Comman
         embed.setThumbnail(track.artworkUrl);
       }
 
-      const isPaused = state.engineState === 'paused';
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId('riffly_pause')
-          .setLabel('Pause')
-          .setEmoji('⏸️')
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(isPaused),
-        new ButtonBuilder()
-          .setCustomId('riffly_resume')
-          .setLabel('Resume')
-          .setEmoji('▶️')
-          .setStyle(ButtonStyle.Success)
-          .setDisabled(!isPaused),
-        new ButtonBuilder()
-          .setCustomId('riffly_skip')
-          .setLabel('Skip')
-          .setEmoji('⏭️')
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId('riffly_stop')
-          .setLabel('Stop')
-          .setEmoji('⏹️')
-          .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-          .setCustomId('riffly_loop')
-          .setLabel(
-            state.loopMode === 'track'
-              ? 'Loop Track'
-              : state.loopMode === 'queue'
-                ? 'Loop Queue'
-                : 'Loop',
-          )
-          .setEmoji(state.loopMode === 'track' ? '🔂' : '🔁')
-          .setStyle(state.loopMode === 'off' ? ButtonStyle.Secondary : ButtonStyle.Primary),
+      const rows = buildMusicControlRows(
+        isPaused,
+        state.loopMode,
+        state.upcoming.length,
       );
 
-      await interaction.editReply({ embeds: [embed], components: [row] });
+      await interaction.editReply({ embeds: [embed], components: rows });
     },
   };
 }
