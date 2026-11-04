@@ -228,9 +228,10 @@ export function createAudioVisualizer(
     '██▇▅▃ ▂▃▅',
     '█▇▅▃ ▂▃▅▇',
   ];
-  const step = Math.floor(currentMs / 500) % frames.length;
-  const waveform = frames[step] ?? 'ılıılılllı';
-  const curStr = formatDuration(currentMs, true);
+  const timeBasis = currentMs > 0 ? currentMs : Date.now();
+  const step = Math.floor(timeBasis / 500) % frames.length;
+  const waveform = frames[step] ?? ' ▃▅▇█▇▅▃ ';
+  const curStr = formatDuration(Math.max(0, currentMs), true);
   const totStr = totalMs > 0 ? formatDuration(totalMs, true) : '∞';
   return `\`${waveform}\` \`[${curStr} / ${totStr}]\``;
 }

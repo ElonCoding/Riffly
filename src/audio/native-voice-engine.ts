@@ -41,7 +41,7 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
   private readonly volumes = new Map<string, number>();
   private readonly voiceChannelIds = new Map<string, string>();
   private readonly playbackStartTimes = new Map<string, number>();
-  private readonly pausedDurations = new Map<string, number>();
+  private readonly pauseStartTimes = new Map<string, number>();
 
   readonly isNative = true;
 
@@ -251,7 +251,7 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
       this.resources.set(guildId, resource);
       this.currentTracks.set(guildId, track);
       this.playbackStartTimes.set(guildId, Date.now());
-      this.pausedDurations.set(guildId, 0);
+      this.pauseStartTimes.delete(guildId);
 
       player.play(resource);
     } catch (err) {
@@ -265,6 +265,7 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
   async pause(guildId: string): Promise<void> {
     const player = this.players.get(guildId);
     if (player && player.state.status === AudioPlayerStatus.Playing) {
+      this.pauseStartTimes.set(guildId, Date.now());
       player.pause();
     }
   }
@@ -272,6 +273,13 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
   async resume(guildId: string): Promise<void> {
     const player = this.players.get(guildId);
     if (player && player.state.status === AudioPlayerStatus.Paused) {
+      const pausedAt = this.pauseStartTimes.get(guildId);
+      if (pausedAt) {
+        const pauseDuration = Date.now() - pausedAt;
+        const currentStart = this.playbackStartTimes.get(guildId) ?? Date.now();
+        this.playbackStartTimes.set(guildId, currentStart + pauseDuration);
+        this.pauseStartTimes.delete(guildId);
+      }
       player.unpause();
     }
   }
@@ -279,6 +287,8 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
   async stop(guildId: string): Promise<void> {
     this.currentTracks.delete(guildId);
     this.resources.delete(guildId);
+    this.playbackStartTimes.delete(guildId);
+    this.pauseStartTimes.delete(guildId);
     const player = this.players.get(guildId);
     if (player) {
       player.stop(true);
@@ -304,9 +314,23 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
 
   getPosition(guildId: string): number {
     const resource = this.resources.get(guildId);
-    if (resource) {
+    if (!resource) {
+      return 0;
+    }
+
+    if (resource.playbackDuration && resource.playbackDuration > 0) {
       return resource.playbackDuration;
     }
+
+    const startedAt = this.playbackStartTimes.get(guildId);
+    if (startedAt) {
+      const pausedAt = this.pauseStartTimes.get(guildId);
+      if (pausedAt) {
+        return Math.max(0, pausedAt - startedAt);
+      }
+      return Math.max(0, Date.now() - startedAt);
+    }
+
     return 0;
   }
 
@@ -386,6 +410,6 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
     this.currentTracks.delete(guildId);
     this.voiceChannelIds.delete(guildId);
     this.playbackStartTimes.delete(guildId);
-    this.pausedDurations.delete(guildId);
+    this.pauseStartTimes.delete(guildId);
   }
 }

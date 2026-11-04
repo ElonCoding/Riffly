@@ -153,7 +153,52 @@ export function makeNowPlayingCommand(playerManager: GuildPlayerManager): Comman
         state.upcoming.length,
       );
 
-      await interaction.editReply({ embeds: [embed], components: rows });
+      const response = await interaction.editReply({ embeds: [embed], components: rows });
+
+      // Live 10-second ticker to update visualizer & progress bar continuously (Boogie/Gold style)
+      if (
+        response &&
+        !isPaused &&
+        typeof (response as unknown as { edit?: unknown }).edit === 'function'
+      ) {
+        let tickCount = 0;
+        const interval = setInterval(async () => {
+          tickCount++;
+          if (tickCount > 5) {
+            clearInterval(interval);
+            return;
+          }
+          try {
+            const currentState = playerManager.getState(guildId);
+            if (!currentState.current || currentState.engineState !== 'playing') {
+              clearInterval(interval);
+              return;
+            }
+            const livePos =
+              typeof playerManager.getPlaybackPosition === 'function'
+                ? playerManager.getPlaybackPosition(guildId)
+                : 0;
+
+            const liveVisualizer = track.isStream
+              ? '🔴 Live Stream'
+              : createAudioVisualizer(livePos, track.lengthMs, true);
+
+            const liveProgress = track.isStream
+              ? '🔴 Live Stream'
+              : createProgressBar(livePos, track.lengthMs);
+
+            const updatedEmbed = EmbedBuilder.from(embed).setDescription(
+              `**[${track.title}](${track.uri ?? '#'})**\n\n` +
+                `🔊 **Visualizer:** ${liveVisualizer}\n` +
+                `${liveProgress}`,
+            );
+
+            await interaction.editReply({ embeds: [updatedEmbed], components: rows });
+          } catch {
+            clearInterval(interval);
+          }
+        }, 2000);
+      }
     },
   };
 }
