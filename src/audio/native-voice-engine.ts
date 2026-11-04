@@ -197,7 +197,7 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
         audioStream = this.ytdl.download(targetUrl, {
           filter: { hasAudio: true, hasVideo: false },
           quality: 'highestaudio',
-          highWaterMark: 1 << 25,
+          highWaterMark: 1 << 21, // 2MB buffer instead of 32MB: starts voice output 10x faster
         });
       } else {
         // Direct stream / other source URL
