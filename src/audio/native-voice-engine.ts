@@ -368,6 +368,9 @@ export class NativeVoiceMusicEngine extends EventEmitter implements MusicEngine 
       });
 
       player.on(AudioPlayerStatus.Playing, () => {
+        if (!this.playbackStartTimes.has(guildId)) {
+          this.playbackStartTimes.set(guildId, Date.now());
+        }
         const track = this.currentTracks.get(guildId);
         if (track) {
           this.emit('trackStart', guildId, track);
