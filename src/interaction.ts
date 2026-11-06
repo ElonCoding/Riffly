@@ -35,6 +35,8 @@ const MUSIC_BUTTONS = new Set([
   'riffly_stop',
   'riffly_loop',
   'riffly_shuffle',
+  'riffly_previous',
+  'riffly_like',
 ]);
 
 /**
@@ -380,6 +382,23 @@ async function handleButtonInteraction(
           playerManager.shuffle(guildId);
           break;
         }
+        case 'riffly_previous': {
+          if (typeof playerManager.seek === 'function') {
+            await playerManager.seek(guildId, 0);
+          }
+          break;
+        }
+        case 'riffly_like': {
+          const state = playerManager.getState(guildId);
+          const songTitle = state.current?.title ?? 'Current track';
+          if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+              content: `❤️ Added **${songTitle}** to your Liked Songs!`,
+              ephemeral: true,
+            });
+          }
+          return;
+        }
         default: {
           console.warn(`[Interaction] Unrecognized music button customId: ${customId}`);
           return;
@@ -442,5 +461,126 @@ async function handleSelectMenuInteraction(
       embeds: [embed],
       components: buildHelpActionRows(tab),
     });
+    return;
+  }
+
+  if (customId === 'riffly_queue_select') {
+    const value = interaction.values[0];
+    if (!value || value === 'queue_empty') {
+      if (!interaction.deferred && !interaction.replied) {
+        await interaction.deferUpdate();
+      }
+      return;
+    }
+
+    if (!canModifyQueue(interaction)) {
+      await interaction.reply({
+        content: '🔇 You must be in the same voice channel as Riffly to use this control.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (value.startsWith('skip_to_') && defaultPlayerManager && interaction.guildId) {
+      const idx = parseInt(value.replace('skip_to_', ''), 10);
+      if (!isNaN(idx)) {
+        for (let i = 0; i < idx; i++) {
+          defaultPlayerManager.remove(interaction.guildId, 0);
+        }
+        await defaultPlayerManager.skip(interaction.guildId);
+        await interaction.reply({
+          content: '⏭️ Skipped forward in queue!',
+          ephemeral: true,
+        });
+        return;
+      }
+    }
+
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferUpdate();
+    }
+    return;
+  }
+
+  if (customId === 'riffly_more_features') {
+    const feature = interaction.values[0];
+    if (!feature || !defaultPlayerManager || !interaction.guildId) {
+      if (!interaction.deferred && !interaction.replied) {
+        await interaction.deferUpdate();
+      }
+      return;
+    }
+
+    if (!canModifyQueue(interaction)) {
+      await interaction.reply({
+        content: '🔇 You must be in the same voice channel as Riffly to use this control.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const guildId = interaction.guildId;
+    switch (feature) {
+      case 'feature_shuffle': {
+        defaultPlayerManager.shuffle(guildId);
+        await interaction.reply({ content: '🔀 Queue shuffled!', ephemeral: true });
+        return;
+      }
+      case 'feature_loop_track': {
+        defaultPlayerManager.setLoopMode(guildId, 'track');
+        await interaction.reply({ content: '🔂 Loop mode: **Track**', ephemeral: true });
+        return;
+      }
+      case 'feature_loop_queue': {
+        defaultPlayerManager.setLoopMode(guildId, 'queue');
+        await interaction.reply({ content: '🔁 Loop mode: **Queue**', ephemeral: true });
+        return;
+      }
+      case 'feature_loop_off': {
+        defaultPlayerManager.setLoopMode(guildId, 'off');
+        await interaction.reply({ content: '➡️ Loop mode: **Off**', ephemeral: true });
+        return;
+      }
+      case 'feature_clear': {
+        defaultPlayerManager.clear(guildId);
+        await interaction.reply({ content: '🗑️ Upcoming queue cleared!', ephemeral: true });
+        return;
+      }
+      case 'feature_autoplay': {
+        const current = defaultPlayerManager.isAutoplay(guildId);
+        defaultPlayerManager.setAutoplay(guildId, !current);
+        await interaction.reply({
+          content: !current ? '📻 Autoplay enabled!' : '📻 Autoplay disabled.',
+          ephemeral: true,
+        });
+        return;
+      }
+      case 'feature_bassboost':
+      case 'feature_nightcore':
+      case 'feature_8d':
+      case 'feature_vaporwave': {
+        const preset = feature.replace('feature_', '') as import('./audio/types.js').AudioFilterPreset;
+        await defaultPlayerManager.setFilter(guildId, preset);
+        await interaction.reply({ content: `🎛️ Audio filter set to **${preset}**!`, ephemeral: true });
+        return;
+      }
+      case 'feature_lyrics': {
+        const state = defaultPlayerManager.getState(guildId);
+        const track = state.current;
+        if (track) {
+          await interaction.reply({
+            content: `📜 Search for lyrics with \`/lyrics title:${track.title.slice(0, 50)}\``,
+            ephemeral: true,
+          });
+        } else {
+          await interaction.reply({ content: '⏹️ Nothing is currently playing.', ephemeral: true });
+        }
+        return;
+      }
+    }
+
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferUpdate();
+    }
   }
 }

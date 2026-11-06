@@ -5,9 +5,6 @@
  */
 
 import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
   EmbedBuilder,
   SlashCommandBuilder,
 } from 'discord.js';
@@ -18,11 +15,11 @@ import { RifflyError } from '../errors.js';
 import { validatePlayInput } from './input.js';
 import {
   assertBotVoicePermissions,
-  createAudioVisualizer,
-  createProgressBar,
+  createMusicSlider,
   getBotVoiceChannelId,
   resolveMemberVoiceChannelId,
 } from './helpers.js';
+import { buildMusicControlRows } from './nowplaying.js';
 
 function formatDuration(ms: number): string {
   if (ms <= 0) return '∞';
@@ -32,46 +29,12 @@ function formatDuration(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-export function buildMusicActionRows(queueCount = 0): ActionRowBuilder<ButtonBuilder>[] {
-  const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId('riffly_shuffle')
-      .setLabel('Shuffle')
-      .setEmoji('🔀')
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(queueCount < 2),
-    new ButtonBuilder()
-      .setCustomId('riffly_pause')
-      .setLabel('Pause')
-      .setEmoji('⏸️')
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId('riffly_resume')
-      .setLabel('Play')
-      .setEmoji('▶️')
-      .setStyle(ButtonStyle.Success)
-      .setDisabled(true),
-    new ButtonBuilder()
-      .setCustomId('riffly_skip')
-      .setLabel('Skip')
-      .setEmoji('⏭️')
-      .setStyle(ButtonStyle.Primary),
-    new ButtonBuilder()
-      .setCustomId('riffly_stop')
-      .setLabel('Stop')
-      .setEmoji('⏹️')
-      .setStyle(ButtonStyle.Danger),
-  );
-
-  const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId('riffly_loop')
-      .setLabel('Loop')
-      .setEmoji('🔁')
-      .setStyle(ButtonStyle.Secondary),
-  );
-
-  return [row1, row2];
+export function buildMusicActionRows(
+  queueCount = 0,
+  isPaused = false,
+  upcomingTracks: readonly import('../audio/types.js').Track[] = [],
+) {
+  return buildMusicControlRows(isPaused, 'off', queueCount, upcomingTracks);
 }
 
 function buildEnqueuedEmbed(
@@ -79,13 +42,16 @@ function buildEnqueuedEmbed(
   started: boolean,
   positionMs = 0,
   isPlaying = true,
+  ping = 0,
 ): EmbedBuilder {
   const isPlaylist = resolved.tracks.length > 1;
 
   if (isPlaylist) {
     const firstTrack = resolved.tracks[0];
     const visualizer = started
-      ? `\n\n🔊 **Visualizer:** ${createAudioVisualizer(positionMs, firstTrack?.lengthMs ?? 0, isPlaying)}\n${createProgressBar(positionMs, firstTrack?.lengthMs ?? 0, 16, false)}`
+      ? `\n\nılı | **[${firstTrack?.title ?? 'Track'}](${firstTrack?.uri ?? '#'})** by ${firstTrack?.author ?? 'Unknown'}\n\n` +
+        `\`${formatDuration(positionMs)}\` ${createMusicSlider(positionMs, firstTrack?.lengthMs ?? 0, 16)}\n` +
+        `\`${firstTrack?.isStream ? 'LIVE' : formatDuration(firstTrack?.lengthMs ?? 0)}\``
       : '';
 
     const embed = new EmbedBuilder()
@@ -101,7 +67,7 @@ function buildEnqueuedEmbed(
           inline: true,
         },
       )
-      .setColor(0x5865f2);
+      .setColor(0x2b2d31);
 
     if (firstTrack?.artworkUrl) {
       embed.setThumbnail(firstTrack.artworkUrl);
@@ -114,27 +80,26 @@ function buildEnqueuedEmbed(
     return new EmbedBuilder()
       .setTitle('📋 Added to Queue')
       .setDescription(resolved.summary)
-      .setColor(0x5865f2);
+      .setColor(0x2b2d31);
   }
 
   const titlePrefix = started ? '▶️ Now Playing' : '📋 Added to Queue';
-  const trackTitle = track.uri ? `**[${track.title}](${track.uri})**` : `**${track.title}**`;
-  const visualizer = started
-    ? `\n\n🔊 **Visualizer:** ${createAudioVisualizer(positionMs, track.lengthMs, isPlaying)}\n${createProgressBar(positionMs, track.lengthMs, 16, false)}`
-    : '';
+  const curStr = formatDuration(Math.max(0, positionMs));
+  const totStr = track.isStream ? 'LIVE' : formatDuration(track.lengthMs);
+  const visualizerIcon = isPlaying ? 'ılı' : '⏸️';
+  const slider = createMusicSlider(positionMs, track.lengthMs, 16);
+
+  const description = started
+    ? `${visualizerIcon} | **[${track.title}](${track.uri ?? '#'})** by ${track.author}\n\n` +
+      `\`${curStr}\` ${slider}\n` +
+      `\`${totStr}\`\n\n` +
+      `Volume: 100% · Repeat: Off · Ping: ${Math.max(0, Math.round(ping))}ms`
+    : `**[${track.title}](${track.uri ?? '#'})** by ${track.author}`;
 
   const embed = new EmbedBuilder()
     .setTitle(titlePrefix)
-    .setDescription(`${trackTitle}${visualizer}`)
-    .addFields(
-      { name: 'Artist', value: track.author, inline: true },
-      {
-        name: 'Duration',
-        value: track.isStream ? '🔴 Live' : formatDuration(track.lengthMs),
-        inline: true,
-      },
-    )
-    .setColor(0x5865f2);
+    .setDescription(description)
+    .setColor(0x2b2d31);
 
   if (track.artworkUrl) {
     embed.setThumbnail(track.artworkUrl);
@@ -214,7 +179,10 @@ export function makePlayCommand(
         // Enqueue and possibly start playback
         const { started } = await playerManager.play(guildId, resolved.tracks);
 
-        const components = started ? buildMusicActionRows(resolved.tracks.length - 1) : [];
+        const clientPing = (interaction.client as unknown as { ws?: { ping?: number } })?.ws?.ping ?? 0;
+        const components = started
+          ? buildMusicActionRows(resolved.tracks.length - 1, false, resolved.tracks.slice(1))
+          : [];
 
         if (started && typeof playerManager.waitForTrackStart === 'function') {
           const firstTrackTitle = resolved.tracks[0]?.title ?? 'Track';
@@ -228,7 +196,7 @@ export function makePlayCommand(
               typeof playerManager.getPlaybackPosition === 'function'
                 ? playerManager.getPlaybackPosition(guildId)
                 : 0;
-            const embed = buildEnqueuedEmbed(resolved, true, livePos);
+            const embed = buildEnqueuedEmbed(resolved, true, livePos, true, clientPing);
             await interaction.editReply({ content: null, embeds: [embed], components });
 
             // Start live ticker on play response so progress bar and visualizer advance continuously
@@ -254,8 +222,14 @@ export function makePlayCommand(
                   typeof playerManager.getPlaybackPosition === 'function'
                     ? playerManager.getPlaybackPosition(guildId)
                     : 0;
-                const updatedEmbed = buildEnqueuedEmbed(resolved, true, currentPos, !isPaused);
-                await interaction.editReply({ embeds: [updatedEmbed], components }).catch(() => {
+                const livePing = (interaction.client as unknown as { ws?: { ping?: number } })?.ws?.ping ?? 0;
+                const updatedEmbed = buildEnqueuedEmbed(resolved, true, currentPos, !isPaused, livePing);
+                const updatedRows = buildMusicActionRows(
+                  currentState.upcoming.length,
+                  isPaused,
+                  currentState.upcoming,
+                );
+                await interaction.editReply({ embeds: [updatedEmbed], components: updatedRows }).catch(() => {
                   clearInterval(ticker);
                 });
               } catch {

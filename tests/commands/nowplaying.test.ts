@@ -97,34 +97,39 @@ describe('/nowplaying command', () => {
       components?: ActionRowBuilder<ButtonBuilder>[];
     };
     expect(callArg.embeds).toBeDefined();
+    expect(callArg.embeds?.length).toBe(2);
+
     const embed = callArg.embeds?.[0];
-    expect(embed?.data.title).toBe('🎵 Now Playing');
+    expect(embed?.data.title).toBe('Now Playing');
     expect(embed?.data.description).toContain('Awesome Song');
-    expect(embed?.data.description).toContain('🔘'); // progress bar indicator
+    expect(embed?.data.description).toContain('Cool Artist');
+    expect(embed?.data.description).toContain('🔵'); // sleek slider knob
+    expect(embed?.data.description).toContain('Volume: 80%');
     expect(embed?.data.thumbnail?.url).toBe('https://img.test/art.jpg');
 
-    // Fields check
-    const fields = embed?.data.fields;
-    expect(fields?.find((f) => f.name === 'Artist')?.value).toBe('Cool Artist');
-    expect(fields?.find((f) => f.name === 'Requested By')?.value).toBe('<@user-123>');
-    expect(fields?.find((f) => f.name === 'Volume')?.value).toBe('🔊 80%');
-    expect(fields?.find((f) => f.name === 'Loop')?.value).toBe('🔂 Track');
-    expect(fields?.find((f) => f.name === 'Status')?.value).toBe('▶️ Playing');
+    const upNextEmbed = callArg.embeds?.[1];
+    expect(upNextEmbed?.data.title).toBe('Up Next');
+    expect(upNextEmbed?.data.description).toContain('Next 1');
 
-    // Components check (ActionRows with control buttons)
+    // Components check (ActionRows with control buttons and select menus)
     expect(callArg.components).toBeDefined();
+    expect(callArg.components?.length).toBe(3);
+
     const row = callArg.components?.[0];
     expect(row?.components.length).toBe(5);
     const customIds = row?.components.map((c) => (c.data as { custom_id?: string }).custom_id);
     expect(customIds).toEqual([
-      'riffly_shuffle',
-      'riffly_pause',
       'riffly_resume',
+      'riffly_previous',
+      'riffly_pause',
       'riffly_skip',
-      'riffly_stop',
+      'riffly_like',
     ]);
+
     const row2 = callArg.components?.[1];
-    expect(row2?.components.length).toBe(1);
-    expect((row2?.components[0]?.data as { custom_id?: string }).custom_id).toBe('riffly_loop');
+    expect((row2?.components[0]?.data as { custom_id?: string }).custom_id).toBe('riffly_queue_select');
+
+    const row3 = callArg.components?.[2];
+    expect((row3?.components[0]?.data as { custom_id?: string }).custom_id).toBe('riffly_more_features');
   });
 });

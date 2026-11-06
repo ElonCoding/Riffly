@@ -272,6 +272,26 @@ export function createProgressBar(
 }
 
 /**
+ * Generates sleek audio slider with blue circle knob matching Boogie/Gold style.
+ * e.g. ───────🔵────────
+ */
+export function createMusicSlider(
+  currentMs: number,
+  totalMs: number,
+  barLength = 16,
+): string {
+  if (totalMs <= 0) {
+    return '🔴' + '─'.repeat(Math.max(1, barLength - 1));
+  }
+  const clamped = Math.max(0, Math.min(currentMs, totalMs));
+  const ratio = clamped / totalMs;
+  const idx = Math.min(barLength - 1, Math.floor(ratio * barLength));
+  const before = '─'.repeat(idx);
+  const after = '─'.repeat(Math.max(0, barLength - 1 - idx));
+  return `${before}🔵${after}`;
+}
+
+/**
  * Parses user-provided timestamp input into milliseconds.
  * Supports:
  * - "90" or "90s" -> 90,000ms

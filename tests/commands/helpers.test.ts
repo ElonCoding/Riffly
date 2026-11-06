@@ -3,6 +3,7 @@ import type { ChatInputCommandInteraction } from 'discord.js';
 import {
   assertBotVoicePermissions,
   canModifyQueue,
+  createMusicSlider,
   createProgressBar,
   formatDuration,
   getBotVoiceChannelId,
@@ -189,6 +190,19 @@ describe('command helpers', () => {
       const bar = createProgressBar(180_000, 180_000, 12);
       expect(bar.startsWith('▬▬▬▬▬▬▬▬▬▬▬🔘')).toBe(true);
       expect(bar).toContain('03:00 / 03:00');
+    });
+  });
+
+  describe('createMusicSlider', () => {
+    it('creates slider with blue knob for playing track', () => {
+      const slider = createMusicSlider(60_000, 180_000, 16);
+      expect(slider).toContain('🔵');
+      expect(slider).toContain('─');
+    });
+
+    it('creates live stream slider when totalMs <= 0', () => {
+      const slider = createMusicSlider(0, 0, 16);
+      expect(slider).toContain('🔴');
     });
   });
 
