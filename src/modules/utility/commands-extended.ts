@@ -569,6 +569,16 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
     },
   };
 
+  interface WikipediaSummary {
+    title?: string;
+    description?: string;
+    extract?: string;
+    type?: string;
+    thumbnail?: { source?: string };
+    originalimage?: { source?: string };
+    content_urls?: { desktop?: { page?: string } };
+  }
+
   // 19. /wiki
   const wikiCmd: CommandDefinition = {
     name: 'wiki',
@@ -580,15 +590,129 @@ export function createExtendedUtilityCommands(): CommandDefinition[] {
         opt.setName('query').setDescription('Topic to search').setRequired(true),
       ),
     execute: async (interaction: ChatInputCommandInteraction) => {
-      const q = interaction.options.getString('query', true);
-      const embed = new EmbedBuilder()
-        .setTitle(`📚 Wikipedia: ${q}`)
-        .setColor(0x6366f1)
-        .setDescription(
-          `Read more on Wikipedia: [https://en.wikipedia.org/wiki/${encodeURIComponent(q)}](https://en.wikipedia.org/wiki/${encodeURIComponent(q)})`,
-        );
+      const q = interaction.options.getString('query', true).trim();
+      await interaction.deferReply({ ephemeral: false });
 
-      await interaction.reply({ embeds: [embed] });
+      const ua = 'RifflyDiscordBot/2.0 (https://github.com/ElonCoding/Riffly; contact@riffly.dev)';
+      let summary: WikipediaSummary | null = null;
+      let relatedPages: Array<{ title: string; key: string; description?: string }> = [];
+
+      try {
+        const directRes = await fetch(
+          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(q.replace(/\s+/g, '_'))}`,
+          { headers: { 'User-Agent': ua }, signal: AbortSignal.timeout(8000) },
+        );
+        if (directRes.ok) {
+          summary = (await directRes.json()) as WikipediaSummary;
+        }
+      } catch {
+        // Fall back to search below
+      }
+
+      const isDisambig = summary?.type === 'disambiguation';
+      if (!summary || isDisambig) {
+        try {
+          const searchRes = await fetch(
+            `https://en.wikipedia.org/w/rest.php/v1/search/page?q=${encodeURIComponent(q)}&limit=5`,
+            { headers: { 'User-Agent': ua }, signal: AbortSignal.timeout(8000) },
+          );
+          if (searchRes.ok) {
+            const searchData = (await searchRes.json()) as {
+              pages?: Array<{ title: string; key: string; description?: string }>;
+            };
+            if (searchData.pages && searchData.pages.length > 0) {
+              const top = searchData.pages[0];
+              if (top) {
+                const topRes = await fetch(
+                  `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(top.key)}`,
+                  { headers: { 'User-Agent': ua }, signal: AbortSignal.timeout(8000) },
+                );
+                if (topRes.ok) {
+                  summary = (await topRes.json()) as WikipediaSummary;
+                }
+              }
+              relatedPages = searchData.pages.slice(1, 4);
+            }
+          }
+        } catch {
+          // Will handle not found below
+        }
+      }
+
+      const activeSummary = summary;
+      if (!activeSummary || !activeSummary.title) {
+        await interaction.editReply({
+          content: `❌ No Wikipedia article found for **"${q}"**. Please check spelling or try another topic.`,
+        });
+        return;
+      }
+
+      const pageUrl =
+        activeSummary.content_urls?.desktop?.page ??
+        `https://en.wikipedia.org/wiki/${encodeURIComponent(activeSummary.title.replace(/\s+/g, '_'))}`;
+
+      const embed = new EmbedBuilder()
+        .setAuthor({
+          name: 'Wikipedia • The Free Encyclopedia',
+          iconURL:
+            'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/103px-Wikipedia-logo-v2.svg.png',
+          url: 'https://en.wikipedia.org',
+        })
+        .setTitle(activeSummary.title)
+        .setURL(pageUrl)
+        .setColor(0x3366cc);
+
+      let desc = '';
+      if (activeSummary.description) {
+        desc += `*${activeSummary.description}*\n\n`;
+      }
+      if (activeSummary.extract) {
+        desc += activeSummary.extract;
+      } else {
+        desc += 'No summary available for this topic.';
+      }
+
+      if (desc.length > 4000) {
+        desc = desc.slice(0, 3990) + '...';
+      }
+      embed.setDescription(desc);
+
+      const thumb = activeSummary.thumbnail?.source ?? activeSummary.originalimage?.source;
+      if (thumb) {
+        embed.setThumbnail(thumb);
+      }
+
+      if (relatedPages.length > 0) {
+        const relatedList = relatedPages
+          .map(
+            (p) =>
+              `• [${p.title}](https://en.wikipedia.org/wiki/${encodeURIComponent(p.key)})${
+                p.description ? ` — *${p.description}*` : ''
+              }`,
+          )
+          .join('\n');
+        embed.addFields({
+          name: '🔗 Related Topics',
+          value: relatedList.slice(0, 1024),
+        });
+      }
+
+      embed.setFooter({
+        text: 'Wikipedia • Open Knowledge (CC BY-SA 4.0)',
+        iconURL:
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/103px-Wikipedia-logo-v2.svg.png',
+      });
+      embed.setTimestamp();
+
+      const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setLabel('Read Full Article')
+          .setStyle(ButtonStyle.Link)
+          .setURL(pageUrl)
+          .setEmoji('📖'),
+      );
+
+      await interaction.editReply({ embeds: [embed], components: [actionRow] });
     },
   };
 
