@@ -7,6 +7,10 @@ import {
   type ChatInputCommandInteraction,
 } from 'discord.js';
 import type { CommandDefinition } from '../core/types.js';
+import {
+  buildTicTacToeRows,
+  createTicTacToeGame,
+} from './tictactoe.js';
 
 export function createFunCommands(): CommandDefinition[] {
   // 1. /rp
@@ -162,28 +166,34 @@ export function createFunCommands(): CommandDefinition[] {
         return;
       }
 
-      const rows: ActionRowBuilder<ButtonBuilder>[] = [];
-      for (let r = 0; r < 3; r++) {
-        const row = new ActionRowBuilder<ButtonBuilder>();
-        for (let c = 0; c < 3; c++) {
-          row.addComponents(
-            new ButtonBuilder()
-              .setCustomId(`ttt_${r}_${c}`)
-              .setLabel('➖')
-              .setStyle(ButtonStyle.Secondary),
-          );
-        }
-        rows.push(row);
-      }
-
+      const board: Array<'X' | 'O' | null> = Array(9).fill(null);
+      const rows = buildTicTacToeRows(board);
       const embed = new EmbedBuilder()
-        .setTitle('🎮 Tic-Tac-Toe')
+        .setTitle('🎮 Tic-Tac-Toe Match')
         .setColor(0x3b82f6)
         .setDescription(
-          `**${interaction.user.username}** (❌) vs **${opp.username}** (⭕)\nTurn: <@${interaction.user.id}>`,
-        );
+          `**${interaction.user.username}** (❌) vs **${opp.username}** (⭕)\n\n` +
+            `👉 Turn: <@${interaction.user.id}> (❌)`,
+        )
+        .setFooter({ text: 'Riffly Fun & Games' })
+        .setTimestamp();
 
-      await interaction.reply({ embeds: [embed], components: rows });
+      const reply = await interaction.reply({
+        embeds: [embed],
+        components: rows,
+        fetchReply: true,
+      });
+
+      createTicTacToeGame({
+        messageId: reply.id,
+        guildId: interaction.guildId ?? '',
+        playerX: { id: interaction.user.id, username: interaction.user.username },
+        playerO: { id: opp.id, username: opp.username, isBot: opp.bot },
+        board,
+        turn: 'X',
+        winner: null,
+        lastUpdated: Date.now(),
+      });
     },
   };
 

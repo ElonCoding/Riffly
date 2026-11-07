@@ -25,6 +25,7 @@ import {
   buildHelpCategoryEmbed,
   buildHelpActionRows,
 } from './modules/utility/help-menu.js';
+import { handleTicTacToeButton } from './modules/fun/tictactoe.js';
 
 let defaultPlayerManager: GuildPlayerManager | undefined;
 
@@ -125,6 +126,12 @@ async function handleButtonInteraction(
   playerManager: GuildPlayerManager | undefined,
 ): Promise<void> {
   const customId = interaction.customId;
+
+  // Handle Tic-Tac-Toe buttons (riffly_ttt_* or legacy ttt_*)
+  if (customId.startsWith('riffly_ttt_') || customId.startsWith('ttt_')) {
+    await handleTicTacToeButton(interaction);
+    return;
+  }
 
   // Only handle Riffly interactive buttons
   if (!customId.startsWith('riffly_')) {
