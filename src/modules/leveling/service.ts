@@ -1,5 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
-import type { GuildMember, TextChannel, User } from 'discord.js';
+import type { GuildMember, TextBasedChannel, TextChannel, User } from 'discord.js';
 import type { ILevelRepository, UserLevelData } from '../../database/types.js';
 import type { XpAwardResult } from './types.js';
 
@@ -55,6 +55,24 @@ export class LevelingService {
   constructor(private readonly repository: ILevelRepository) {}
 
   /**
+   * Builds the official Sentry/OwO-style Level Up embed with triangle icon, purple banner, user avatar, and footer.
+   */
+  public buildLevelUpEmbed(
+    member: GuildMember,
+    newLevel: number,
+    type: 'chat' | 'voice' = 'chat',
+  ): EmbedBuilder {
+    const activityText = type === 'voice' ? '🎶🎤 **Voice Level' : '💬 **Level';
+    return new EmbedBuilder()
+      .setTitle('△ Level Up!')
+      .setColor(0x8b5cf6)
+      .setDescription(`<@${member.id}> has reached ${activityText} ${newLevel}**! ◆`)
+      .setThumbnail(member.user.displayAvatarURL())
+      .setFooter({ text: 'Riffly Leveling' })
+      .setTimestamp();
+  }
+
+  /**
    * Evaluates message activity, enforces cooldowns, and awards random XP within configured bounds.
    */
   public async handleMessage(
@@ -64,6 +82,7 @@ export class LevelingService {
       maxXp?: number;
       cooldownSeconds?: number;
       levelUpChannel?: TextChannel;
+      currentChannel?: TextBasedChannel;
     } = {},
   ): Promise<XpAwardResult> {
     if (member.user.bot) {
@@ -107,17 +126,12 @@ export class LevelingService {
       calculateLevelFromXp,
     );
 
-    if (result.leveledUp && options.levelUpChannel) {
-      const embed = new EmbedBuilder()
-        .setTitle('🎉 Level Up!')
-        .setColor(0xf59e0b)
-        .setDescription(
-          `Congratulations <@${member.id}>! You reached **Level ${result.newLevel}**!`,
-        )
-        .setThumbnail(member.user.displayAvatarURL())
-        .setTimestamp();
-
-      await options.levelUpChannel.send({ embeds: [embed] }).catch(() => null);
+    if (result.leveledUp) {
+      const channelToSend = options.levelUpChannel ?? options.currentChannel;
+      if (channelToSend && 'send' in channelToSend) {
+        const embed = this.buildLevelUpEmbed(member, result.newLevel, 'chat');
+        await (channelToSend as TextChannel).send({ embeds: [embed] }).catch(() => null);
+      }
     }
 
     return {
@@ -127,6 +141,63 @@ export class LevelingService {
       oldLevel: result.oldLevel,
       newLevel: result.newLevel,
       totalXp: result.data.xp,
+    };
+  }
+
+  /**
+   * Awards voice XP for time spent in voice channels and announces voice level-ups.
+   */
+  public async awardVoiceXp(
+    member: GuildMember,
+    minutes = 1,
+    options: {
+      xpPerMinute?: number;
+      levelUpChannel?: TextChannel;
+      currentChannel?: TextBasedChannel;
+    } = {},
+  ): Promise<{
+    awarded: boolean;
+    leveledUp: boolean;
+    newLevel: number;
+    oldLevel: number;
+    voiceMinutes: number;
+    voiceXp: bigint;
+  }> {
+    if (member.user.bot || !this.repository.addVoiceXp) {
+      return {
+        awarded: false,
+        leveledUp: false,
+        newLevel: 0,
+        oldLevel: 0,
+        voiceMinutes: 0,
+        voiceXp: BigInt(0),
+      };
+    }
+
+    const xpGained = options.xpPerMinute ?? Math.floor(Math.random() * 6) + 15;
+    const result = await this.repository.addVoiceXp(
+      member.guild.id,
+      member.id,
+      minutes,
+      xpGained,
+      calculateLevelFromXp,
+    );
+
+    if (result.leveledUp) {
+      const channelToSend = options.levelUpChannel ?? options.currentChannel;
+      if (channelToSend && 'send' in channelToSend) {
+        const embed = this.buildLevelUpEmbed(member, result.newLevel, 'voice');
+        await (channelToSend as TextChannel).send({ embeds: [embed] }).catch(() => null);
+      }
+    }
+
+    return {
+      awarded: true,
+      leveledUp: result.leveledUp,
+      newLevel: result.newLevel,
+      oldLevel: result.oldLevel,
+      voiceMinutes: result.voiceMinutes,
+      voiceXp: result.voiceXp,
     };
   }
 

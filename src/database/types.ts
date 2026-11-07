@@ -180,6 +180,17 @@ export interface UserLevelData {
 }
 
 /**
+ * Domain representation of user voice time and voice XP.
+ */
+export interface UserVoiceActivityData {
+  guildId: string;
+  userId: string;
+  voiceMinutes: number;
+  voiceXp: bigint;
+  lastVoiceAt: Date | null;
+}
+
+/**
  * Domain representation of user economy balances and activity.
  */
 export interface UserEconomyData {
@@ -296,6 +307,20 @@ export interface ILevelRepository {
   ): Promise<{ data: UserLevelData; leveledUp: boolean; oldLevel: number; newLevel: number }>;
   getLeaderboard(guildId: string, limit?: number, offset?: number): Promise<UserLevelData[]>;
   setUserLevel(guildId: string, userId: string, level: number, xp: bigint): Promise<UserLevelData>;
+  getUserVoiceActivity?(guildId: string, userId: string): Promise<UserVoiceActivityData>;
+  addVoiceXp?(
+    guildId: string,
+    userId: string,
+    minutes: number,
+    xpAmount: number,
+    computeLevel: (xp: number) => number,
+  ): Promise<{
+    voiceMinutes: number;
+    voiceXp: bigint;
+    leveledUp: boolean;
+    oldLevel: number;
+    newLevel: number;
+  }>;
   resetUser?(
     guildId: string,
     userId: string,

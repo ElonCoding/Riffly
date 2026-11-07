@@ -105,6 +105,7 @@ export function createLevelingModule(
               ? { cooldownSeconds: settings.cooldownSeconds }
               : {}),
             ...(levelUpChannel ? { levelUpChannel } : {}),
+            currentChannel: message.channel,
           });
         },
       },

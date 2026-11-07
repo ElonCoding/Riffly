@@ -70,6 +70,29 @@ describe('LevelingService', () => {
         return Promise.resolve(list);
       }),
       setUserLevel: vi.fn(),
+      addVoiceXp: vi
+        .fn()
+        .mockImplementation(
+          (
+            _guildId: string,
+            _userId: string,
+            minutes: number,
+            amount: number,
+            computeLevel: (xp: number) => number,
+          ) => {
+            const oldXp = 0;
+            const newXp = amount;
+            const oldLevel = computeLevel(oldXp);
+            const newLevel = computeLevel(newXp);
+            return Promise.resolve({
+              voiceMinutes: minutes,
+              voiceXp: BigInt(newXp),
+              leveledUp: newLevel > oldLevel,
+              oldLevel,
+              newLevel,
+            });
+          },
+        ),
     };
 
     service = new LevelingService(mockRepo);
@@ -140,6 +163,62 @@ describe('LevelingService', () => {
     expect(result.leveledUp).toBe(true);
     expect(result.newLevel).toBe(1);
     expect(sendFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('defaults to current channel for level up notification when no custom channel is set', async () => {
+    const sendFn = vi.fn().mockResolvedValue({});
+    const mockCurrentChannel = { send: sendFn } as unknown as TextChannel;
+
+    const member = {
+      id: 'u_default',
+      guild: { id: 'g_default' },
+      user: {
+        bot: false,
+        displayAvatarURL: () => 'https://example.com/avatar.png',
+      },
+    } as unknown as GuildMember;
+
+    const result = await service.handleMessage(member, {
+      minXp: 150,
+      maxXp: 150,
+      cooldownSeconds: 0,
+      currentChannel: mockCurrentChannel,
+    });
+
+    expect(result.leveledUp).toBe(true);
+    expect(sendFn).toHaveBeenCalledTimes(1);
+    const sentData = sendFn.mock.calls[0]?.[0];
+    const embed = sentData?.embeds?.[0];
+    expect(embed.data.title).toBe('△ Level Up!');
+    expect(embed.data.color).toBe(0x8b5cf6);
+    expect(embed.data.description).toContain('<@u_default> has reached 💬 **Level 1**! ◆');
+  });
+
+  it('awards voice XP and sends voice level up alert', async () => {
+    const sendFn = vi.fn().mockResolvedValue({});
+    const mockVoiceChat = { send: sendFn } as unknown as TextChannel;
+
+    const member = {
+      id: 'u_voice',
+      guild: { id: 'g_voice' },
+      user: {
+        bot: false,
+        displayAvatarURL: () => 'https://example.com/voice-avatar.png',
+      },
+    } as unknown as GuildMember;
+
+    const result = await service.awardVoiceXp(member, 5, {
+      xpPerMinute: 120,
+      currentChannel: mockVoiceChat,
+    });
+
+    expect(result.awarded).toBe(true);
+    expect(result.leveledUp).toBe(true);
+    expect(result.newLevel).toBe(1);
+    expect(sendFn).toHaveBeenCalledTimes(1);
+    const embed = sendFn.mock.calls[0]?.[0]?.embeds?.[0];
+    expect(embed.data.title).toBe('△ Level Up!');
+    expect(embed.data.description).toContain('<@u_voice> has reached 🎶🎤 **Voice Level 1**! ◆');
   });
 
   it('generates rank embed with progress bar and statistics', async () => {

@@ -1,4 +1,10 @@
-import { Client, Events, GatewayIntentBits } from 'discord.js';
+import {
+  Client,
+  Events,
+  GatewayIntentBits,
+  type TextBasedChannel,
+  type TextChannel,
+} from 'discord.js';
 import type { AppConfig } from './config.js';
 import type { Command } from './commands/types.js';
 import { buildMasterCommandMap } from './commands/master-registry.js';
@@ -14,6 +20,9 @@ import { TrackResolver } from './provider/resolver.js';
 import { PrefixService } from './modules/prefix/service.js';
 import { CommunityService } from './modules/community/service.js';
 import { PrismaCommunityRepository } from './database/repositories/community-repository.js';
+import { GuildRepository } from './database/repositories/guild-repository.js';
+import { LevelRepository } from './database/repositories/level-repository.js';
+import { LevelingService } from './modules/leveling/service.js';
 import {
   getDefaultLoggingService,
   formatMessageDeleteEmbed,
@@ -249,6 +258,9 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
 
   const prefixService = new PrefixService();
   const commService = new CommunityService(new PrismaCommunityRepository());
+  const guildRepo = new GuildRepository();
+  const levelRepo = new LevelRepository();
+  const levelingService = new LevelingService(levelRepo);
 
   client.on(Events.MessageCreate, (message) => {
     void (async () => {
@@ -298,8 +310,91 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
       } catch {
         // Ignore command resolution errors
       }
+
+      // 4. Default automatic XP progression & Level-up alerts (like OwO / Sentry)
+      try {
+        const member =
+          message.member ??
+          (await message.guild.members.fetch(message.author.id).catch(() => null));
+        if (member) {
+          const modConfig = await guildRepo
+            .getModuleConfig(message.guild.id, 'leveling')
+            .catch(() => null);
+          if (!modConfig || modConfig.enabled !== false) {
+            const settings = modConfig?.settings as Record<string, unknown> | undefined;
+            let levelUpChannel: TextChannel | undefined;
+            if (settings?.levelUpChannelId && typeof settings.levelUpChannelId === 'string') {
+              const ch = message.guild.channels.cache.get(settings.levelUpChannelId);
+              if (ch && 'send' in ch) levelUpChannel = ch as TextChannel;
+            }
+
+            const minXp =
+              typeof settings?.minXpPerMessage === 'number' ? settings.minXpPerMessage : 15;
+            const maxXp =
+              typeof settings?.maxXpPerMessage === 'number' ? settings.maxXpPerMessage : 25;
+            const cooldown =
+              typeof settings?.cooldownSeconds === 'number' ? settings.cooldownSeconds : 60;
+
+            await levelingService.handleMessage(member, {
+              minXp,
+              maxXp,
+              cooldownSeconds: cooldown,
+              ...(levelUpChannel ? { levelUpChannel } : {}),
+              currentChannel: message.channel,
+            });
+          }
+        }
+      } catch {
+        // Ignore leveling errors
+      }
     })();
   });
+
+  // Voice XP & Leveling Background Ticker (awards XP to members actively in voice channels)
+  const voiceTicker = setInterval(() => {
+    void (async () => {
+      for (const guild of client.guilds.cache.values()) {
+        const voiceStates = guild.voiceStates.cache;
+        if (!voiceStates.size) continue;
+
+        try {
+          const modConfig = await guildRepo
+            .getModuleConfig(guild.id, 'leveling')
+            .catch(() => null);
+          if (modConfig && modConfig.enabled === false) continue;
+          const settings = modConfig?.settings as Record<string, unknown> | undefined;
+
+          let levelUpChannel: TextChannel | undefined;
+          if (settings?.levelUpChannelId && typeof settings.levelUpChannelId === 'string') {
+            const ch = guild.channels.cache.get(settings.levelUpChannelId);
+            if (ch && 'send' in ch) levelUpChannel = ch as TextChannel;
+          }
+
+          for (const [, state] of voiceStates) {
+            if (!state.channelId) continue;
+            const member = state.member;
+            if (!member || member.user.bot) continue;
+            if (state.deaf || state.selfDeaf) continue;
+            if (guild.afkChannelId && state.channelId === guild.afkChannelId) continue;
+
+            const voiceChannel = state.channel;
+            const targetChannel =
+              levelUpChannel ??
+              (voiceChannel && 'send' in voiceChannel
+                ? (voiceChannel as unknown as TextBasedChannel)
+                : (guild.systemChannel ?? undefined));
+
+            await levelingService.awardVoiceXp(member, 1, {
+              ...(levelUpChannel ? { levelUpChannel } : {}),
+              ...(targetChannel ? { currentChannel: targetChannel } : {}),
+            });
+          }
+        } catch {
+          // Ignore guild voice leveling errors
+        }
+      }
+    })();
+  }, 60000);
 
   client.on(Events.MessageReactionAdd, (reaction, user) => {
     void (async () => {
@@ -348,6 +443,7 @@ export function createBot(config: AppConfig, options: BotOptions = {}): RifflyBo
       }
     },
     async stop(): Promise<void> {
+      clearInterval(voiceTicker);
       console.log('[Bot] Disconnecting from Discord Gateway...');
       await client.destroy();
     },

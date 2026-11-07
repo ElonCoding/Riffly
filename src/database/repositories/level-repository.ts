@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { getPrismaClient } from '../client.js';
-import type { ILevelRepository, UserLevelData } from '../types.js';
+import type { ILevelRepository, UserLevelData, UserVoiceActivityData } from '../types.js';
 
 /**
  * Repository managing user experience, message counts, levels, and leaderboards.
@@ -183,6 +183,110 @@ export class LevelRepository implements ILevelRepository {
       messagesCount: record.messagesCount,
       lastXpAt: record.lastXpAt,
     };
+  }
+
+  /**
+   * Retrieves voice activity statistics for a user.
+   */
+  public async getUserVoiceActivity(
+    guildId: string,
+    userId: string,
+  ): Promise<UserVoiceActivityData> {
+    const record = await this.client.userVoiceActivity.findUnique({
+      where: {
+        guildId_userId: {
+          guildId,
+          userId,
+        },
+      },
+    });
+
+    if (!record) {
+      return {
+        guildId,
+        userId,
+        voiceMinutes: 0,
+        voiceXp: BigInt(0),
+        lastVoiceAt: null,
+      };
+    }
+
+    return {
+      guildId: record.guildId,
+      userId: record.userId,
+      voiceMinutes: record.voiceMinutes,
+      voiceXp: record.voiceXp,
+      lastVoiceAt: record.lastVoiceAt,
+    };
+  }
+
+  /**
+   * Awards voice XP and updates minutes spent in voice channels.
+   */
+  public async addVoiceXp(
+    guildId: string,
+    userId: string,
+    minutes: number,
+    xpAmount: number,
+    computeLevel: (xp: number) => number,
+  ): Promise<{
+    voiceMinutes: number;
+    voiceXp: bigint;
+    leveledUp: boolean;
+    oldLevel: number;
+    newLevel: number;
+  }> {
+    return this.client.$transaction(async (tx) => {
+      await tx.guildSettings.upsert({
+        where: { guildId },
+        update: {},
+        create: { guildId },
+      });
+
+      const existing = await tx.userVoiceActivity.findUnique({
+        where: {
+          guildId_userId: {
+            guildId,
+            userId,
+          },
+        },
+      });
+
+      const oldXp = Number(existing?.voiceXp ?? BigInt(0));
+      const oldLevel = computeLevel(oldXp);
+      const newXp = oldXp + xpAmount;
+      const newLevel = computeLevel(newXp);
+      const leveledUp = newLevel > oldLevel;
+
+      const record = await tx.userVoiceActivity.upsert({
+        where: {
+          guildId_userId: {
+            guildId,
+            userId,
+          },
+        },
+        update: {
+          voiceMinutes: (existing?.voiceMinutes ?? 0) + minutes,
+          voiceXp: BigInt(newXp),
+          lastVoiceAt: new Date(),
+        },
+        create: {
+          guildId,
+          userId,
+          voiceMinutes: minutes,
+          voiceXp: BigInt(newXp),
+          lastVoiceAt: new Date(),
+        },
+      });
+
+      return {
+        voiceMinutes: record.voiceMinutes,
+        voiceXp: record.voiceXp,
+        leveledUp,
+        oldLevel,
+        newLevel,
+      };
+    });
   }
 
   public async resetUser(

@@ -6,6 +6,16 @@ import type { UserLevel, GuildSettings } from '../../src/database/types.js';
 function createMockPrismaClient(): PrismaClient {
   const guildStore = new Map<string, GuildSettings>();
   const levelStore = new Map<string, UserLevel>();
+  const voiceStore = new Map<
+    string,
+    {
+      guildId: string;
+      userId: string;
+      voiceMinutes: number;
+      voiceXp: bigint;
+      lastVoiceAt: Date | null;
+    }
+  >();
 
   const client = {
     guildSettings: {
@@ -20,6 +30,62 @@ function createMockPrismaClient(): PrismaClient {
           });
         }
         return Promise.resolve(guildStore.get(where.guildId)!);
+      },
+    },
+    userVoiceActivity: {
+      findUnique: ({
+        where,
+      }: {
+        where: { guildId_userId: { guildId: string; userId: string } };
+      }) => {
+        const key = `${where.guildId_userId.guildId}:${where.guildId_userId.userId}`;
+        return Promise.resolve(voiceStore.get(key) ?? null);
+      },
+      upsert: ({
+        where,
+        update,
+        create,
+      }: {
+        where: { guildId_userId: { guildId: string; userId: string } };
+        update: { voiceMinutes?: number; voiceXp?: bigint; lastVoiceAt?: Date };
+        create: {
+          guildId: string;
+          userId: string;
+          voiceMinutes: number;
+          voiceXp: bigint;
+          lastVoiceAt?: Date;
+        };
+      }) => {
+        const key = `${where.guildId_userId.guildId}:${where.guildId_userId.userId}`;
+        const existing = voiceStore.get(key);
+        if (existing) {
+          const updated = {
+            ...existing,
+            ...update,
+            voiceMinutes: update.voiceMinutes ?? existing.voiceMinutes,
+            voiceXp: update.voiceXp ?? existing.voiceXp,
+            lastVoiceAt: update.lastVoiceAt ?? existing.lastVoiceAt,
+          };
+          voiceStore.set(key, updated);
+          return Promise.resolve(updated);
+        }
+        const created = {
+          guildId: create.guildId,
+          userId: create.userId,
+          voiceMinutes: create.voiceMinutes,
+          voiceXp: create.voiceXp,
+          lastVoiceAt: create.lastVoiceAt ?? new Date(),
+        };
+        voiceStore.set(key, created);
+        return Promise.resolve(created);
+      },
+      deleteMany: ({ where }: { where: { guildId: string; userId?: string } }) => {
+        for (const [key, val] of voiceStore.entries()) {
+          if (val.guildId === where.guildId && (!where.userId || val.userId === where.userId)) {
+            voiceStore.delete(key);
+          }
+        }
+        return Promise.resolve({ count: 1 });
       },
     },
     userLevel: {
@@ -122,5 +188,28 @@ describe('LevelRepository', () => {
     expect(leaderboard).toHaveLength(2);
     expect(leaderboard[0]?.userId).toBe('u2');
     expect(leaderboard[1]?.userId).toBe('u1');
+  });
+
+  it('tracks voice activity and calculates voice level up', async () => {
+    const defaultVoice = await repository.getUserVoiceActivity('g1', 'u_voice');
+    expect(defaultVoice.voiceMinutes).toBe(0);
+    expect(defaultVoice.voiceXp).toBe(BigInt(0));
+
+    const formula = (xp: number) => Math.floor(xp / 100);
+
+    const first = await repository.addVoiceXp('g1', 'u_voice', 5, 80, formula);
+    expect(first.voiceMinutes).toBe(5);
+    expect(first.voiceXp).toBe(BigInt(80));
+    expect(first.leveledUp).toBe(false);
+
+    const second = await repository.addVoiceXp('g1', 'u_voice', 3, 30, formula);
+    expect(second.voiceMinutes).toBe(8);
+    expect(second.voiceXp).toBe(BigInt(110));
+    expect(second.leveledUp).toBe(true);
+    expect(second.newLevel).toBe(1);
+
+    const updated = await repository.getUserVoiceActivity('g1', 'u_voice');
+    expect(updated.voiceMinutes).toBe(8);
+    expect(updated.voiceXp).toBe(BigInt(110));
   });
 });
