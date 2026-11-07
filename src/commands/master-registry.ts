@@ -260,10 +260,11 @@ export const GLOBAL_SLASH_COMMAND_NAMES: readonly string[] = [
   // Tickets & Verification (2)
   'ticket',
   'verify',
-  // Leveling & Leaderboards (3)
+  // Leveling & Leaderboards (4)
   'rank',
   'levels',
   'leaderboard',
+  'setup-leveling',
   // Voice Rooms (2)
   'voicemaster',
   'vc',
@@ -271,12 +272,11 @@ export const GLOBAL_SLASH_COMMAND_NAMES: readonly string[] = [
   'antinuke',
   'antiraid',
   'automod',
-  // Community Features (7)
+  // Community Features (6)
   'autorole',
   'reactionrole',
   'vanityrole',
   'boosterrole',
-  'clownboard',
   'counter',
   'autoresponder',
   // Giveaways (1)

@@ -7,6 +7,7 @@ import {
 } from 'discord.js';
 import type { CommandDefinition } from '../core/types.js';
 import type { LevelingService } from './service.js';
+import { GuildRepository } from '../../database/repositories/guild-repository.js';
 
 export function createLevelingCommands(service: LevelingService): CommandDefinition[] {
   // 1. /rank
@@ -373,9 +374,28 @@ export function createLevelingCommands(service: LevelingService): CommandDefinit
     defaultMemberPermissions: PermissionFlagsBits.ManageGuild,
     execute: async (interaction: ChatInputCommandInteraction) => {
       await interaction.deferReply({ ephemeral: true });
+      const guild = interaction.guild;
+      if (!guild) {
+        await interaction.editReply({ content: 'Command can only be run in a server.' });
+        return;
+      }
       const channel = interaction.options.getChannel('channel', true);
       const mult = interaction.options.getNumber('multiplier') ?? 1.0;
       const rate = interaction.options.getInteger('rate') ?? 60;
+
+      try {
+        const guildRepo = new GuildRepository();
+        const existing = (await guildRepo.getModuleConfig(guild.id, 'leveling'))?.settings ?? {};
+        await guildRepo.updateModuleSettings(guild.id, 'leveling', {
+          ...existing,
+          levelUpChannelId: channel.id,
+          multiplier: mult,
+          cooldownSeconds: rate,
+          enabled: true,
+        });
+      } catch {
+        // Fall back gracefully if database unavailable
+      }
 
       await interaction.editReply(
         `✅ **Leveling System Configured!**\n• Level Up Channel: <#${channel.id}>\n• Multiplier: \`${mult}x\`\n• Cooldown: \`${rate}s\``,

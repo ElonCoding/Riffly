@@ -41,6 +41,19 @@ describe('Global Slash Command Registry Inventory', () => {
     expect(rpJson?.name).toBe('rp');
   });
 
+  it('verifies /setup-leveling exists in global registry and allCommandData', () => {
+    expect(GLOBAL_SLASH_COMMAND_NAMES).toContain('setup-leveling');
+    const setupCmd = allCommandData.find((cmd) => cmd.name === 'setup-leveling');
+    expect(setupCmd).toBeDefined();
+    const json = setupCmd?.toJSON();
+    expect(json?.name).toBe('setup-leveling');
+    expect(
+      (json as { options?: Array<{ name: string }> })?.options?.some(
+        (opt) => opt.name === 'channel',
+      ),
+    ).toBe(true);
+  });
+
   it('verifies /github command options include username and repo', () => {
     expect(GLOBAL_SLASH_COMMAND_NAMES).toContain('github');
 
